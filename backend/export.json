@@ -1,0 +1,85 @@
+[
+{
+    "_id": {
+        "$oid": "68c7711352a922a04ea036f9"
+    },
+    "name": "PatSuperAdmin",
+    "email": "patsuperadmin@example.com",
+    "passwordHash": "$2b$10$ZYynSW6MXAy9PHGQCjJ6X./vcCg6aqVWKTvXFkWZHPCkBUfz6Uwh2",
+    "role": "superadmin",
+    "mobile": "+91-9876543210",
+    "instituteId": null,
+    "batchId": null,
+    "permissions": [],
+    "isActive": true,
+    "profileImageUrl": null,
+    "lastLoginAt": null,
+    "resetPasswordToken": null,
+    "resetPasswordExpires": null,
+    "createdAt": {
+        "$date": "2025-09-15T01:51:13.879Z"
+    },
+    "updatedAt": {
+        "$date": "2025-09-15T01:51:13.879Z"
+    },
+    "__v": 0
+},
+{
+    "_id": {
+        "$oid": "68c771b552a922a04ea03751"
+    },
+    "name": "Prasi",
+    "email": "prasanthsubramanian2425@gmail.com",
+    "passwordHash": "$2b$10$SSvf/AEgxc6ls8L1wwD44OTEswtmPwCK6.HZv8v2ySfTgPdK3qL8i",
+    "role": "student",
+    "mobile": "+91-9003311514",
+    "instituteId": {
+        "$oid": "68c7717752a922a04ea03733"
+    },
+    "batchId": {
+        "$oid": "68c7719a52a922a04ea0374a"
+    },
+    "permissions": [],
+    "isActive": true,
+    "profileImageUrl": null,
+    "lastLoginAt": null,
+    "resetPasswordToken": null,
+    "resetPasswordExpires": null,
+    "createdAt": {
+        "$date": "2025-09-15T01:53:57.342Z"
+    },
+    "updatedAt": {
+        "$date": "2025-09-15T01:53:57.342Z"
+    },
+    "__v": 0
+},
+{
+    "_id": {
+        "$oid": "68c771e052a922a04ea03756"
+    },
+    "name": "Dhaya",
+    "email": "dhayan.d3@gmail.com",
+    "passwordHash": "$2b$10$1dspH7c41iX15GAVOqHCzOA0r/4H2lDU7ZlZgcBeiD.sdjcWHnsp.",
+    "role": "student",
+    "mobile": "+91-9003311514",
+    "instituteId": {
+        "$oid": "68c7717752a922a04ea03733"
+    },
+    "batchId": {
+        "$oid": "68c7719a52a922a04ea0374a"
+    },
+    "permissions": [],
+    "isActive": true,
+    "profileImageUrl": null,
+    "lastLoginAt": null,
+    "resetPasswordToken": null,
+    "resetPasswordExpires": null,
+    "createdAt": {
+        "$date": "2025-09-15T01:54:40.611Z"
+    },
+    "updatedAt": {
+        "$date": "2025-09-15T01:54:40.611Z"
+    },
+    "__v": 0
+}
+]

@@ -1,0 +1,173 @@
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import axios from 'axios';
+import toast from 'react-hot-toast';
+import { API_BASE } from "../api/client";
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'superadmin' | 'contentadmin' | 'trainer' | 'student' | 'centeradmin';
+  center?: any;
+  studentDetails?: any;
+}
+
+interface AuthContextType {
+  user: User | null;
+  token: string | null;
+  login: (email: string, password: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  register: (userData: any) => Promise<void>;
+  logout: () => void;
+  loading: boolean;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Set up axios defaults
+axios.defaults.baseURL = '/api';
+
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const [loading, setLoading] = useState(true);
+
+  // Logout function
+  const logout = useCallback(() => {
+    setUser(null);
+    setToken(null);
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // Clear axios headers
+    axios.defaults.headers.common = {};
+    axios.defaults.headers.post = {};
+    axios.defaults.headers.get = {};
+    axios.defaults.headers.put = {};
+    axios.defaults.headers.delete = {};
+
+    toast.success('Logged out successfully');
+  }, []);
+
+  // Initialize auth state from localStorage
+  useEffect(() => {
+    const initializeAuth = () => {
+      const storedToken = localStorage.getItem('token');
+      const storedRefreshToken = localStorage.getItem('refreshToken');
+      const storedUser = localStorage.getItem('user');
+
+      if (storedToken && storedRefreshToken && storedUser) {
+        axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+        axios.defaults.headers.common['x-refresh-token'] = storedRefreshToken;
+
+        setToken(storedToken);
+        setUser(JSON.parse(storedUser));
+      }
+      setLoading(false);
+    };
+
+    initializeAuth();
+  }, []);
+
+  // Axios response interceptor for 401 and token refresh
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      (response) => {
+        // Update token if backend provides a new one
+        if (response.data.newAccessToken) {
+          const newToken = response.data.newAccessToken;
+          setToken(newToken);
+          localStorage.setItem('token', newToken);
+          axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+          delete response.data.newAccessToken;
+        }
+        return response;
+      },
+      (error) => {
+        const { config, response } = error;
+
+        // Ignore 401 for login, register, reset endpoints
+        const ignoreUrls = [
+          `${API_BASE}/loginUser`,
+          `${API_BASE}/auth/register`,
+          `${API_BASE}/forgotPassword`
+        ];
+
+        if (response?.status === 401 && !ignoreUrls.includes(config.url || '')) {
+          logout();
+          toast.error('Session expired. Please login again.');
+        }
+
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
+  }, [logout]);
+
+  // Login
+  const login = async (email: string, password: string) => {
+    try {
+      const response = await axios.post(`${API_BASE}/loginUser`, { email, password });
+      const { accessToken, refreshToken, frontend_version, user } = response.data;
+
+      setToken(accessToken);
+      setUser(user);
+
+      localStorage.setItem('token', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('appVersion', frontend_version);
+
+      toast.success('Login successful!');
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Login failed';
+      toast.error(message);
+      throw error; // keep throwing so caller can handle
+    }
+  };
+
+  // Reset password
+  const resetPassword = async (email: string) => {
+    try {
+      const response = await axios.post(`${API_BASE}/forgotPassword`, { email });
+      toast.success(response.data.message || 'Password reset instructions sent!');
+      return response.data;
+    } catch (error: any) {
+      const message = error.response?.data?.error || 'Failed to send reset email';
+      toast.error(message);
+      throw new Error(message);
+    }
+  };
+
+  // Register
+  const register = async (userData: any) => {
+    try {
+      const response = await axios.post(`${API_BASE}/auth/register`, userData);
+      const { token: newToken, user: newUser } = response.data;
+
+      setToken(newToken);
+      setUser(newUser);
+      localStorage.setItem('token', newToken);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+
+      toast.success('Registration successful!');
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Registration failed';
+      toast.error(message);
+      throw error;
+    }
+  };
+
+  const value = { user, token, login, resetPassword, register, logout, loading };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
+  return context;
+};
