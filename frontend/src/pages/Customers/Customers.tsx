@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { PlusCircle, Pencil, Trash2, Eye, X, Search, MapPin, User } from "lucide-react";
+import { MapPin, User, Phone, Mail, Search, MoreVertical, Edit, Trash2, Building } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { FaPlus } from "react-icons/fa6";
-import { FiEdit } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
-import { BsThreeDotsVertical } from "react-icons/bs";
 import api from "../../api/client";
 
 interface Customer {
@@ -27,28 +25,10 @@ const Customers = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-
-  // Filters
   const [searchText, setSearchText] = useState("");
-  const [rowsPerPage, setRowsPerPage] = useState(25);
-  const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
-
-  // Column selector dropdown
-  const [showColumnDropdown, setShowColumnDropdown] = useState(false);
-
-  // Columns toggle (defaults)
-  const [visibleColumns, setVisibleColumns] = useState<string[]>([
-    "name", "phone", "address", "site_addresses", "createdAt"
-  ]);
-
-  // Selection
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [selectAll, setSelectAll] = useState(false);
-
-  // Delete confirmation
+  const [showActionMenu, setShowActionMenu] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 
   const navigate = useNavigate();
 
@@ -73,6 +53,7 @@ const Customers = () => {
     try {
       await api.delete(`/customers/delete/${id}`);
       toast.success("Customer deleted successfully");
+      setShowActionMenu(null);
       fetchCustomers();
     } catch (error: any) {
       toast.error(error.response?.data?.error || "Failed to delete customer");
@@ -92,109 +73,56 @@ const Customers = () => {
     return matchesSearch;
   });
 
-  // Pagination
-  const totalPages = Math.ceil(filtered.length / rowsPerPage);
-  const paginated = filtered.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
-
-  const allColumns = [
-    { key: "name", label: "Name" },
-    { key: "phone", label: "Phone" },
-    { key: "address", label: "Address" },
-    { key: "site_addresses", label: "Site Addresses" },
-    { key: "owner_id", label: "Owner" },
-    { key: "createdAt", label: "Created At" },
-    { key: "updatedAt", label: "Updated At" },
-  ];
-
-  // Handle Select All
-  const toggleSelectAll = () => {
-    if (selectAll) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(paginated.map((c) => c._id));
-    }
-    setSelectAll(!selectAll);
-  };
-
-  const toggleSelectOne = (id: string) => {
-    if (selectedIds.includes(id)) {
-      setSelectedIds(selectedIds.filter((sid) => sid !== id));
-    } else {
-      setSelectedIds([...selectedIds, id]);
-    }
-  };
-
-  // Bulk Delete
-  const handleBulkDelete = async () => {
-    try {
-      await Promise.all(
-        selectedIds.map((id) => api.delete(`/customers/delete/${id}`))
-      );
-      toast.success("Selected customers deleted successfully");
-      setSelectedIds([]);
-      setSelectAll(false);
-      fetchCustomers();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Failed to bulk delete");
-    }
-  };
-
   const resetFilters = () => {
     setSearchText("");
-    setRowsPerPage(25);
-    setCurrentPage(1);
-    setVisibleColumns(["name", "phone", "address", "site_addresses", "createdAt"]);
-    setSelectedIds([]);
-    setSelectAll(false);
   };
 
   if (loading) {
-    return <div className="text-center text-gray-500 py-10">Loading customers...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6 fade-in p-6">
       {/* Header */}
-      <div className="bg-white p-3 sm:p-4 rounded-t-xl border shadow-md flex flex-col gap-3 sm:gap-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <h1 className="text-2xl sm:text-3xl font-bold">Customers</h1>
-            <User size={32} className="text-gray-800" />
+      <div className="bg-white p-6 rounded-xl border shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <User className="h-6 w-6 text-blue-600" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
+              <p className="text-gray-600">Manage your customer relationships</p>
+            </div>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end overflow-x-auto">
-            {/* Bulk Actions */}
-            {selectedIds.length > 0 && (
-              <button
-                onClick={() => setConfirmBulkDelete(true)}
-                className="px-2 sm:px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition text-sm flex-shrink-0"
-              >
-                Delete Selected ({selectedIds.length})
-              </button>
-            )}
 
+          <div className="flex items-center gap-3">
             {/* Filters Toggle */}
             <button
-              className="px-2 sm:px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition flex items-center gap-1 sm:gap-2 text-sm flex-shrink-0"
+              className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition flex items-center gap-2"
               onClick={() => setShowFilters(!showFilters)}
             >
               <motion.span
                 animate={{ rotate: showFilters ? 180 : 0 }}
                 transition={{ duration: 0.3 }}
-                className="inline-block text-xs"
+                className="inline-block"
               >
                 ▼
               </motion.span>
-              <span className="hidden sm:inline">Filters</span>
-              <span className="sm:hidden">Filter</span>
+              Filters
             </button>
 
             {/* Add Customer */}
             <Link
               to="/customers/create"
-              className="inline-flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 bg-blue-600 text-white rounded-full shadow hover:bg-blue-700 transition-all flex-shrink-0"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm"
             >
-              <FaPlus size={16} className="sm:hidden" />
-              <FaPlus size={20} className="hidden sm:block" />
+              <FaPlus size={16} />
+              Add Customer
             </Link>
           </div>
         </div>
@@ -208,350 +136,329 @@ const Customers = () => {
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.3, ease: "easeInOut" }}
             >
-              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 md:flex md:flex-wrap md:items-center md:gap-4 gap-3">
-                {/* Search - Full width on all screens */}
-                <div className="relative w-full md:w-60">
+              <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-gray-200">
+                {/* Search */}
+                <div className="relative w-full md:w-80">
                   <Search className="absolute left-3 top-2.5 text-gray-400 h-4 w-4" />
                   <input
                     type="text"
                     placeholder="Search customers by name, phone, or address..."
                     value={searchText}
-                    onChange={(e) => {
-                      setSearchText(e.target.value);
-                      setCurrentPage(1);
-                    }}
+                    onChange={(e) => setSearchText(e.target.value)}
                     className="input input-bordered pl-9 w-full"
                   />
                 </div>
 
-                {/* Rows per page */}
-                <select
-                  className="input input-bordered w-full sm:w-auto"
-                  value={rowsPerPage}
-                  onChange={(e) => {
-                    setRowsPerPage(Number(e.target.value));
-                    setCurrentPage(1);
-                  }}
+                <button
+                  className="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 border text-sm"
+                  onClick={resetFilters}
                 >
-                  {[25, 50, 75, 100].map((count) => (
-                    <option key={count} value={count}>
-                      {count} per page
-                    </option>
-                  ))}
-                </select>
-
-                {/* Right-aligned controls */}
-                <div className="flex gap-3 sm:gap-4 md:ml-auto w-full sm:w-auto justify-between sm:justify-start">
-                  {/* Column Selector */}
-                  <div className="relative w-full sm:w-auto">
-                    <button
-                      onClick={() => setShowColumnDropdown(!showColumnDropdown)}
-                      className="px-4 py-2 w-full sm:w-auto bg-gray-200 rounded-lg hover:bg-gray-300 transition text-sm"
-                    >
-                      Select Columns ▼
-                    </button>
-                    {showColumnDropdown && (
-                      <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-10">
-                        {allColumns.map((col) => (
-                          <label
-                            key={col.key}
-                            className="flex items-center gap-2 text-sm py-1 cursor-pointer"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={visibleColumns.includes(col.key)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setVisibleColumns([...visibleColumns, col.key]);
-                                } else {
-                                  setVisibleColumns(
-                                    visibleColumns.filter((c) => c !== col.key)
-                                  );
-                                }
-                              }}
-                            />
-                            {col.label}
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Clear Filters */}
-                  <button
-                    className="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 border text-sm w-full sm:w-auto"
-                    onClick={resetFilters}
-                  >
-                    Clear Filters
-                  </button>
-                </div>
+                  Clear Filters
+                </button>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto shadow-lg border border-gray-200 bg-white">
-        <table className="w-full text-sm text-left">
-          <thead className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-sm">
-            <tr>
-              <th className="px-6 py-4 font-semibold">
-                <input
-                  type="checkbox"
-                  checked={selectAll}
-                  onChange={toggleSelectAll}
-                />
-              </th>
-              {allColumns
-                .filter((col) => visibleColumns.includes(col.key))
-                .map((col) => (
-                  <th key={col.key} className="px-6 py-4 font-semibold">
-                    {col.label}
-                  </th>
-                ))}
-              <th className="px-6 py-4 font-semibold text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {paginated.length > 0 ? (
-              paginated.map((customer) => (
-                <tr
-                  key={customer._id}
-                  className="group hover:bg-blue-50 transition-all cursor-pointer"
-                >
-                  <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.includes(customer._id)}
-                      onChange={() => toggleSelectOne(customer._id)}
-                    />
-                  </td>
-                  {allColumns
-                    .filter((col) => visibleColumns.includes(col.key))
-                    .map((col) => (
-                      <td key={col.key} className="px-6 py-4 text-gray-700">
-                        {col.key === "site_addresses" ? (
-                          <div className="flex flex-wrap gap-1">
-                            {customer.site_addresses.length > 0 ? (
-                              customer.site_addresses.map((site, index) => (
-                                <span
-                                  key={index}
-                                  className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs"
-                                >
-                                  <MapPin size={12} />
-                                  {site}
-                                </span>
-                              ))
-                            ) : (
-                              "-"
-                            )}
-                          </div>
-                        ) : col.key === "owner_id" ? (
-                          customer.owner_id?.name || "-"
-                        ) : col.key === "createdAt" ? (
-                          new Date(customer.createdAt).toLocaleDateString()
-                        ) : col.key === "updatedAt" ? (
-                          new Date(customer.updatedAt).toLocaleDateString()
-                        ) : (
-                          (customer as any)[col.key] || "-"
-                        )}
-                      </td>
-                    ))}
-                  <td
-                    className="px-6 py-4 flex items-center justify-center gap-3"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {/* Edit */}
-                    <Link
-                      to={`/customers/edit/${customer._id}`}
-                      className="p-2 rounded-full bg-yellow-200 text-gray-500 hover:bg-yellow-500 shadow-md transition"
-                      title="Edit"
-                    >
-                      <FiEdit size={18} />
-                    </Link>
-
-                    {/* View Details */}
-                    <button
-                      onClick={() => setSelectedCustomer(customer)}
-                      className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 shadow-md transition"
-                      title="View Details"
-                    >
-                      <BsThreeDotsVertical className="h-5 w-5" />
-                    </button>
-
-                    {/* Delete */}
-                    <button
-                      onClick={() => setConfirmDeleteId(customer._id)}
-                      className="p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-500 hover:text-white transition"
-                      title="Delete Customer"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={visibleColumns.length + 2} className="text-center py-10 text-gray-500 text-base font-medium">
-                  No customers found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-between items-center px-4 py-3 
-                        bg-white border border-gray-200 shadow-md rounded-b-xl mt-4">
-          <button
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            className={`px-3 py-1 rounded-md text-sm font-medium border shadow-sm
-              ${currentPage === 1
-                ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-                : "text-blue-600 bg-gray-50 hover:bg-blue-100"
-              }`}
-          >
-            Prev
-          </button>
-          <div className="flex gap-2">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`px-3 py-1 rounded-md text-sm font-medium border shadow-sm transition
-                  ${currentPage === page
-                    ? "bg-blue-600 text-white shadow"
-                    : "bg-gray-50 text-gray-700 hover:bg-blue-100"
-                  }`}
-              >
-                {page}
-              </button>
-            ))}
-          </div>
-          <button
-            disabled={currentPage === totalPages}
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-            className={`px-3 py-1 rounded-md text-sm font-medium border shadow-sm
-              ${currentPage === totalPages
-                ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-                : "text-blue-600 bg-gray-50 hover:bg-blue-100"
-              }`}
-          >
-            Next
-          </button>
-        </div>
-      )}
-
-      {/* Popup Modal for Details */}
-      {selectedCustomer && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 sm:w-[90%] md:w-[600px] relative animate-fadeIn">
-            <button
-              onClick={() => setSelectedCustomer(null)}
-              className="absolute top-3 right-3 p-2 rounded-full hover:bg-red-100 transition"
+      {/* Cards Grid */}
+      {filtered.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filtered.map((customer) => (
+            <div
+              key={customer._id}
+              className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200"
             >
-              <X className="w-5 h-5 text-gray-500" />
-            </button>
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">
-              {selectedCustomer.name}
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-700">
-              <p>
-                <strong>Phone:</strong> {selectedCustomer.phone}
-              </p>
-              <p>
-                <strong>Owner:</strong> {selectedCustomer.owner_id?.name || "-"}
-              </p>
-              <p className="sm:col-span-2">
-                <strong>Address:</strong> {selectedCustomer.address}
-              </p>
-              <p className="sm:col-span-2">
-                <strong>Site Addresses:</strong>
-                {selectedCustomer.site_addresses.length > 0 ? (
-                  <ul className="mt-2 space-y-1">
-                    {selectedCustomer.site_addresses.map((site, index) => (
-                      <li key={index} className="flex items-center gap-2 text-xs bg-gray-50 p-2 rounded">
-                        <MapPin size={12} className="text-blue-600" />
-                        {site}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  " -"
+              <div className="p-5">
+                {/* Header */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-lg text-gray-900 truncate mb-1">
+                      {customer.name}
+                    </h3>
+                    {/* <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Building className="h-3 w-3" />
+                      <span className="truncate">{customer.owner_id?.name || "-"}</span>
+                    </div> */}
+                  </div>
+                  
+                  {/* Action Menu */}
+                  <div className="relative">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowActionMenu(showActionMenu === customer._id ? null : customer._id);
+                      }}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <MoreVertical className="h-4 w-4 text-gray-500" />
+                    </button>
+
+                    {showActionMenu === customer._id && (
+                      <div className="absolute right-0 top-10 z-10 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
+                        <button
+                          onClick={() => navigate(`/customers/edit/${customer._id}`)}
+                          className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          <Edit className="h-4 w-4" />
+                          Edit Customer
+                        </button>
+                        <button
+                          onClick={() => setSelectedCustomer(customer)}
+                          className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          <User className="h-4 w-4" />
+                          View Details
+                        </button>
+                        <button
+                          onClick={() => setConfirmDeleteId(customer._id)}
+                          className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete Customer
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Contact Info */}
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Phone className="h-3 w-3" />
+                    <span className="truncate">{customer.phone}</span>
+                  </div>
+                  <div className="flex items-start gap-2 text-sm text-gray-600">
+                    <MapPin className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                    <span className="line-clamp-2">{customer.address}</span>
+                  </div>
+                </div>
+
+                {/* Site Addresses */}
+                {customer.site_addresses.length > 0 && (
+                  <div className="mb-4">
+                    <div className="flex items-center gap-1 text-xs font-medium text-gray-700 mb-2">
+                      <MapPin className="h-3 w-3" />
+                      Site Addresses ({customer.site_addresses.length})
+                    </div>
+                    <div className="space-y-1">
+                      {customer.site_addresses.slice(0, 2).map((site, index) => (
+                        <div
+                          key={index}
+                          className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded border border-gray-200 truncate"
+                        >
+                          {site}
+                        </div>
+                      ))}
+                      {customer.site_addresses.length > 2 && (
+                        <div className="text-xs text-blue-600 font-medium">
+                          +{customer.site_addresses.length - 2} more sites
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 )}
-              </p>
-              <p>
-                <strong>Created At:</strong>{" "}
-                {new Date(selectedCustomer.createdAt).toLocaleString()}
-              </p>
-              <p>
-                <strong>Updated At:</strong>{" "}
-                {new Date(selectedCustomer.updatedAt).toLocaleString()}
-              </p>
+              </div>
+
             </div>
-          </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl border shadow-sm p-12 text-center">
+          <User className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No customers found</h3>
+          <p className="text-gray-600 mb-6">
+            {searchText 
+              ? "Try adjusting your search terms"
+              : "Get started by adding your first customer"
+            }
+          </p>
+          <Link
+            to="/customers/create"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm"
+          >
+            <FaPlus size={16} />
+            Add First Customer
+          </Link>
         </div>
       )}
 
-      {/* Confirm Delete One */}
-      {confirmDeleteId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 shadow-lg w-96 text-center">
-            <h3 className="text-lg font-semibold mb-4">
-              Are you sure you want to delete this customer?
-            </h3>
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={() => setConfirmDeleteId(null)}
-                className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  handleDelete(confirmDeleteId);
-                  setConfirmDeleteId(null);
-                }}
-                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Customer Details Modal */}
+      <AnimatePresence>
+        {selectedCustomer && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setSelectedCustomer(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-2xl font-bold text-gray-900">
+                      {selectedCustomer.name}
+                    </h3>
+                    <p className="text-gray-600 mt-1">Customer Details</p>
+                  </div>
+                  <button
+                    onClick={() => setSelectedCustomer(null)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Contact Information */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                      Contact Information
+                    </h4>
+                    
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Phone</label>
+                      <div className="flex items-center gap-2 mt-1 text-gray-900">
+                        <Phone className="h-4 w-4 text-gray-400" />
+                        {selectedCustomer.phone}
+                      </div>
+                    </div>
+                    
+                    {/* <div>
+                      <label className="text-sm font-medium text-gray-700">Owner</label>
+                      <div className="flex items-center gap-2 mt-1 text-gray-900">
+                        <Building className="h-4 w-4 text-gray-400" />
+                        {selectedCustomer.owner_id?.name || "-"}
+                      </div>
+                    </div> */}
+                  </div>
 
-      {/* Confirm Bulk Delete */}
-      {confirmBulkDelete && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 shadow-lg w-96 text-center">
-            <h3 className="text-lg font-semibold mb-4">
-              Are you sure you want to delete {selectedIds.length} customers?
-            </h3>
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={() => setConfirmBulkDelete(false)}
-                className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={async () => {
-                  await handleBulkDelete();
-                  setConfirmBulkDelete(false);
-                }}
-                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
-              >
-                Delete All
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                  {/* Address Information */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                      Address Information
+                    </h4>
+                    
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Primary Address</label>
+                      <div className="flex items-start gap-2 mt-1 text-gray-900">
+                        <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <span>{selectedCustomer.address}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Site Addresses */}
+                  {selectedCustomer.site_addresses.length > 0 && (
+                    <div className="md:col-span-2">
+                      <h4 className="font-semibold text-gray-900 border-b border-gray-200 pb-2 mb-4">
+                        Site Addresses ({selectedCustomer.site_addresses.length})
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {selectedCustomer.site_addresses.map((site, index) => (
+                          <div
+                            key={index}
+                            className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200"
+                          >
+                            <MapPin className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                            <span className="text-sm text-gray-700">{site}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Timestamps */}
+                  <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Created At</label>
+                      <p className="text-gray-900 mt-1">
+                        {new Date(selectedCustomer.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Last Updated</label>
+                      <p className="text-gray-900 mt-1">
+                        {new Date(selectedCustomer.updatedAt).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => navigate(`/customers/edit/${selectedCustomer._id}`)}
+                    className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  >
+                    Edit Customer
+                  </button>
+                  <button
+                    onClick={() => setSelectedCustomer(null)}
+                    className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Confirm Delete Modal */}
+      <AnimatePresence>
+        {confirmDeleteId && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setConfirmDeleteId(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                  <Trash2 className="h-5 w-5 text-red-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-800">Delete Customer</h3>
+              </div>
+              <p className="text-sm text-gray-600 mb-6">
+                Are you sure you want to delete this customer? This action cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmDeleteId(null)}
+                  className="flex-1 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition border border-gray-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    handleDelete(confirmDeleteId!);
+                    setConfirmDeleteId(null);
+                  }}
+                  className="flex-1 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-md transition"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

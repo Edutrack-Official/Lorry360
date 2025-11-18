@@ -16,6 +16,7 @@ import {
   Wrench,
   Bell,
   Settings,
+  ChevronDown,
 } from "lucide-react";
 import { IoPersonSharp } from "react-icons/io5";
 
@@ -44,6 +45,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   const handleLogoutConfirm = () => {
     logout();
@@ -59,7 +61,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: "Maintenance", href: "/maintenance", icon: Wrench, roles: ["owner", "admin"] },
     { name: "Reports", href: "/reports", icon: BarChart3, roles: ["owner", "admin"] },
     { name: "Settings", href: "/settings", icon: Settings, roles: ["owner", "admin"] },
-    { name: "Owners", href: "/Owners", icon: Settings, roles: ["admin"] },
+    { name: "Owners", href: "/owners", icon: Users, roles: ["admin"] },
   ];
 
   const filteredNavigation = navigation.filter((item) =>
@@ -175,109 +177,149 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Main */}
       <div className="lg:pl-16">
-        {/* Top bar */}
+        {/* Top bar - Improved Responsive Design */}
         <div className="sticky top-0 z-30 bg-white border-b-4 border-blue-700 shadow-sm">
-          <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between h-16 px-4 sm:px-6">
+            {/* Left: Menu + Branding */}
+            <div className="flex items-center gap-2 sm:gap-3 flex-1">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="text-gray-600 hover:text-gray-800 lg:hidden"
+                className="lg:hidden p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
                 aria-label="Open menu"
               >
-                <Menu className="h-6 w-6" />
+                <Menu className="h-5 w-5" />
               </button>
-              <div className="flex items-center gap-2">
-                <Truck className="h-6 w-6 text-blue-700" />
-                <span className="text-xl font-bold text-gray-900">FLEET360</span>
-                <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full capitalize">
+              
+              <div className="flex items-center gap-2 min-w-0">
+                <Truck className="h-6 w-6 text-blue-700 flex-shrink-0" />
+                <span className="text-lg sm:text-xl font-bold text-gray-900 truncate">
+                  FLEET360
+                </span>
+                <span className="hidden xs:inline-flex text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full capitalize flex-shrink-0">
                   {user?.role || "admin"}
                 </span>
               </div>
             </div>
 
-            {/* Right: Bell + Profile + Logout */}
-            <div className="ml-auto flex items-center space-x-3 relative">
-              {/* Notifications */}
-              <button
-                className="relative p-2 text-gray-500 hover:text-blue-600 rounded-lg hover:bg-gray-100 transition-colors"
-                onClick={() => setShowNotifications((prev) => !prev)}
-              >
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-1 right-1 inline-flex h-2 w-2 rounded-full bg-red-500"></span>
-              </button>
+            {/* Right: Actions - Responsive Stack */}
+            <div className="flex items-center gap-1 sm:gap-2 lg:gap-3">
+              {/* Notifications - Icon only on mobile */}
+              <div className="relative">
+                <button
+                  className="p-2 text-gray-500 hover:text-blue-600 rounded-lg hover:bg-gray-100 transition-colors"
+                  onClick={() => setShowNotifications((prev) => !prev)}
+                >
+                  <Bell className="h-5 w-5" />
+                  <span className="absolute top-1 right-1 inline-flex h-2 w-2 rounded-full bg-red-500"></span>
+                </button>
 
-              {/* Notifications Dropdown */}
-              {showNotifications && (
-                <div className="absolute right-12 top-12 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50 animate-fade-in">
-                  <div className="p-4 border-b border-gray-200">
-                    <p className="font-semibold text-gray-800">Notifications</p>
-                  </div>
-                  <div className="max-h-96 overflow-y-auto">
-                    {/* Sample notifications */}
-                    <div className="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                          <Truck className="h-4 w-4 text-green-600" />
+                {/* Notifications Dropdown */}
+                {showNotifications && (
+                  <div className="absolute right-0 top-12 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50 animate-fade-in">
+                    <div className="p-4 border-b border-gray-200">
+                      <p className="font-semibold text-gray-800">Notifications</p>
+                    </div>
+                    <div className="max-h-96 overflow-y-auto">
+                      <div className="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <Truck className="h-4 w-4 text-green-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-800 truncate">Lorry Maintenance Due</p>
+                            <p className="text-xs text-gray-500 mt-1 truncate">KA01AB1234 requires routine service</p>
+                            <p className="text-xs text-gray-400 mt-1">2 hours ago</p>
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-800">Lorry Maintenance Due</p>
-                          <p className="text-xs text-gray-500 mt-1">KA01AB1234 requires routine service</p>
-                          <p className="text-xs text-gray-400 mt-1">2 hours ago</p>
+                      </div>
+                      <div className="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <Package className="h-4 w-4 text-blue-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-800 truncate">New Customer Added</p>
+                            <p className="text-xs text-gray-500 mt-1 truncate">ABC Constructions registered</p>
+                            <p className="text-xs text-gray-400 mt-1">5 hours ago</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-4 hover:bg-gray-50 cursor-pointer">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <MapPin className="h-4 w-4 text-yellow-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-800 truncate">Trip Completed</p>
+                            <p className="text-xs text-gray-500 mt-1 truncate">Trip #TRP001 has been completed</p>
+                            <p className="text-xs text-gray-400 mt-1">1 day ago</p>
+                          </div>
                         </div>
                       </div>
                     </div>
-                    <div className="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                          <Package className="h-4 w-4 text-blue-600" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-800">New Customer Added</p>
-                          <p className="text-xs text-gray-500 mt-1">ABC Constructions registered</p>
-                          <p className="text-xs text-gray-400 mt-1">5 hours ago</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="p-4 hover:bg-gray-50 cursor-pointer">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
-                          <MapPin className="h-4 w-4 text-yellow-600" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-800">Trip Completed</p>
-                          <p className="text-xs text-gray-500 mt-1">Trip #TRP001 has been completed</p>
-                          <p className="text-xs text-gray-400 mt-1">1 day ago</p>
-                        </div>
-                      </div>
+                    <div className="p-3 border-t border-gray-200">
+                      <button className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium">
+                        View All Notifications
+                      </button>
                     </div>
                   </div>
-                  <div className="p-3 border-t border-gray-200">
-                    <button className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium">
-                      View All Notifications
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Profile */}
-              <div className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
-                <div className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center border-2 border-blue-200">
-                  <IoPersonSharp className="h-5 w-5 text-blue-700" />
-                </div>
-                <div className="hidden sm:block text-left">
-                  <p className="text-sm font-bold text-gray-900 capitalize">
-                    {user?.name || "Admin User"}
-                  </p>
-                  <p className="text-xs text-gray-500 capitalize">
-                    {user?.role || "admin"} • {user?.email}
-                  </p>
-                </div>
+                )}
               </div>
 
-              {/* Logout */}
+              {/* User Profile - Compact on mobile */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-2 p-1 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors min-w-0"
+                >
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center border-2 border-blue-200 flex-shrink-0">
+                    <IoPersonSharp className="h-4 w-4 text-blue-700" />
+                  </div>
+                  <div className="hidden sm:block text-left min-w-0 max-w-32">
+                    <p className="text-sm font-bold text-gray-900 capitalize truncate">
+                      {user?.name || "Admin User"}
+                    </p>
+                    <p className="text-xs text-gray-500 capitalize truncate">
+                      {user?.role || "admin"}
+                    </p>
+                  </div>
+                  <ChevronDown className="hidden sm:block h-4 w-4 text-gray-400 flex-shrink-0" />
+                </button>
+
+                {/* User Dropdown Menu */}
+                {showUserMenu && (
+                  <div className="absolute right-0 top-12 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 animate-fade-in">
+                    <div className="p-3 border-b border-gray-200">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{user?.name}</p>
+                      <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                    </div>
+                    <div className="py-1">
+                      <button className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                        <Settings className="h-4 w-4" />
+                        Settings
+                      </button>
+                      <button className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                        <IoPersonSharp className="h-4 w-4" />
+                        Profile
+                      </button>
+                    </div>
+                    <div className="border-t border-gray-200 pt-1">
+                      <button
+                        onClick={() => setShowLogoutModal(true)}
+                        className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Logout - Icon only on mobile */}
               <button
                 onClick={() => setShowLogoutModal(true)}
-                className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors sm:hidden"
                 aria-label="Logout"
               >
                 <LogOut className="h-5 w-5" />
@@ -287,8 +329,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
 
         {/* Page content */}
-        <main className="p-1 sm:p-2 lg:p-2">
-          <div className="bg-white rounded-lg border min-h-[calc(100vh-80px)]">
+        <main className="p-2 sm:p-4 lg:p-6">
+          <div className="bg-white rounded-xl border border-gray-200 min-h-[calc(100vh-80px)] shadow-sm">
             {children}
           </div>
         </main>
@@ -297,7 +339,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Logout Modal */}
       {showLogoutModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm animate-fade-in">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm mx-4 animate-fade-in">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                 <LogOut className="h-5 w-5 text-red-600" />
@@ -307,16 +349,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <p className="text-sm text-gray-600 mb-6">
               Are you sure you want to log out of your Fleet Management account?
             </p>
-            <div className="flex justify-end space-x-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={() => setShowLogoutModal(false)}
-                className="px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition border border-gray-300"
+                className="flex-1 py-2.5 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition border border-gray-300"
               >
                 Cancel
               </button>
               <button
                 onClick={handleLogoutConfirm}
-                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 shadow-md transition"
+                className="flex-1 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-md transition"
               >
                 Logout
               </button>

@@ -34,17 +34,9 @@ const Crushers = () => {
 
   // Filters
   const [searchText, setSearchText] = useState("");
-  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [rowsPerPage, setRowsPerPage] = useState(12);
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
-
-  // Column selector dropdown
-  const [showColumnDropdown, setShowColumnDropdown] = useState(false);
-
-  // Columns toggle (defaults)
-  const [visibleColumns, setVisibleColumns] = useState<string[]>([
-    "name", "materials", "createdAt"
-  ]);
 
   // Selection
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -90,21 +82,12 @@ const Crushers = () => {
       crusher.materials.some(material => 
         material.material_name.toLowerCase().includes(searchText.toLowerCase())
       );
-
     return matchesSearch;
   });
 
   // Pagination
   const totalPages = Math.ceil(filtered.length / rowsPerPage);
   const paginated = filtered.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
-
-  const allColumns = [
-    { key: "name", label: "Crusher Name" },
-    { key: "materials", label: "Materials & Prices" },
-    { key: "owner_id", label: "Owner" },
-    { key: "createdAt", label: "Created At" },
-    { key: "updatedAt", label: "Updated At" },
-  ];
 
   // Handle Select All
   const toggleSelectAll = () => {
@@ -141,9 +124,8 @@ const Crushers = () => {
 
   const resetFilters = () => {
     setSearchText("");
-    setRowsPerPage(25);
+    setRowsPerPage(12);
     setCurrentPage(1);
-    setVisibleColumns(["name", "materials", "createdAt"]);
     setSelectedIds([]);
     setSelectAll(false);
   };
@@ -155,46 +137,53 @@ const Crushers = () => {
   return (
     <div className="space-y-6 fade-in p-6">
       {/* Header */}
-      <div className="bg-white p-3 sm:p-4 rounded-t-xl border shadow-md flex flex-col gap-3 sm:gap-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <h1 className="text-2xl sm:text-3xl font-bold">Crushers</h1>
-            <Package size={32} className="text-gray-800" />
+      <div className="bg-white p-4 sm:p-6 rounded-xl border shadow-sm">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Package size={28} className="text-blue-600" />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Crushers</h1>
+              <p className="text-gray-600 text-sm mt-1">
+                Manage your crushers and materials
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-end overflow-x-auto">
+          
+          <div className="flex items-center gap-3 w-full lg:w-auto">
             {/* Bulk Actions */}
             {selectedIds.length > 0 && (
               <button
                 onClick={() => setConfirmBulkDelete(true)}
-                className="px-2 sm:px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition text-sm flex-shrink-0"
+                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition text-sm font-medium flex items-center gap-2"
               >
-                Delete Selected ({selectedIds.length})
+                <Trash2 size={16} />
+                Delete ({selectedIds.length})
               </button>
             )}
 
             {/* Filters Toggle */}
             <button
-              className="px-2 sm:px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition flex items-center gap-1 sm:gap-2 text-sm flex-shrink-0"
+              className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition flex items-center gap-2 text-sm font-medium border"
               onClick={() => setShowFilters(!showFilters)}
             >
               <motion.span
                 animate={{ rotate: showFilters ? 180 : 0 }}
                 transition={{ duration: 0.3 }}
-                className="inline-block text-xs"
               >
                 ▼
               </motion.span>
-              <span className="hidden sm:inline">Filters</span>
-              <span className="sm:hidden">Filter</span>
+              Filters
             </button>
 
             {/* Add Crusher */}
             <Link
               to="/crushers/create"
-              className="inline-flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 bg-blue-600 text-white rounded-full shadow hover:bg-blue-700 transition-all flex-shrink-0"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-medium text-sm"
             >
-              <FaPlus size={16} className="sm:hidden" />
-              <FaPlus size={20} className="hidden sm:block" />
+              <FaPlus size={16} />
+              <span className="hidden sm:inline">Add Crusher</span>
             </Link>
           </div>
         </div>
@@ -207,79 +196,47 @@ const Crushers = () => {
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.3, ease: "easeInOut" }}
+              className="overflow-hidden"
             >
-              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 md:flex md:flex-wrap md:items-center md:gap-4 gap-3">
-                {/* Search - Full width on all screens */}
-                <div className="relative w-full md:w-60">
-                  <Search className="absolute left-3 top-2.5 text-gray-400 h-4 w-4" />
-                  <input
-                    type="text"
-                    placeholder="Search crushers by name or materials..."
-                    value={searchText}
-                    onChange={(e) => {
-                      setSearchText(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="input input-bordered pl-9 w-full"
-                  />
+              <div className="pt-4 border-t border-gray-200 grid grid-cols-1 lg:grid-cols-4 gap-4">
+                {/* Search */}
+                <div className="lg:col-span-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-3 text-gray-400 h-4 w-4" />
+                    <input
+                      type="text"
+                      placeholder="Search crushers by name or materials..."
+                      value={searchText}
+                      onChange={(e) => {
+                        setSearchText(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                      className="input input-bordered pl-10 w-full"
+                    />
+                  </div>
                 </div>
 
                 {/* Rows per page */}
-                <select
-                  className="input input-bordered w-full sm:w-auto"
-                  value={rowsPerPage}
-                  onChange={(e) => {
-                    setRowsPerPage(Number(e.target.value));
-                    setCurrentPage(1);
-                  }}
-                >
-                  {[25, 50, 75, 100].map((count) => (
-                    <option key={count} value={count}>
-                      {count} per page
-                    </option>
-                  ))}
-                </select>
+                <div>
+                  <select
+                    className="input input-bordered w-full"
+                    value={rowsPerPage}
+                    onChange={(e) => {
+                      setRowsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <option value={12}>12 per page</option>
+                    <option value={24}>24 per page</option>
+                    <option value={36}>36 per page</option>
+                    <option value={48}>48 per page</option>
+                  </select>
+                </div>
 
-                {/* Right-aligned controls */}
-                <div className="flex gap-3 sm:gap-4 md:ml-auto w-full sm:w-auto justify-between sm:justify-start">
-                  {/* Column Selector */}
-                  <div className="relative w-full sm:w-auto">
-                    <button
-                      onClick={() => setShowColumnDropdown(!showColumnDropdown)}
-                      className="px-4 py-2 w-full sm:w-auto bg-gray-200 rounded-lg hover:bg-gray-300 transition text-sm"
-                    >
-                      Select Columns ▼
-                    </button>
-                    {showColumnDropdown && (
-                      <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-10">
-                        {allColumns.map((col) => (
-                          <label
-                            key={col.key}
-                            className="flex items-center gap-2 text-sm py-1 cursor-pointer"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={visibleColumns.includes(col.key)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setVisibleColumns([...visibleColumns, col.key]);
-                                } else {
-                                  setVisibleColumns(
-                                    visibleColumns.filter((c) => c !== col.key)
-                                  );
-                                }
-                              }}
-                            />
-                            {col.label}
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Clear Filters */}
+                {/* Clear Filters */}
+                <div>
                   <button
-                    className="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 border text-sm w-full sm:w-auto"
+                    className="w-full px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 border text-sm font-medium"
                     onClick={resetFilters}
                   >
                     Clear Filters
@@ -291,216 +248,288 @@ const Crushers = () => {
         </AnimatePresence>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto shadow-lg border border-gray-200 bg-white">
-        <table className="w-full text-sm text-left">
-          <thead className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-sm">
-            <tr>
-              <th className="px-6 py-4 font-semibold">
-                <input
-                  type="checkbox"
-                  checked={selectAll}
-                  onChange={toggleSelectAll}
-                />
-              </th>
-              {allColumns
-                .filter((col) => visibleColumns.includes(col.key))
-                .map((col) => (
-                  <th key={col.key} className="px-6 py-4 font-semibold">
-                    {col.label}
-                  </th>
-                ))}
-              <th className="px-6 py-4 font-semibold text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {paginated.length > 0 ? (
-              paginated.map((crusher) => (
-                <tr
-                  key={crusher._id}
-                  className="group hover:bg-blue-50 transition-all cursor-pointer"
-                >
-                  <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+      {/* Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {paginated.length > 0 ? (
+          paginated.map((crusher) => (
+            <motion.div
+              key={crusher._id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden group"
+            >
+              {/* Card Header */}
+              <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-gray-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
                     <input
                       type="checkbox"
                       checked={selectedIds.includes(crusher._id)}
                       onChange={() => toggleSelectOne(crusher._id)}
+                      className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                      onClick={(e) => e.stopPropagation()}
                     />
-                  </td>
-                  {allColumns
-                    .filter((col) => visibleColumns.includes(col.key))
-                    .map((col) => (
-                      <td key={col.key} className="px-6 py-4 text-gray-700">
-                        {col.key === "materials" ? (
-                          <div className="space-y-1">
-                            {crusher.materials.length > 0 ? (
-                              crusher.materials.map((material, index) => (
-                                <div
-                                  key={index}
-                                  className="flex items-center justify-between text-xs bg-gray-50 px-2 py-1 rounded"
-                                >
-                                  <span className="font-medium">{material.material_name}</span>
-                                  <span className="text-green-600 flex items-center gap-1">
-                                    <DollarSign size={10} />
-                                    {material.price_per_unit}/unit
-                                  </span>
-                                </div>
-                              ))
-                            ) : (
-                              <span className="text-gray-400 text-xs">No materials</span>
-                            )}
-                          </div>
-                        ) : col.key === "owner_id" ? (
-                          crusher.owner_id?.name || "-"
-                        ) : col.key === "createdAt" ? (
-                          new Date(crusher.createdAt).toLocaleDateString()
-                        ) : col.key === "updatedAt" ? (
-                          new Date(crusher.updatedAt).toLocaleDateString()
-                        ) : (
-                          (crusher as any)[col.key] || "-"
-                        )}
-                      </td>
-                    ))}
-                  <td
-                    className="px-6 py-4 flex items-center justify-center gap-3"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                    <div className="p-2 bg-white rounded-lg shadow-sm border">
+                      <Package size={20} className="text-blue-600" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
                     {/* Edit */}
                     <Link
                       to={`/crushers/edit/${crusher._id}`}
-                      className="p-2 rounded-full bg-yellow-200 text-gray-500 hover:bg-yellow-500 shadow-md transition"
+                      className="p-2 rounded-lg bg-yellow-100 text-yellow-600 hover:bg-yellow-200 transition shadow-sm"
                       title="Edit"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <FiEdit size={18} />
+                      <FiEdit size={16} />
                     </Link>
-
-                    {/* View Details */}
-                    <button
-                      onClick={() => setSelectedCrusher(crusher)}
-                      className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 shadow-md transition"
-                      title="View Details"
-                    >
-                      <BsThreeDotsVertical className="h-5 w-5" />
-                    </button>
 
                     {/* Delete */}
                     <button
-                      onClick={() => setConfirmDeleteId(crusher._id)}
-                      className="p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-500 hover:text-white transition"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmDeleteId(crusher._id);
+                      }}
+                      className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition shadow-sm"
                       title="Delete Crusher"
                     >
-                      <Trash2 size={18} />
+                      <Trash2 size={16} />
                     </button>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={visibleColumns.length + 2} className="text-center py-10 text-gray-500 text-base font-medium">
-                  No crushers found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                  </div>
+                </div>
+                
+                <h3 className="text-lg font-semibold text-gray-900 mt-3 line-clamp-1">
+                  {crusher.name}
+                </h3>
+                {/* <p className="text-sm text-gray-600 mt-1">
+                  Owner: {crusher.owner_id?.name || "Unknown"}
+                </p> */}  
+              </div>
+
+              {/* Card Body - Materials */}
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-medium text-gray-900">Materials & Prices</h4>
+                  <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                    {crusher.materials.length} materials
+                  </span>
+                </div>
+
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {crusher.materials.length > 0 ? (
+                    crusher.materials.map((material, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-100"
+                      >
+                        <span className="text-sm font-medium text-gray-800">
+                          {material.material_name}
+                        </span>
+                        <div className="flex items-center gap-1 text-green-600 font-semibold text-sm">
+                          <DollarSign size={12} />
+                          {material.price_per_unit}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-4 text-gray-400 text-sm">
+                      No materials added
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Card Footer */}
+              <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
+                <div className="flex items-center justify-between text-xs text-gray-600">
+                  <div>
+                    Created: {new Date(crusher.createdAt).toLocaleDateString()}
+                  </div>
+                  <button
+                    onClick={() => setSelectedCrusher(crusher)}
+                    className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+                  >
+                    <Eye size={14} />
+                    View
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          ))
+        ) : (
+          <div className="col-span-full text-center py-16">
+            <div className="max-w-md mx-auto">
+              <Package size={64} className="mx-auto text-gray-300 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                No crushers found
+              </h3>
+              <p className="text-gray-600 mb-6">
+                {searchText ? "Try adjusting your search terms" : "Get started by creating your first crusher"}
+              </p>
+              {!searchText && (
+                <Link
+                  to="/crushers/create"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-medium"
+                >
+                  <FaPlus size={16} />
+                  Add First Crusher
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-between items-center px-4 py-3 
-                        bg-white border border-gray-200 shadow-md rounded-b-xl mt-4">
-          <button
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            className={`px-3 py-1 rounded-md text-sm font-medium border shadow-sm
-              ${currentPage === 1
-                ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-                : "text-blue-600 bg-gray-50 hover:bg-blue-100"
-              }`}
-          >
-            Prev
-          </button>
-          <div className="flex gap-2">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`px-3 py-1 rounded-md text-sm font-medium border shadow-sm transition
-                  ${currentPage === page
-                    ? "bg-blue-600 text-white shadow"
-                    : "bg-gray-50 text-gray-700 hover:bg-blue-100"
-                  }`}
-              >
-                {page}
-              </button>
-            ))}
+        <div className="flex justify-between items-center px-6 py-4 
+                        bg-white border border-gray-200 shadow-sm rounded-xl">
+          <div className="flex items-center gap-4 text-sm text-gray-700">
+            <span>
+              Showing {((currentPage - 1) * rowsPerPage) + 1} to {Math.min(currentPage * rowsPerPage, filtered.length)} of {filtered.length} crushers
+            </span>
           </div>
-          <button
-            disabled={currentPage === totalPages}
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-            className={`px-3 py-1 rounded-md text-sm font-medium border shadow-sm
-              ${currentPage === totalPages
-                ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-                : "text-blue-600 bg-gray-50 hover:bg-blue-100"
-              }`}
-          >
-            Next
-          </button>
+          
+          <div className="flex items-center gap-2">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              className={`px-4 py-2 rounded-lg text-sm font-medium border transition
+                ${currentPage === 1
+                  ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                  : "text-gray-700 bg-white hover:bg-gray-50 border-gray-300"
+                }`}
+            >
+              Previous
+            </button>
+            
+            <div className="flex gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium border transition min-w-[40px]
+                    ${currentPage === page
+                      ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                    }`}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+            
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              className={`px-4 py-2 rounded-lg text-sm font-medium border transition
+                ${currentPage === totalPages
+                  ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                  : "text-gray-700 bg-white hover:bg-gray-50 border-gray-300"
+                }`}
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
 
       {/* Popup Modal for Details */}
       {selectedCrusher && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 sm:w-[90%] md:w-[600px] relative animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 sm:w-[90%] md:w-[600px] relative animate-fadeIn max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setSelectedCrusher(null)}
-              className="absolute top-3 right-3 p-2 rounded-full hover:bg-red-100 transition"
+              className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition"
             >
               <X className="w-5 h-5 text-gray-500" />
             </button>
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">
-              {selectedCrusher.name}
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-700">
-              <p>
-                <strong>Owner:</strong> {selectedCrusher.owner_id?.name || "-"}
-              </p>
-              <p>
-                <strong>Total Materials:</strong> {selectedCrusher.materials.length}
-              </p>
-              <div className="sm:col-span-2">
-                <strong className="block mb-2">Materials & Prices:</strong>
-                {selectedCrusher.materials.length > 0 ? (
-                  <div className="space-y-2">
-                    {selectedCrusher.materials.map((material, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Package size={16} className="text-blue-600" />
-                          <span className="font-medium">{material.material_name}</span>
+            
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-blue-100 rounded-xl">
+                <Package size={28} className="text-blue-600" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {selectedCrusher.name}
+                </h2>
+                {/* <p className="text-gray-600">
+                  Owner: {selectedCrusher.owner_id?.name || "Unknown"}
+                </p> */}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* <div className="space-y-4">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="font-semibold text-gray-900 mb-2">Created</h3>
+                  <p className="text-gray-700">
+                    {new Date(selectedCrusher.createdAt).toLocaleString()}
+                  </p>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h3 className="font-semibold text-gray-900 mb-2">Last Updated</h3>
+                  <p className="text-gray-700">
+                    {new Date(selectedCrusher.updatedAt).toLocaleString()}
+                  </p>
+                </div>
+              </div> */}
+
+              <div className="bg-blue-50 rounded-lg p-4">
+                <h3 className="font-semibold text-gray-900 mb-3">Materials Summary</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-700">Total Materials</span>
+                    <span className="bg-blue-600 text-white px-2 py-1 rounded-full text-sm font-medium">
+                      {selectedCrusher.materials.length}
+                    </span>
+                  </div>
+                  {selectedCrusher.materials.length > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-700">Average Price</span>
+                      <span className="text-green-600 font-semibold">
+                        ${(selectedCrusher.materials.reduce((sum, mat) => sum + mat.price_per_unit, 0) / selectedCrusher.materials.length).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <h3 className="font-semibold text-gray-900 mb-4">Materials & Prices</h3>
+              {selectedCrusher.materials.length > 0 ? (
+                <div className="space-y-3">
+                  {selectedCrusher.materials.map((material, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg shadow-sm"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-green-100 rounded-lg">
+                          <DollarSign size={16} className="text-green-600" />
                         </div>
-                        <div className="flex items-center gap-1 text-green-600 font-semibold">
-                          <DollarSign size={16} />
-                          {material.price_per_unit} / unit
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {material.material_name}
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            Price per unit
+                          </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-400">No materials added</p>
-                )}
-              </div>
-              <p>
-                <strong>Created At:</strong>{" "}
-                {new Date(selectedCrusher.createdAt).toLocaleString()}
-              </p>
-              <p>
-                <strong>Updated At:</strong>{" "}
-                {new Date(selectedCrusher.updatedAt).toLocaleString()}
-              </p>
+                      <div className="text-lg font-bold text-green-600">
+                        ${material.price_per_unit}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-400 bg-gray-50 rounded-lg border border-dashed">
+                  <Package size={32} className="mx-auto mb-2" />
+                  No materials added to this crusher
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -508,15 +537,21 @@ const Crushers = () => {
 
       {/* Confirm Delete One */}
       {confirmDeleteId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-xl p-6 shadow-lg w-96 text-center">
-            <h3 className="text-lg font-semibold mb-4">
-              Are you sure you want to delete this crusher?
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Trash2 size={24} className="text-red-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Delete Crusher?
             </h3>
-            <div className="flex justify-center gap-4">
+            <p className="text-gray-600 mb-6">
+              This action cannot be undone. All associated materials will be removed.
+            </p>
+            <div className="flex justify-center gap-3">
               <button
                 onClick={() => setConfirmDeleteId(null)}
-                className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300"
+                className="px-6 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition font-medium"
               >
                 Cancel
               </button>
@@ -525,7 +560,7 @@ const Crushers = () => {
                   handleDelete(confirmDeleteId);
                   setConfirmDeleteId(null);
                 }}
-                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+                className="px-6 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition font-medium"
               >
                 Delete
               </button>
@@ -536,15 +571,21 @@ const Crushers = () => {
 
       {/* Confirm Bulk Delete */}
       {confirmBulkDelete && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-xl p-6 shadow-lg w-96 text-center">
-            <h3 className="text-lg font-semibold mb-4">
-              Are you sure you want to delete {selectedIds.length} crushers?
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Trash2 size={24} className="text-red-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Delete {selectedIds.length} Crushers?
             </h3>
-            <div className="flex justify-center gap-4">
+            <p className="text-gray-600 mb-6">
+              This will permanently remove all selected crushers and their materials.
+            </p>
+            <div className="flex justify-center gap-3">
               <button
                 onClick={() => setConfirmBulkDelete(false)}
-                className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300"
+                className="px-6 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition font-medium"
               >
                 Cancel
               </button>
@@ -553,7 +594,7 @@ const Crushers = () => {
                   await handleBulkDelete();
                   setConfirmBulkDelete(false);
                 }}
-                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+                className="px-6 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition font-medium"
               >
                 Delete All
               </button>

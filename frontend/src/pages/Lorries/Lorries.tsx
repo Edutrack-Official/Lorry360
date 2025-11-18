@@ -6,7 +6,10 @@ import {
   Search,
   Truck,
   Wrench,
-  Clock
+  Clock,
+  MoreVertical,
+  Edit,
+  Trash2
 } from "lucide-react";
 import { FaPlus } from "react-icons/fa6";
 import { FiEdit } from "react-icons/fi";
@@ -27,28 +30,17 @@ interface Lorry {
 const Lorries = () => {
   const [lorries, setLorries] = useState<Lorry[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Filters
   const [searchText, setSearchText] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "maintenance" | "inactive">("all");
-  const [rowsPerPage, setRowsPerPage] = useState(25);
-  const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
-
-  // Column selector dropdown
-  const [showColumnDropdown, setShowColumnDropdown] = useState(false);
-
-  // Columns toggle (defaults)
-  const [visibleColumns, setVisibleColumns] = useState<string[]>([
-    "registration_number", "nick_name", "status", "createdAt"
-  ]);
+  const [selectedLorry, setSelectedLorry] = useState<Lorry | null>(null);
+  const [showActionMenu, setShowActionMenu] = useState<string | null>(null);
 
   const navigate = useNavigate();
 
   const fetchLorries = async () => {
     try {
       const res = await api.get("/lorries");
-      console.log("lorries", res);
       setLorries(res.data.data?.lorries || []);
     } catch (error: any) {
       toast.error(error.response?.data?.error || "Failed to fetch lorries");
@@ -65,7 +57,6 @@ const Lorries = () => {
     try {
       let newStatus: string;
       
-      // Cycle through statuses: active → maintenance → inactive → active
       switch (currentStatus) {
         case 'active':
           newStatus = 'maintenance';
@@ -82,6 +73,7 @@ const Lorries = () => {
 
       await api.patch(`/lorries/status/${id}`, { status: newStatus });
       toast.success(`Status updated to ${newStatus}`);
+      setShowActionMenu(null);
       fetchLorries();
     } catch (error: any) {
       toast.error(error.response?.data?.error || "Failed to update status");
@@ -96,6 +88,7 @@ const Lorries = () => {
     try {
       await api.delete(`/lorries/delete/${id}`);
       toast.success("Lorry deleted successfully");
+      setShowActionMenu(null);
       fetchLorries();
     } catch (error: any) {
       toast.error(error.response?.data?.error || "Failed to delete lorry");
@@ -115,42 +108,47 @@ const Lorries = () => {
     return matchesSearch && matchesStatus;
   });
 
-  // Pagination
-  const totalPages = Math.ceil(filtered.length / rowsPerPage);
-  const paginated = filtered.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
-
-  const allColumns = [
-    { key: "registration_number", label: "Registration Number" },
-    { key: "nick_name", label: "Nick Name" },
-    { key: "status", label: "Status" },
-    { key: "owner_id", label: "Owner" },
-    { key: "createdAt", label: "Created At" },
-    { key: "updatedAt", label: "Last Updated" },
-  ];
-
-  const resetFilters = () => {
-    setSearchText("");
-    setFilterStatus("all");
-    setRowsPerPage(25);
-    setCurrentPage(1);
-    setVisibleColumns(["registration_number", "nick_name", "status", "createdAt"]);
-  };
-
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      active: { color: "bg-green-100 text-green-800", icon: "🚚" },
-      maintenance: { color: "bg-yellow-100 text-yellow-800", icon: "🔧" },
-      inactive: { color: "bg-gray-100 text-gray-800", icon: "⏸️" }
+      active: { 
+        color: "bg-green-100 text-green-800 border-green-200", 
+        icon: "🚚",
+        label: "Active"
+      },
+      maintenance: { 
+        color: "bg-yellow-100 text-yellow-800 border-yellow-200", 
+        icon: "🔧",
+        label: "Maintenance"
+      },
+      inactive: { 
+        color: "bg-gray-100 text-gray-800 border-gray-200", 
+        icon: "⏸️",
+        label: "Inactive"
+      }
     };
     
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.inactive;
     
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
+      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium border ${config.color}`}>
         <span>{config.icon}</span>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {config.label}
       </span>
     );
+  };
+
+  const getStatusColor = (status: string) => {
+    const colors = {
+      active: "border-l-green-500",
+      maintenance: "border-l-yellow-500",
+      inactive: "border-l-gray-500"
+    };
+    return colors[status as keyof typeof colors] || "border-l-gray-500";
+  };
+
+  const resetFilters = () => {
+    setSearchText("");
+    setFilterStatus("all");
   };
 
   if (loading) {
@@ -164,17 +162,22 @@ const Lorries = () => {
   return (
     <div className="space-y-6 fade-in p-6">
       {/* Header */}
-      <div className="bg-white p-4 rounded-t-xl border shadow-md flex flex-col gap-4">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-bold">Lorries</h1>
-            <Truck size={32} className="text-blue-600" />
+      <div className="bg-white p-6 rounded-xl border shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Truck className="h-6 w-6 text-blue-600" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Lorries</h1>
+              <p className="text-gray-600">Manage your fleet of vehicles</p>
+            </div>
           </div>
 
           <div className="flex items-center gap-3">
             {/* Filters Toggle */}
             <button
-              className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition flex items-center gap-2"
+              className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition flex items-center gap-2"
               onClick={() => setShowFilters(!showFilters)}
             >
               <motion.span
@@ -190,9 +193,10 @@ const Lorries = () => {
             {/* Add Lorry */}
             <Link
               to="/lorries/create"
-              className="inline-flex items-center justify-center w-11 h-11 bg-blue-600 text-white rounded-full shadow hover:bg-blue-700 transition-all"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm"
             >
-              <FaPlus size={20} />
+              <FaPlus size={16} />
+              Add Lorry
             </Link>
           </div>
         </div>
@@ -206,30 +210,23 @@ const Lorries = () => {
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.3, ease: "easeInOut" }}
             >
-              {/* ✅ All controls in one horizontal line */}
-              <div className="flex flex-wrap items-center gap-4 mt-2">
-                {/* Left-aligned controls */}
-                <div className="relative w-full md:w-60">
+              <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-gray-200">
+                {/* Search */}
+                <div className="relative w-full md:w-80">
                   <Search className="absolute left-3 top-2.5 text-gray-400 h-4 w-4" />
                   <input
                     type="text"
-                    placeholder="Search by registration or nick name..."
+                    placeholder="Search by registration number or nick name..."
                     value={searchText}
-                    onChange={(e) => {
-                      setSearchText(e.target.value);
-                      setCurrentPage(1);
-                    }}
+                    onChange={(e) => setSearchText(e.target.value)}
                     className="input input-bordered pl-9 w-full"
                   />
                 </div>
 
                 <select
-                  className="input input-bordered w-40"
+                  className="input input-bordered w-full md:w-40"
                   value={filterStatus}
-                  onChange={(e) => {
-                    setFilterStatus(e.target.value as "all" | "active" | "maintenance" | "inactive");
-                    setCurrentPage(1);
-                  }}
+                  onChange={(e) => setFilterStatus(e.target.value as any)}
                 >
                   <option value="all">All Status</option>
                   <option value="active">Active</option>
@@ -237,205 +234,178 @@ const Lorries = () => {
                   <option value="inactive">Inactive</option>
                 </select>
 
-                <select
-                  className="input input-bordered w-40"
-                  value={rowsPerPage}
-                  onChange={(e) => {
-                    setRowsPerPage(Number(e.target.value));
-                    setCurrentPage(1);
-                  }}
+                <button
+                  className="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 border text-sm"
+                  onClick={resetFilters}
                 >
-                  {[25, 50, 75, 100].map((count) => (
-                    <option key={count} value={count}>
-                      {count} per page
-                    </option>
-                  ))}
-                </select>
-
-                {/* Right-aligned controls, pushed by ml-auto */}
-                <div className="flex gap-4 ml-auto">
-                  <div className="relative">
-                    <button
-                      onClick={() => setShowColumnDropdown(!showColumnDropdown)}
-                      className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
-                    >
-                      Select Columns ▼
-                    </button>
-                    {showColumnDropdown && (
-                      <div className="absolute z-10 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg p-3">
-                        {allColumns.map((col) => (
-                          <label key={col.key} className="flex items-center gap-2 text-sm py-1">
-                            <input
-                              type="checkbox"
-                              checked={visibleColumns.includes(col.key)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setVisibleColumns([...visibleColumns, col.key]);
-                                } else {
-                                  setVisibleColumns(visibleColumns.filter((c) => c !== col.key));
-                                }
-                              }}
-                            />
-                            {col.label}
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <button
-                    className="btn btn-secondary"
-                    onClick={resetFilters}
-                  >
-                    Clear Filters
-                  </button>
-                </div>
+                  Clear Filters
+                </button>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto shadow-lg border border-gray-200 bg-white">
-        <table className="w-full text-sm text-left">
-          <thead className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-sm">
-            <tr>
-              {allColumns
-                .filter((col) => visibleColumns.includes(col.key))
-                .map((col) => (
-                  <th key={col.key} className="px-6 py-4 font-semibold">
-                    {col.label}
-                  </th>
-                ))}
-              <th className="px-6 py-4 font-semibold text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {paginated.length > 0 ? (
-              paginated.map((lorry) => (
-                <tr
-                  key={lorry._id}
-                  className="group hover:bg-blue-50 transition-all cursor-pointer"
-                  onClick={() => navigate(`/lorries/${lorry._id}`)}
-                >
-                  {allColumns
-                    .filter((col) => visibleColumns.includes(col.key))
-                    .map((col) => (
-                      <td key={col.key} className="px-6 py-4 text-gray-700">
-                        {col.key === "registration_number" ? (
-                          <span className="font-mono font-semibold text-blue-600">
-                            {lorry.registration_number}
-                          </span>
-                        ) : col.key === "status" ? (
-                          getStatusBadge(lorry.status)
-                        ) : col.key === "owner_id" ? (
-                          lorry.owner_id?.name || "-"
-                        ) : col.key === "createdAt" || col.key === "updatedAt" ? (
-                          new Date(lorry[col.key as keyof Lorry] as string).toLocaleDateString()
-                        ) : (
-                          (lorry as any)[col.key] || "-"
-                        )}
-                      </td>
-                    ))}
-                  <td
-                    className="px-6 py-4 flex items-center justify-center gap-3"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {/* Edit */}
-                    <Link
-                      to={`/lorries/edit/${lorry._id}`}
-                      className="p-2 rounded-full bg-yellow-200 text-gray-500 hover:bg-yellow-500 shadow-md transition"
-                      title="Edit Lorry"
-                    >
-                      <FiEdit size={18} />
-                    </Link>
-
-                    {/* Toggle Status */}
+      {/* Cards Grid */}
+      {filtered.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filtered.map((lorry) => (
+            <div
+              key={lorry._id}
+              className={`bg-white rounded-xl border shadow-sm hover:shadow-md transition-all duration-200 `}
+            >
+              <div className="p-5">
+                {/* Header */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <h3 className="font-bold text-lg text-gray-900 mb-1">
+                      {lorry.registration_number}
+                    </h3>
+                    {lorry.nick_name && (
+                      <p className="text-gray-600 text-sm">{lorry.nick_name}</p>
+                    )}
+                  </div>
+                  
+                  {/* Action Menu */}
+                  <div className="relative">
                     <button
-                      onClick={() => handleToggleStatus(lorry._id, lorry.status)}
-                      className={`p-2 rounded-full transition ${
-                        lorry.status === 'active'
-                          ? "bg-green-100 text-green-600 hover:bg-green-200"
-                          : lorry.status === 'maintenance'
-                          ? "bg-yellow-100 text-yellow-600 hover:bg-yellow-200"
-                          : "bg-gray-100 text-gray-400 hover:bg-gray-200"
-                      }`}
-                      title={`Change status from ${lorry.status}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowActionMenu(showActionMenu === lorry._id ? null : lorry._id);
+                      }}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                     >
-                      <Power className="h-5 w-5" />
+                      <MoreVertical className="h-4 w-4 text-gray-500" />
                     </button>
 
-                    {/* Delete */}
-                    <button
-                      onClick={() => handleDeleteLorry(lorry._id, lorry.registration_number)}
-                      className="p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-500 hover:text-white transition"
-                      title="Delete Lorry"
-                    >
-                      🗑️
-                    </button>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={visibleColumns.length + 1} className="text-center py-10 text-gray-500 text-base font-medium">
-                  No lorries found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+                    {showActionMenu === lorry._id && (
+                      <div className="absolute right-0 top-10 z-10 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
+                        <button
+                          onClick={() => navigate(`/lorries/edit/${lorry._id}`)}
+                          className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          <Edit className="h-4 w-4" />
+                          Edit Lorry
+                        </button>
+                        <button
+                          onClick={() => handleToggleStatus(lorry._id, lorry.status)}
+                          className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          <Power className="h-4 w-4" />
+                          Change Status
+                        </button>
+                        <button
+                          onClick={() => handleDeleteLorry(lorry._id, lorry.registration_number)}
+                          className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete Lorry
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-between items-center px-4 py-3 
-                  bg-white border border-gray-200 shadow-md rounded-b-xl mt-4">
-          <button
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            className={`px-3 py-1 rounded-md text-sm font-medium border shadow-sm
-        ${
-          currentPage === 1
-            ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-            : "text-blue-600 bg-gray-50 hover:bg-blue-100"
-        }`}
+                {/* Status Badge */}
+                <div className="mb-4">
+                  {getStatusBadge(lorry.status)}
+                </div>
+              </div>
+
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl border shadow-sm p-12 text-center">
+          <Truck className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No lorries found</h3>
+          <p className="text-gray-600 mb-6">
+            {searchText || filterStatus !== "all" 
+              ? "Try adjusting your search or filters"
+              : "Get started by adding your first lorry to the fleet"
+            }
+          </p>
+          <Link
+            to="/lorries/create"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm"
           >
-            Prev
-          </button>
-
-          <div className="flex gap-2">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`px-3 py-1 rounded-md text-sm font-medium border shadow-sm transition
-            ${
-              currentPage === page
-                ? "bg-blue-600 text-white shadow"
-                : "bg-gray-50 text-gray-700 hover:bg-blue-100"
-            }`}
-              >
-                {page}
-              </button>
-            ))}
-          </div>
-
-          <button
-            disabled={currentPage === totalPages}
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-            className={`px-3 py-1 rounded-md text-sm font-medium border shadow-sm
-        ${
-          currentPage === totalPages
-            ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-            : "text-blue-600 bg-gray-50 hover:bg-blue-100"
-        }`}
-          >
-            Next
-          </button>
+            <FaPlus size={16} />
+            Add First Lorry
+          </Link>
         </div>
       )}
+
+      {/* Lorry Details Modal */}
+      <AnimatePresence>
+        {selectedLorry && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setSelectedLorry(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-xl max-w-md w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {selectedLorry.registration_number}
+                  </h3>
+                  <button
+                    onClick={() => setSelectedLorry(null)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Nick Name</label>
+                    <p className="text-gray-900">{selectedLorry.nick_name || "Not set"}</p>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Status</label>
+                    <div className="mt-1">{getStatusBadge(selectedLorry.status)}</div>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Owner</label>
+                    <p className="text-gray-900">{selectedLorry.owner_id?.name || "-"}</p>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Last Updated</label>
+                    <p className="text-gray-900">{new Date(selectedLorry.updatedAt).toLocaleString()}</p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => navigate(`/lorries/edit/${selectedLorry._id}`)}
+                    className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Edit Lorry
+                  </button>
+                  <button
+                    onClick={() => setSelectedLorry(null)}
+                    className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
