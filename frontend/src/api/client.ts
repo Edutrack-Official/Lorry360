@@ -1,7 +1,6 @@
 import axios from "axios";
 
 export const API_BASE = "http://localhost:7071/api";
-// export const API_BASE = "https://pat360-funcapp-ere3atdke4d2c2f7.centralindia-01.azurewebsites.net/api";
 
 export const api = axios.create({
   baseURL: API_BASE,
@@ -13,19 +12,25 @@ api.interceptors.request.use((config) => {
   const refreshToken = localStorage.getItem("refreshToken");
   const APP_VERSION = localStorage.getItem("appVersion");
 
+  console.log('🔄 API Request Interceptor - Token:', token ? 'Present' : 'Missing');
+  console.log('🔄 API Request Interceptor - URL:', config.url);
+  
   config.headers = config.headers || {};
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+    console.log('🔄 Authorization header set');
+  } else {
+    console.log('❌ No token found in localStorage');
   }
 
   if (refreshToken) {
     config.headers["x-refresh-token"] = refreshToken;
   }
 
-  // ✅ Include app version in all requests
   config.headers["x-app-version"] = APP_VERSION;
 
+  console.log('🔄 Final headers:', config.headers);
   return config;
 });
 

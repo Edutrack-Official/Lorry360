@@ -7,7 +7,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Tests from './pages/Test/Tests';
 import ViewTests from './pages/Test/DisplayTests';
-import Questions from './pages/Questions/Questions';
+import Questions from './pages/Crushers/Crushers';
 import Users from './pages/Users/Users';
 
 import ProtectedRoute from './components/ProtectedRoute';
@@ -19,11 +19,10 @@ import AddSubject from './pages/Subjects/AddSubject';
 import UploadSubjectExcel from './pages/Subjects/UploadSubjectExcel';
 import Chapters from './pages/Chapters/Chapters';
 import AddChapter from './pages/Chapters/AddChapter';
-import UploadChapterExcel from './pages/Chapters/UploadChapterExcel'; 
+import UploadChapterExcel from './pages/Chapters/UploadChapterExcel';
 
-import Institutes from './pages/Institutes/Institutes';
-import AddInstitute from './pages/Institutes/AddInstitute';
-import ManageInstituteForm from './pages/Institutes/ManageInstituteForm';
+import Lorries from './pages/Lorries/Lorries';
+import ManageLorryForm from './pages/Lorries/ManageLorryForm';
 import Batches from './pages/Batches/Batches';
 import AddBatch from './pages/Batches/AddBatch';
 import ManageBatchForm from './pages/Batches/ManageBatchForm';
@@ -31,8 +30,8 @@ import Students from './pages/Students/Student';
 import AddStudent from './pages/Students/AddStudent';
 import ManageStudentForm from './pages/Students/ManageStudentForm';
 
-import QuestionSets from './pages/QuestionSets/QuestionSets';
-import AddQuestionSet from './pages/QuestionSets/AddQuestionSet';
+import QuestionSets from './pages/Customers/Customers';
+import AddQuestionSet from './pages/Customers/AddQuestionSet';
 
 import Groups from './pages/Groups/Groups';
 import ManageGroupForm from './pages/Groups/ManageGroupForm';
@@ -48,19 +47,25 @@ import EnrolledCourses from './pages/Course/CourseEnrollment';
 
 import ResultsPage from './pages/Resultes/ResultsPage';
 
-import ManageQuestionSetForm from './pages/QuestionSets/ManageQuestionSetForm';
-import AddQuestion from './pages/Questions/AddQuestion';
+import ManageQuestionSetForm from './pages/Customers/ManageCustomerForm';
+import AddQuestion from './pages/Crushers/AddQuestion';
 import InstituteAdmins from './pages/InstituteAdmins/InstituteAdmins';
 import InstituteAdminForm from './pages/InstituteAdmins/InstituteAdminForm';
 import CourseEnrollment from './pages/Course/CourseEnrollment';
 import NotFound from './pages/NotFound';
+import Customers from './pages/Customers/Customers';
+import ManageCustomerForm from './pages/Customers/ManageCustomerForm';
+import Crushers from './pages/Crushers/Crushers';
+import ManageCrusherForm from './pages/Crushers/ManageCrusherForm';
+import Owners from './pages/Owners/Owners';
+import ManageOwnerForm from './pages/Owners/ManageOwnerForm';
 
 function App() {
   return (
     <AuthProvider>
       <Router>
         <div className="min-h-screen bg-gray-50">
-          <Toaster 
+          <Toaster
             position="top-right"
             toastOptions={{
               duration: 4000,
@@ -76,48 +81,48 @@ function App() {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
             {/* Results - Full screen without nav */}
-            <Route 
-              path="/results/:courseId/:testId" 
+            <Route
+              path="/results/:courseId/:testId"
               element={
                 <ProtectedRoute>
                   <ResultsPage />
                 </ProtectedRoute>
-              } 
+              }
             />
 
             {/* Course routes - FULL SCREEN (without Layout) */}
-            
-            <Route 
-              path="/courses/create" 
+
+            <Route
+              path="/courses/create"
               element={
                 <ProtectedRoute>
                   <CourseForm />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/courses/edit/:id" 
+            <Route
+              path="/courses/edit/:id"
               element={
                 <ProtectedRoute>
                   <CourseForm />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/courses/:courseId" 
+            <Route
+              path="/courses/:courseId"
               element={
                 <ProtectedRoute>
                   <CourseDetail />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/my-courses" 
+            <Route
+              path="/my-courses"
               element={
                 <ProtectedRoute>
                   <EnrolledCourses />
                 </ProtectedRoute>
-              } 
+              }
             />
 
             {/* All other routes with Layout */}
@@ -131,78 +136,49 @@ function App() {
                       <Route path="/dashboard" element={<Dashboard />} />
 
 
-                          <Route 
-                                        path="/courses" 
-                                        element={
-                                          <ProtectedRoute>
-                                            <CourseList />
-                                          </ProtectedRoute>
-                                        } 
-                                      />
+                      <Route
+                        path="/courses"
+                        element={
+                          <ProtectedRoute>
+                            <CourseList />
+                          </ProtectedRoute>
+                        }
+                      />
 
-                                           <Route 
-                                              path="/enroll/course/:courseId" 
-                                        element={
-                                          <ProtectedRoute>
-                                            <CourseEnrollment />
-                                          </ProtectedRoute>
-                                        } 
-                                      />
-                      {/* Institutes */}
-                      <Route path="/institutes" element={<Institutes />} />
-                      <Route path="/institutes/create" element={<AddInstitute />} />
-                      <Route path="/institutes/edit/:id" element={<ManageInstituteForm />} />
-                      <Route path="/institutes/:instituteId/admins" element={<InstituteAdmins />} />
-                      <Route path="/institutes/:instituteId/admins/create" element={<InstituteAdminForm />} />
-                      <Route path="/institutes/:instituteId/admins/edit/:id" element={<InstituteAdminForm />} />
+                      <Route
+                        path="/enroll/course/:courseId"
+                        element={
+                          <ProtectedRoute>
+                            <CourseEnrollment />
+                          </ProtectedRoute>
+                        }
+                      />
+                      {/* Lorries */}
+                      <Route path="/lorries" element={<Lorries />} />
+                      <Route path="/lorries/create" element={<ManageLorryForm />} />
+                      <Route path="/lorries/edit/:id" element={<ManageLorryForm />} />
 
-                      {/* Batches */}
-                      <Route path="/institutes/:instituteId/batches" element={<Batches />} />
-                      <Route path="/batches/create" element={<AddBatch />} />
-                      <Route path="/batches/edit/:id" element={<ManageBatchForm />} />
-                      <Route path="/batches/:batchId/students" element={<Students />} />
-                      <Route path="/students/create" element={<AddStudent />} />
-                      <Route path="/students/edit/:id" element={<ManageStudentForm />} />
 
-                      {/* Exams / Subjects / Chapters */}
-                      <Route path="/exams" element={<Exams />} />
-                      <Route path="/exams/:examId/subjects" element={<Subjects />} />
-                      <Route path="/exams/:examId/subjects/add" element={<AddSubject />} />
-                      <Route path="/exams/:examId/subjects/upload" element={<UploadSubjectExcel />} />
-                      <Route path="/subjects/:subjectId/chapters" element={<Chapters />} />
-                      <Route path="/subjects/:subjectId/chapters/add" element={<AddChapter />} />
-                      <Route path="/subjects/:subjectId/chapters/upload" element={<UploadChapterExcel />} />
+                      {/* Customers Management */}
+                      <Route path="/customers" element={<Customers />} />
+                      <Route path="/customers/create" element={<ManageCustomerForm />} />
+                      <Route path="/customers/edit/:id" element={<ManageCustomerForm />} />
 
-                      {/* Question Sets */}
-                      <Route path="/questionsets" element={<QuestionSets />} />
-                      <Route path="/questionsets/add" element={<AddQuestionSet />} />
-                      <Route path="/questionsets/edit/:id" element={<ManageQuestionSetForm />} />
+                      {/* Crushers Management */}
+                      <Route path="/crushers" element={<Crushers />} />
+                      <Route path="/crushers/create" element={<ManageCrusherForm />} />
+                      <Route path="/crushers/edit/:id" element={<ManageCrusherForm />} />
 
-                      {/* Questions */}
-                      <Route path="/questions/:questionSetId" element={<Questions />} />
-                      <Route path="/questions/:questionSetId/add" element={<AddQuestion />} />
-                      <Route path="/questions/:questionSetId/edit/:id" element={<AddQuestion />} />
-
-                      {/* Groups */}
-                      <Route path="/batches/:batchId/groups" element={<Groups />} />
-                      <Route path="/groups/create/:batchId" element={<ManageGroupForm />} />
-                      <Route path="/groups/edit/:id" element={<ManageGroupForm />} />
-                      <Route path="/groups" element={<AddGroup />} />
-
-                      {/* Tests */}
-                      <Route path="/tests" element={<Tests />} />
-                      <Route path="/tests/edit/:id" element={<Tests />} />
-                      <Route path="/view-tests" element={<ViewTests />} />
-                      <Route path="/random-tests" element={<RandomTestBuilder />} />
-                      <Route path="/random-tests/edit/:id" element={<RandomTestBuilder />} />
-                      <Route path="/view-random-tests" element={<DisplayRandomTests />} />
-                      <Route path="/test/:id/add-questions" element={<AddQuestionsPage />} />
+                      {/* Owners Management */}
+                      <Route path="/owners" element={<Owners />} />
+                      <Route path="/owners/create" element={<ManageOwnerForm />} />
+                      <Route path="/owners/edit/:id" element={<ManageOwnerForm />} />
 
                       {/* Users */}
                       <Route path="/users" element={<Users />} />
-                      
+
                       <Route path="*" element={<NotFound />} />
-              
+
                     </Routes>
                   </Layout>
                 </ProtectedRoute>

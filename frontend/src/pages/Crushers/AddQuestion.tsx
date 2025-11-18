@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import BackButton from "../../components/BackButton";
-import ManageQuestionForm from "./ManageQuestionForm";
+import ManageQuestionForm from "./ManageCrusherForm";
 import UploadQuestionExcel from "./UploadQuestionExcel";
 
 const AddQuestion: React.FC = () => {

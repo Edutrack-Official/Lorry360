@@ -3,19 +3,19 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import {
   LayoutDashboard,
-  FileText,
+  Truck,
   Users,
   Building2,
-  FileQuestion,
+  Package,
   BarChart3,
   LogOut,
   Menu,
   X,
   ClipboardList,
-  Shuffle,
-  GraduationCap,
-  BookOpen,
+  MapPin,
+  Wrench,
   Bell,
+  Settings,
 } from "lucide-react";
 import { IoPersonSharp } from "react-icons/io5";
 
@@ -51,18 +51,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   const navigation = [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["superadmin", "contentadmin", "trainer", "student", "centeradmin"] },
-    { name: "Institutes", href: "/institutes", icon: GraduationCap, roles: ["superadmin"] },
-    { name: "Exams", href: "/exams", icon: ClipboardList, roles: ["superadmin", "centeradmin"] },
-    { name: "Question Sets", href: "/questionsets", icon: FileQuestion, roles: ["superadmin", "contentadmin", "trainer"] },
-    { name: "Courses", href: "/courses", icon: BookOpen, roles: ["superadmin", "centeradmin"] },
-    { name: "Tests", href: "/view-tests", icon: FileText, roles: ["superadmin", "contentadmin", "trainer", "student", "centeradmin"] },
-    { name: "Random Tests", href: "/view-random-tests", icon: Shuffle, roles: ["superadmin", "contentadmin", "trainer", "student", "centeradmin"] },
-    { name: "Users", href: "/users", icon: Users, roles: ["superadmin", "centeradmin"] },
+    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["owner", "admin"] },
+    { name: "Lorries", href: "/lorries", icon: Truck, roles: ["owner", "admin"] },
+    { name: "Customers", href: "/customers", icon: Users, roles: ["owner", "admin"] },
+    { name: "Crushers", href: "/crushers", icon: Package, roles: ["owner", "admin"] },
+    { name: "Trips", href: "/trips", icon: MapPin, roles: ["owner", "admin"] },
+    { name: "Maintenance", href: "/maintenance", icon: Wrench, roles: ["owner", "admin"] },
+    { name: "Reports", href: "/reports", icon: BarChart3, roles: ["owner", "admin"] },
+    { name: "Settings", href: "/settings", icon: Settings, roles: ["owner", "admin"] },
+    { name: "Owners", href: "/Owners", icon: Settings, roles: ["admin"] },
   ];
 
   const filteredNavigation = navigation.filter((item) =>
-    item.roles.includes(user?.role || "")
+    item.roles.includes(user?.role || "admin")
   );
 
   return (
@@ -76,8 +77,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="fixed inset-y-0 left-0 flex w-72 flex-col bg-blue-700 shadow-2xl text-white">
           <div className="flex h-16 items-center justify-between px-4 border-b border-blue-500">
             <div className="flex items-center space-x-2">
-              <BookOpen className="h-8 w-8 text-white animate-bounce" />
-              <span className="text-xl font-bold">PAT360</span>
+              <Truck className="h-8 w-8 text-white" />
+              <span className="text-xl font-bold">FLEET360</span>
             </div>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -108,16 +109,33 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               );
             })}
           </nav>
+          {/* User info in mobile sidebar */}
+          <div className="p-4 border-t border-blue-500">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center border-2 border-white">
+                <IoPersonSharp className="h-5 w-5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-white truncate capitalize">
+                  {user?.name || "Admin User"}
+                </p>
+                <p className="text-xs text-blue-200 truncate capitalize">
+                  {user?.role || "admin"}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Desktop Sidebar */}
       <aside className="hidden lg:fixed lg:inset-y-0 lg:flex lg:z-40">
         <div className="flex h-full w-16 flex-col items-center bg-blue-700 text-white shadow-xl">
-          {/* 🔵 Rail top (logo) */}
+          {/* Logo */}
           <div className="flex h-10 w-10 items-center justify-center mt-3 mb-3 rounded-lg bg-blue-600 shadow-md">
-            <BookOpen className="h-6 w-6 text-white animate-pulse" />
+            <Truck className="h-6 w-6 text-white" />
           </div>
+          
           {/* Nav icons */}
           <nav className="flex-1 py-2 flex flex-col items-center gap-1 w-full">
             {filteredNavigation.map((item, idx) => {
@@ -145,6 +163,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               );
             })}
           </nav>
+
+          {/* User avatar in desktop sidebar */}
+          <div className="mb-4">
+            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center border-2 border-white cursor-pointer hover:bg-blue-500 transition-colors">
+              <IoPersonSharp className="h-5 w-5 text-white" />
+            </div>
+          </div>
         </div>
       </aside>
 
@@ -162,14 +187,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <Menu className="h-6 w-6" />
               </button>
               <div className="flex items-center gap-2">
-                <BookOpen className="h-6 w-6 text-blue-700" />
-                <span className="text-xl font-bold text-gray-900">PAT360</span>
+                <Truck className="h-6 w-6 text-blue-700" />
+                <span className="text-xl font-bold text-gray-900">FLEET360</span>
+                <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full capitalize">
+                  {user?.role || "admin"}
+                </span>
               </div>
             </div>
 
             {/* Right: Bell + Profile + Logout */}
             <div className="ml-auto flex items-center space-x-3 relative">
-              {/* 🔔 Notifications */}
+              {/* Notifications */}
               <button
                 className="relative p-2 text-gray-500 hover:text-blue-600 rounded-lg hover:bg-gray-100 transition-colors"
                 onClick={() => setShowNotifications((prev) => !prev)}
@@ -178,26 +206,71 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <span className="absolute top-1 right-1 inline-flex h-2 w-2 rounded-full bg-red-500"></span>
               </button>
 
-              {/* Floater */}
+              {/* Notifications Dropdown */}
               {showNotifications && (
-                <div className="absolute right-12 top-12 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 animate-fade-in">
-                  <div className="p-3 text-sm text-gray-600">
-                    <p className="font-medium text-gray-800">Notifications</p>
-                    <div className="mt-2 text-center text-gray-500 text-sm py-6">
-                      No notifications
+                <div className="absolute right-12 top-12 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50 animate-fade-in">
+                  <div className="p-4 border-b border-gray-200">
+                    <p className="font-semibold text-gray-800">Notifications</p>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    {/* Sample notifications */}
+                    <div className="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          <Truck className="h-4 w-4 text-green-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-800">Lorry Maintenance Due</p>
+                          <p className="text-xs text-gray-500 mt-1">KA01AB1234 requires routine service</p>
+                          <p className="text-xs text-gray-400 mt-1">2 hours ago</p>
+                        </div>
+                      </div>
                     </div>
+                    <div className="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          <Package className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-800">New Customer Added</p>
+                          <p className="text-xs text-gray-500 mt-1">ABC Constructions registered</p>
+                          <p className="text-xs text-gray-400 mt-1">5 hours ago</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-4 hover:bg-gray-50 cursor-pointer">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          <MapPin className="h-4 w-4 text-yellow-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-800">Trip Completed</p>
+                          <p className="text-xs text-gray-500 mt-1">Trip #TRP001 has been completed</p>
+                          <p className="text-xs text-gray-400 mt-1">1 day ago</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-3 border-t border-gray-200">
+                    <button className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium">
+                      View All Notifications
+                    </button>
                   </div>
                 </div>
               )}
 
               {/* Profile */}
-              <div className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors">
-                <div className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center">
+              <div className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+                <div className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center border-2 border-blue-200">
                   <IoPersonSharp className="h-5 w-5 text-blue-700" />
                 </div>
                 <div className="hidden sm:block text-left">
-                  <p className="text-sm font-bold text-gray-900 capitalize">{user?.role}</p>
-                  <p className="text-xs text-gray-500">{user?.email}</p>
+                  <p className="text-sm font-bold text-gray-900 capitalize">
+                    {user?.name || "Admin User"}
+                  </p>
+                  <p className="text-xs text-gray-500 capitalize">
+                    {user?.role || "admin"} • {user?.email}
+                  </p>
                 </div>
               </div>
 
@@ -215,7 +288,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
         {/* Page content */}
         <main className="p-1 sm:p-2 lg:p-2">
-        <div className="bg-white rounded-lg border">{children}</div>
+          <div className="bg-white rounded-lg border min-h-[calc(100vh-80px)]">
+            {children}
+          </div>
         </main>
       </div>
 
@@ -223,14 +298,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {showLogoutModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm animate-fade-in">
-            <h3 className="text-lg font-semibold text-gray-800">Confirm Logout</h3>
-            <p className="text-sm text-gray-600 mt-2">
-              Are you sure you want to log out of your account?
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <LogOut className="h-5 w-5 text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-800">Confirm Logout</h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to log out of your Fleet Management account?
             </p>
-            <div className="flex justify-end space-x-3 mt-6">
+            <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setShowLogoutModal(false)}
-                className="px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition"
+                className="px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition border border-gray-300"
               >
                 Cancel
               </button>

@@ -1,42 +1,36 @@
-
 import React, { useEffect, useState } from "react";
 import api from "../../api/client";
 import {
   Mail,
   Power,
   Search,
+  Truck,
+  Wrench,
+  Clock
 } from "lucide-react";
-import { GraduationCap } from 'lucide-react';
-
 import { FaPlus } from "react-icons/fa6";
 import { FiEdit } from "react-icons/fi";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 
-interface Institute {
+interface Lorry {
   _id: string;
-  name: string;
-  code: string;
-  email: string;
-  address: string;
-  contact: string;
-  location: string;
-  subscriptionType: string;
-  capacity: number;
-  isActive: boolean;
+  owner_id: { _id: string; name: string; company_name?: string };
+  registration_number: string;
+  nick_name?: string;
+  status: 'active' | 'maintenance' | 'inactive';
   createdAt: string;
-  createdBy: { _id: string; name: string; email: string };
-  lastUpdatedBy: { _id: string; name: string; email: string };
+  updatedAt: string;
 }
 
-const Institutes = () => {
-  const [institutes, setInstitutes] = useState<Institute[]>([]);
+const Lorries = () => {
+  const [lorries, setLorries] = useState<Lorry[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filters
   const [searchText, setSearchText] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "maintenance" | "inactive">("all");
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
@@ -46,49 +40,78 @@ const Institutes = () => {
 
   // Columns toggle (defaults)
   const [visibleColumns, setVisibleColumns] = useState<string[]>([
-    "name", "code", "email","contact", "createdBy"
+    "registration_number", "nick_name", "status", "createdAt"
   ]);
 
   const navigate = useNavigate();
 
-  const fetchInstitutes = async () => {
+  const fetchLorries = async () => {
     try {
-      const res = await api.get("/institutes");
-      console.log("ins",res);
-      setInstitutes(res.data.institutes || []);
-    } catch {
-      toast.error("Failed to fetch institutes");
+      const res = await api.get("/lorries");
+      console.log("lorries", res);
+      setLorries(res.data.data?.lorries || []);
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || "Failed to fetch lorries");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchInstitutes();
+    fetchLorries();
   }, []);
 
-  const handleToggleActive = async (id: string, currentStatus: boolean) => {
+  const handleToggleStatus = async (id: string, currentStatus: string) => {
     try {
-      await api.put(`/institutes/${id}`, {
-        isActive: !currentStatus,
-      });
-      toast.success(`Marked as ${!currentStatus ? "Active" : "Inactive"}`);
-      fetchInstitutes();
+      let newStatus: string;
+      
+      // Cycle through statuses: active → maintenance → inactive → active
+      switch (currentStatus) {
+        case 'active':
+          newStatus = 'maintenance';
+          break;
+        case 'maintenance':
+          newStatus = 'inactive';
+          break;
+        case 'inactive':
+          newStatus = 'active';
+          break;
+        default:
+          newStatus = 'active';
+      }
+
+      await api.patch(`/lorries/status/${id}`, { status: newStatus });
+      toast.success(`Status updated to ${newStatus}`);
+      fetchLorries();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to update status");
+      toast.error(error.response?.data?.error || "Failed to update status");
+    }
+  };
+
+  const handleDeleteLorry = async (id: string, registrationNumber: string) => {
+    if (!window.confirm(`Are you sure you want to delete lorry ${registrationNumber}?`)) {
+      return;
+    }
+
+    try {
+      await api.delete(`/lorries/delete/${id}`);
+      toast.success("Lorry deleted successfully");
+      fetchLorries();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || "Failed to delete lorry");
     }
   };
 
   // ✅ Apply Search + Filters
-  const filtered = institutes.filter((inst) => {
+  const filtered = lorries.filter((lorry) => {
     const matchesSearch =
-      inst.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      inst.code?.toLowerCase().includes(searchText.toLowerCase()) ||
-      inst.email?.toLowerCase().includes(searchText.toLowerCase());
+      lorry.registration_number.toLowerCase().includes(searchText.toLowerCase()) ||
+      lorry.nick_name?.toLowerCase().includes(searchText.toLowerCase()) ||
+      lorry.owner_id?.name?.toLowerCase().includes(searchText.toLowerCase());
+    
     const matchesStatus =
-      filterStatus === "all" ||
-      (filterStatus === "active" && inst.isActive) ||
-      (filterStatus === "inactive" && !inst.isActive);
+      filterStatus === "all" || lorry.status === filterStatus;
+    
     return matchesSearch && matchesStatus;
   });
 
@@ -97,17 +120,12 @@ const Institutes = () => {
   const paginated = filtered.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
   const allColumns = [
-    { key: "name", label: "Name" },
-    { key: "code", label: "Code" },
-    { key: "email", label: "Email" },
-    { key: "createdBy", label: "Created By" },
-    { key: "lastUpdatedBy", label: "Last Updated By" },
-    { key: "address", label: "Address" },
-    { key: "contact", label: "Contact" },
-    { key: "location", label: "Location" },
-    { key: "subscriptionType", label: "Subscription" },
-    { key: "capacity", label: "Capacity" },
+    { key: "registration_number", label: "Registration Number" },
+    { key: "nick_name", label: "Nick Name" },
+    { key: "status", label: "Status" },
+    { key: "owner_id", label: "Owner" },
     { key: "createdAt", label: "Created At" },
+    { key: "updatedAt", label: "Last Updated" },
   ];
 
   const resetFilters = () => {
@@ -115,8 +133,33 @@ const Institutes = () => {
     setFilterStatus("all");
     setRowsPerPage(25);
     setCurrentPage(1);
-    setVisibleColumns(["name", "code", "email", "contact","createdBy"]);
+    setVisibleColumns(["registration_number", "nick_name", "status", "createdAt"]);
   };
+
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      active: { color: "bg-green-100 text-green-800", icon: "🚚" },
+      maintenance: { color: "bg-yellow-100 text-yellow-800", icon: "🔧" },
+      inactive: { color: "bg-gray-100 text-gray-800", icon: "⏸️" }
+    };
+    
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.inactive;
+    
+    return (
+      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>
+        <span>{config.icon}</span>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </span>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 fade-in p-6">
@@ -124,8 +167,8 @@ const Institutes = () => {
       <div className="bg-white p-4 rounded-t-xl border shadow-md flex flex-col gap-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-bold">Institutes</h1>
-            <GraduationCap size={32} className="text-gray-800" />
+            <h1 className="text-3xl font-bold">Lorries</h1>
+            <Truck size={32} className="text-blue-600" />
           </div>
 
           <div className="flex items-center gap-3">
@@ -144,9 +187,9 @@ const Institutes = () => {
               Filters
             </button>
 
-            {/* Add Institute */}
+            {/* Add Lorry */}
             <Link
-              to="/institutes/create"
+              to="/lorries/create"
               className="inline-flex items-center justify-center w-11 h-11 bg-blue-600 text-white rounded-full shadow hover:bg-blue-700 transition-all"
             >
               <FaPlus size={20} />
@@ -170,7 +213,7 @@ const Institutes = () => {
                   <Search className="absolute left-3 top-2.5 text-gray-400 h-4 w-4" />
                   <input
                     type="text"
-                    placeholder="Search institutes..."
+                    placeholder="Search by registration or nick name..."
                     value={searchText}
                     onChange={(e) => {
                       setSearchText(e.target.value);
@@ -184,12 +227,13 @@ const Institutes = () => {
                   className="input input-bordered w-40"
                   value={filterStatus}
                   onChange={(e) => {
-                    setFilterStatus(e.target.value as "all" | "active" | "inactive");
+                    setFilterStatus(e.target.value as "all" | "active" | "maintenance" | "inactive");
                     setCurrentPage(1);
                   }}
                 >
                   <option value="all">All Status</option>
                   <option value="active">Active</option>
+                  <option value="maintenance">Maintenance</option>
                   <option value="inactive">Inactive</option>
                 </select>
 
@@ -269,27 +313,28 @@ const Institutes = () => {
           </thead>
           <tbody className="divide-y divide-gray-200">
             {paginated.length > 0 ? (
-              paginated.map((inst) => (
+              paginated.map((lorry) => (
                 <tr
-                  key={inst._id}
+                  key={lorry._id}
                   className="group hover:bg-blue-50 transition-all cursor-pointer"
-                  onClick={() => navigate(`/institutes/${inst._id}/batches`)}
+                  onClick={() => navigate(`/lorries/${lorry._id}`)}
                 >
                   {allColumns
                     .filter((col) => visibleColumns.includes(col.key))
                     .map((col) => (
                       <td key={col.key} className="px-6 py-4 text-gray-700">
-                        {col.key === "email" ? (
-                          <div className="flex items-center gap-2">
-                            <Mail className="w-4 h-4 text-gray-400" />
-                            {inst.email || "-"}
-                          </div>
-                        ) : col.key === "createdAt" ? (
-                          new Date(inst.createdAt).toLocaleDateString()
-                        ) : col.key === "createdBy" || col.key === "lastUpdatedBy" ? (
-                          inst[col.key as "createdBy" | "lastUpdatedBy"]?.name || "-"
+                        {col.key === "registration_number" ? (
+                          <span className="font-mono font-semibold text-blue-600">
+                            {lorry.registration_number}
+                          </span>
+                        ) : col.key === "status" ? (
+                          getStatusBadge(lorry.status)
+                        ) : col.key === "owner_id" ? (
+                          lorry.owner_id?.name || "-"
+                        ) : col.key === "createdAt" || col.key === "updatedAt" ? (
+                          new Date(lorry[col.key as keyof Lorry] as string).toLocaleDateString()
                         ) : (
-                          (inst as any)[col.key] || "-"
+                          (lorry as any)[col.key] || "-"
                         )}
                       </td>
                     ))}
@@ -299,40 +344,43 @@ const Institutes = () => {
                   >
                     {/* Edit */}
                     <Link
-                      to={`/institutes/edit/${inst._id}`}
+                      to={`/lorries/edit/${lorry._id}`}
                       className="p-2 rounded-full bg-yellow-200 text-gray-500 hover:bg-yellow-500 shadow-md transition"
-                      title="Edit"
+                      title="Edit Lorry"
                     >
                       <FiEdit size={18} />
                     </Link>
 
-                    {/* Toggle */}
+                    {/* Toggle Status */}
                     <button
-                      onClick={() => handleToggleActive(inst._id, inst.isActive)}
+                      onClick={() => handleToggleStatus(lorry._id, lorry.status)}
                       className={`p-2 rounded-full transition ${
-                        inst.isActive
+                        lorry.status === 'active'
                           ? "bg-green-100 text-green-600 hover:bg-green-200"
+                          : lorry.status === 'maintenance'
+                          ? "bg-yellow-100 text-yellow-600 hover:bg-yellow-200"
                           : "bg-gray-100 text-gray-400 hover:bg-gray-200"
                       }`}
-                      title={inst.isActive ? "Deactivate" : "Activate"}
+                      title={`Change status from ${lorry.status}`}
                     >
                       <Power className="h-5 w-5" />
                     </button>
-                  <Link
-                    to={`/institutes/${inst._id}/admins`}
-                    className="p-2 rounded-full bg-indigo-200 text-gray-600 hover:bg-indigo-500 hover:text-white transition"
-                    title="Manage Center Admins"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    👤
-                  </Link>
+
+                    {/* Delete */}
+                    <button
+                      onClick={() => handleDeleteLorry(lorry._id, lorry.registration_number)}
+                      className="p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-500 hover:text-white transition"
+                      title="Delete Lorry"
+                    >
+                      🗑️
+                    </button>
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
                 <td colSpan={visibleColumns.length + 1} className="text-center py-10 text-gray-500 text-base font-medium">
-                  No institutes found
+                  No lorries found
                 </td>
               </tr>
             )}
@@ -392,4 +440,4 @@ const Institutes = () => {
   );
 };
 
-export default Institutes;
+export default Lorries;

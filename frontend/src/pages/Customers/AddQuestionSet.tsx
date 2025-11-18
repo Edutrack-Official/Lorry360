@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import BackButton from "../../components/BackButton";
-import ManageQuestionSetForm from "./ManageQuestionSetForm";
+import ManageQuestionSetForm from "./ManageCustomerForm";
 import UploadQuestionSetExcel from "./UploadQuestionSetExcel";
 import { useParams } from 'react-router-dom';
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import { BookOpen, Loader2 } from "lucide-react";
+import { Truck, Loader2 } from "lucide-react";
 import LoadingSpinner from "../components/LoadingSpinner";
 import FloatingInput from "../components/FloatingInput";
 import Loader from "../components/Loader"; // fullscreen success loader
@@ -16,7 +16,6 @@ const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false); // submitting
   const [successLoading, setSuccessLoading] = useState(false); // fullscreen loader
   const [apiError, setApiError] = useState(""); // API error message
-
 
   useEffect(() => {
     const saved = localStorage.getItem("tp_login_email");
@@ -100,13 +99,13 @@ const Login: React.FC = () => {
             {/* Left: form */}
             <div className="w-full md:w-1/2 p-8 sm:p-10">
               <div className="mb-6 flex items-center gap-2">
-                <BookOpen className="h-8 w-8 text-indigo-600" />
-                <span className="text-xl font-bold text-gray-900">PAT360</span>
+                <Truck className="h-8 w-8 text-indigo-600" />
+                <span className="text-xl font-bold text-gray-900">GoldDust 360</span>
               </div>
 
               <h2 className="mb-1 text-3xl font-bold text-gray-900">Welcome back</h2>
               <p className="mb-6 text-sm text-gray-600">
-                Sign in to continue to your dashboard.
+                Sign in to access your fleet management dashboard.
               </p>
 
               {/* Form inputs */}
@@ -195,15 +194,15 @@ const Login: React.FC = () => {
             <div className="hidden md:flex w-full md:w-1/2 items-center justify-center p-10 bg-white">
               <div className="w-full text-center">
                 <img
-                  src="/images/login_img.png"
-                  alt="Illustration"
-                  className="mx-auto mb-6 w-[90%] max-w-md drop-shadow-xl"
+                  src="/images/truck.jpg"
+                  alt="Lorry Management Illustration"
+                  className="mx-auto mb-6 w-[60%] rounded-xl max-w-md drop-shadow-xl"
                 />
                 <h3 className="mb-2 text-2xl font-semibold text-gray-900">
-                  Focus. Attempt. Excel.
+                  Manage. Track. Optimize.
                 </h3>
                 <p className="mx-auto max-w-md text-sm text-gray-600">
-                  Access exams, track performance, and stay on top of your goals—all in one.
+                  Monitor your fleet, track shipments, and optimize routes—all from one powerful dashboard.
                 </p>
               </div>
             </div>
