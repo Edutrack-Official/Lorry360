@@ -1,0 +1,129 @@
+const Driver = require('../models/driver.model');
+
+const createDriver = async (driverData) => {
+  const {
+    owner_id,
+    name,
+    phone,
+    address,
+    salary_per_duty,
+    status
+  } = driverData;
+
+  if (!owner_id || !name || !phone || !address || !salary_per_duty) {
+    const err = new Error('Owner ID, name, phone, address, and salary per duty are required');
+    err.status = 400;
+    throw err;
+  }
+
+  const newDriver = new Driver({
+    owner_id,
+    name,
+    phone,
+    address,
+    salary_per_duty,
+    status: status || 'active'
+  });
+
+  await newDriver.save();
+  return newDriver;
+};
+
+const getAllDrivers = async (owner_id, filterParams = {}) => {
+  const { status } = filterParams;
+  const query = { owner_id };
+  
+  if (status) query.status = status;
+
+  const drivers = await Driver.find(query)
+    .populate('owner_id', 'name company_name')
+    .sort({ createdAt: -1 });
+
+  return {
+    count: drivers.length,
+    drivers
+  };
+};
+
+const getDriverById = async (id, owner_id) => {
+  const driver = await Driver.findOne({ _id: id, owner_id })
+    .populate('owner_id', 'name company_name');
+
+  if (!driver) {
+    const err = new Error('Driver not found');
+    err.status = 404;
+    throw err;
+  }
+  return driver;
+};
+
+const updateDriver = async (id, owner_id, updateData) => {
+  const updatedDriver = await Driver.findOneAndUpdate(
+    { _id: id, owner_id },
+    updateData,
+    { new: true, runValidators: true }
+  ).populate('owner_id', 'name company_name');
+
+  if (!updatedDriver) {
+    const err = new Error('Driver not found or update failed');
+    err.status = 404;
+    throw err;
+  }
+  return updatedDriver;
+};
+
+const deleteDriver = async (id, owner_id) => {
+  const deletedDriver = await Driver.findOneAndDelete({ _id: id, owner_id });
+
+  if (!deletedDriver) {
+    const err = new Error('Driver not found or delete failed');
+    err.status = 404;
+    throw err;
+  }
+  return { message: 'Driver deleted successfully' };
+};
+
+const updateDriverStatus = async (id, owner_id, status) => {
+  const updatedDriver = await Driver.findOneAndUpdate(
+    { _id: id, owner_id },
+    { status },
+    { new: true, runValidators: true }
+  ).populate('owner_id', 'name company_name');
+
+  if (!updatedDriver) {
+    const err = new Error('Driver not found or status update failed');
+    err.status = 404;
+    throw err;
+  }
+  return updatedDriver;
+};
+
+// Get driver statistics
+const getDriverStats = async (owner_id) => {
+  const drivers = await Driver.find({ owner_id });
+  
+  const totalDrivers = drivers.length;
+  const activeDrivers = drivers.filter(d => d.status === 'active').length;
+  const inactiveDrivers = drivers.filter(d => d.status === 'inactive').length;
+  
+  const totalSalaryPerDuty = drivers.reduce((sum, driver) => sum + driver.salary_per_duty, 0);
+  const averageSalary = totalDrivers > 0 ? totalSalaryPerDuty / totalDrivers : 0;
+
+  return {
+    total_drivers: totalDrivers,
+    active_drivers: activeDrivers,
+    inactive_drivers: inactiveDrivers,
+    total_salary_per_duty: totalSalaryPerDuty,
+    average_salary_per_duty: averageSalary
+  };
+};
+
+module.exports = {
+  createDriver,
+  getAllDrivers,
+  getDriverById,
+  updateDriver,
+  deleteDriver,
+  updateDriverStatus,
+  getDriverStats
+};

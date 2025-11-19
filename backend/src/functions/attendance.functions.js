@@ -1,31 +1,30 @@
 const { app } = require('@azure/functions');
 const connectDB = require('../utils/db');
 const {
-  createPayment,
-  getAllPayments,
-  getPaymentById,
-  updatePayment,
-  deletePayment,
-  getPaymentStats,
-  getPaymentsByCrusher,
-  getPaymentsByCustomer
-} = require('../controllers/payment.controller');
+  createAttendance,
+  getAllAttendance,
+  getAttendanceById,
+  updateAttendance,
+  deleteAttendance,
+  getAttendanceStats,
+  getAttendanceByDriver
+} = require('../controllers/attendance.controller');
 const { verifyToken } = require('../middleware/auth.middleware');
 
 /**
- * ✅ Create Payment (Both to crusher and from customer)
+ * ✅ Create Attendance
  */
-app.http('createPayment', {
+app.http('createAttendance', {
   methods: ['POST'],
   authLevel: 'anonymous',
-  route: 'payments/create',
+  route: 'attendance/create',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can create payments
+      // Only owners can create attendance
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -36,7 +35,7 @@ app.http('createPayment', {
       const body = await request.json();
       body.owner_id = user.userId; // Set owner from token
 
-      const result = await createPayment(body);
+      const result = await createAttendance(body);
       
       const response = { status: 201, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -54,19 +53,19 @@ app.http('createPayment', {
 });
 
 /**
- * ✅ Get All Payments for Owner
+ * ✅ Get All Attendance for Owner
  */
-app.http('getAllPayments', {
+app.http('getAllAttendance', {
   methods: ['GET'],
   authLevel: 'anonymous',
-  route: 'payments',
+  route: 'attendance',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can view their payments
+      // Only owners can view their attendance
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -75,7 +74,7 @@ app.http('getAllPayments', {
       }
 
       const filterParams = request.query;
-      const result = await getAllPayments(user.userId, filterParams);
+      const result = await getAllAttendance(user.userId, filterParams);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -93,19 +92,19 @@ app.http('getAllPayments', {
 });
 
 /**
- * ✅ Get Payment by ID
+ * ✅ Get Attendance by ID
  */
-app.http('getPaymentById', {
+app.http('getAttendanceById', {
   methods: ['GET'],
   authLevel: 'anonymous',
-  route: 'payments/{paymentId}',
+  route: 'attendance/{attendanceId}',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can view their payments
+      // Only owners can view their attendance
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -113,8 +112,8 @@ app.http('getPaymentById', {
         };
       }
 
-      const { paymentId } = request.params;
-      const result = await getPaymentById(paymentId, user.userId);
+      const { attendanceId } = request.params;
+      const result = await getAttendanceById(attendanceId, user.userId);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -132,19 +131,19 @@ app.http('getPaymentById', {
 });
 
 /**
- * ✅ Update Payment
+ * ✅ Update Attendance
  */
-app.http('updatePayment', {
+app.http('updateAttendance', {
   methods: ['PUT'],
   authLevel: 'anonymous',
-  route: 'payments/update/{paymentId}',
+  route: 'attendance/update/{attendanceId}',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can update their payments
+      // Only owners can update their attendance
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -152,10 +151,10 @@ app.http('updatePayment', {
         };
       }
 
-      const { paymentId } = request.params;
+      const { attendanceId } = request.params;
       const body = await request.json();
 
-      const result = await updatePayment(paymentId, user.userId, body);
+      const result = await updateAttendance(attendanceId, user.userId, body);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -173,19 +172,19 @@ app.http('updatePayment', {
 });
 
 /**
- * ✅ Delete Payment
+ * ✅ Delete Attendance
  */
-app.http('deletePayment', {
+app.http('deleteAttendance', {
   methods: ['DELETE'],
   authLevel: 'anonymous',
-  route: 'payments/delete/{paymentId}',
+  route: 'attendance/delete/{attendanceId}',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can delete their payments
+      // Only owners can delete their attendance
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -193,8 +192,8 @@ app.http('deletePayment', {
         };
       }
 
-      const { paymentId } = request.params;
-      const result = await deletePayment(paymentId, user.userId);
+      const { attendanceId } = request.params;
+      const result = await deleteAttendance(attendanceId, user.userId);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -212,12 +211,12 @@ app.http('deletePayment', {
 });
 
 /**
- * ✅ Get Payment Statistics
+ * ✅ Get Attendance Statistics
  */
-app.http('getPaymentStats', {
+app.http('getAttendanceStats', {
   methods: ['GET'],
   authLevel: 'anonymous',
-  route: 'payments/stats/{period}',
+  route: 'attendance/stats/{period}',
   handler: async (request) => {
     try {
       await connectDB();
@@ -233,7 +232,7 @@ app.http('getPaymentStats', {
       }
 
       const { period } = request.params;
-      const result = await getPaymentStats(user.userId, period);
+      const result = await getAttendanceStats(user.userId, period);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -251,19 +250,19 @@ app.http('getPaymentStats', {
 });
 
 /**
- * ✅ Get Payments by Crusher
+ * ✅ Get Attendance by Driver
  */
-app.http('getPaymentsByCrusher', {
+app.http('getAttendanceByDriver', {
   methods: ['GET'],
   authLevel: 'anonymous',
-  route: 'payments/crusher/{crusherId}',
+  route: 'attendance/driver/{driverId}',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can view their payments
+      // Only owners can view their attendance
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -271,125 +270,10 @@ app.http('getPaymentsByCrusher', {
         };
       }
 
-      const { crusherId } = request.params;
-      const result = await getPaymentsByCrusher(user.userId, crusherId);
+      const { driverId } = request.params;
+      const { start_date, end_date } = request.query;
 
-      const response = { status: 200, jsonBody: { success: true, data: result } };
-      if (newAccessToken) {
-        response.jsonBody.newAccessToken = newAccessToken;
-      }
-      
-      return response;
-    } catch (err) {
-      return {
-        status: err.status || 500,
-        jsonBody: { success: false, error: err.message },
-      };
-    }
-  },
-});
-
-/**
- * ✅ Get Payments by Customer
- */
-app.http('getPaymentsByCustomer', {
-  methods: ['GET'],
-  authLevel: 'anonymous',
-  route: 'payments/customer/{customerId}',
-  handler: async (request) => {
-    try {
-      await connectDB();
-      
-      const { decoded: user, newAccessToken } = await verifyToken(request);
-
-      // Only owners can view their payments
-      if (user.role !== 'owner') {
-        return {
-          status: 403,
-          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
-        };
-      }
-
-      const { customerId } = request.params;
-      const result = await getPaymentsByCustomer(user.userId, customerId);
-
-      const response = { status: 200, jsonBody: { success: true, data: result } };
-      if (newAccessToken) {
-        response.jsonBody.newAccessToken = newAccessToken;
-      }
-      
-      return response;
-    } catch (err) {
-      return {
-        status: err.status || 500,
-        jsonBody: { success: false, error: err.message },
-      };
-    }
-  },
-});
-
-/**
- * ✅ Get All Crusher Payments (Outgoing)
- */
-app.http('getCrusherPayments', {
-  methods: ['GET'],
-  authLevel: 'anonymous',
-  route: 'payments/type/crusher',
-  handler: async (request) => {
-    try {
-      await connectDB();
-      
-      const { decoded: user, newAccessToken } = await verifyToken(request);
-
-      // Only owners can view their payments
-      if (user.role !== 'owner') {
-        return {
-          status: 403,
-          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
-        };
-      }
-
-      const filterParams = { ...request.query, payment_type: 'to_crusher' };
-      const result = await getAllPayments(user.userId, filterParams);
-
-      const response = { status: 200, jsonBody: { success: true, data: result } };
-      if (newAccessToken) {
-        response.jsonBody.newAccessToken = newAccessToken;
-      }
-      
-      return response;
-    } catch (err) {
-      return {
-        status: err.status || 500,
-        jsonBody: { success: false, error: err.message },
-      };
-    }
-  },
-});
-
-/**
- * ✅ Get All Customer Payments (Incoming)
- */
-app.http('getCustomerPayments', {
-  methods: ['GET'],
-  authLevel: 'anonymous',
-  route: 'payments/type/customer',
-  handler: async (request) => {
-    try {
-      await connectDB();
-      
-      const { decoded: user, newAccessToken } = await verifyToken(request);
-
-      // Only owners can view their payments
-      if (user.role !== 'owner') {
-        return {
-          status: 403,
-          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
-        };
-      }
-
-      const filterParams = { ...request.query, payment_type: 'from_customer' };
-      const result = await getAllPayments(user.userId, filterParams);
+      const result = await getAttendanceByDriver(user.userId, driverId, start_date, end_date);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
