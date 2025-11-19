@@ -12,8 +12,8 @@ api.interceptors.request.use((config) => {
   const refreshToken = localStorage.getItem("refreshToken");
   const APP_VERSION = localStorage.getItem("appVersion");
 
-  console.log('🔄 API Request Interceptor - Token:', token ? 'Present' : 'Missing');
-  console.log('🔄 API Request Interceptor - URL:', config.url);
+  // console.log('🔄 API Request Interceptor - Token:', token ? 'Present' : 'Missing');
+  // console.log('🔄 API Request Interceptor - URL:', config.url);
   
   config.headers = config.headers || {};
 
@@ -30,7 +30,7 @@ api.interceptors.request.use((config) => {
 
   config.headers["x-app-version"] = APP_VERSION;
 
-  console.log('🔄 Final headers:', config.headers);
+  // console.log('🔄 Final headers:', config.headers);
   return config;
 });
 

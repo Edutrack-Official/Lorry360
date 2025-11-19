@@ -60,6 +60,13 @@ import ManageCrusherForm from './pages/Crushers/ManageCrusherForm';
 import Owners from './pages/Owners/Owners';
 import ManageOwnerForm from './pages/Owners/ManageOwnerForm';
 
+
+import LorryTrips from './pages/Lorries/LorryTrips';
+import TripForm from './pages/Lorries/TripForm';
+import Drivers from './pages/Drivers/Drivers';
+import ManageDriverForm from './pages/Drivers/ManageDriverForm';
+
+
 function App() {
   return (
     <AuthProvider>
@@ -159,6 +166,10 @@ function App() {
                       <Route path="/lorries/edit/:id" element={<ManageLorryForm />} />
 
 
+                        <Route path="/lorries/:lorryId/trips" element={<LorryTrips />} />
+                        <Route path="/trips/create" element={<TripForm />} />
+                        <Route path="/trips/edit/:tripId" element={<TripForm />} />
+
                       {/* Customers Management */}
                       <Route path="/customers" element={<Customers />} />
                       <Route path="/customers/create" element={<ManageCustomerForm />} />
@@ -168,6 +179,12 @@ function App() {
                       <Route path="/crushers" element={<Crushers />} />
                       <Route path="/crushers/create" element={<ManageCrusherForm />} />
                       <Route path="/crushers/edit/:id" element={<ManageCrusherForm />} />
+
+           {/* drivers Management */}
+                      <Route path="/drivers" element={<Drivers />} />
+                      <Route path="/drivers/create" element={<ManageDriverForm />} />
+                      <Route path="/drivers/edit/:id" element={<ManageDriverForm />} />
+
 
                       {/* Owners Management */}
                       <Route path="/owners" element={<Owners />} />
