@@ -24,7 +24,11 @@ const crusherSchema = new mongoose.Schema({
       required: [true, 'Price per unit is required'],
       min: [0, 'Price cannot be negative']
     }
-  }]
+  }],
+    isActive: {
+    type: Boolean,
+    default: true
+  }
 }, {
   timestamps: true
 });

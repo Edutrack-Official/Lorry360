@@ -1,33 +1,109 @@
 const { app } = require('@azure/functions');
 const connectDB = require('../utils/db');
 const {
-  createTrip,
-  getAllTrips,
-  getTripById,
-  updateTrip,
-  deleteTrip,
-  updateTripStatus,
-  getTripStats,
-   getTripFormData  // Add this
-
-} = require('../controllers/trip.controller');
+  createSalary,
+  getSalaryByDriver,
+  getAllSalaries,
+  addAdvance,
+  deductAdvance,
+  addBonus,
+  makePayment,
+  getSalaryStats,
+  getDriverSalarySummary
+} = require('../controllers/salary.controller');
 const { verifyToken } = require('../middleware/auth.middleware');
-const { log } = require('console');
 
 /**
- * ✅ Create Trip
+ * ✅ Get or Create Salary for Driver
  */
-app.http('createTrip', {
+app.http('getSalaryByDriver', {
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  route: 'salary/driver/{driverId}',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      // Only owners can view salary
+      if (user.role !== 'owner') {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
+        };
+      }
+
+      const { driverId } = request.params;
+      const result = await getSalaryByDriver(user.userId, driverId);
+
+      const response = { status: 200, jsonBody: { success: true, data: result } };
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { success: false, error: err.message },
+      };
+    }
+  },
+});
+
+/**
+ * ✅ Get All Salaries for Owner
+ */
+app.http('getAllSalaries', {
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  route: 'salary',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      // Only owners can view salaries
+      if (user.role !== 'owner') {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
+        };
+      }
+
+      const result = await getAllSalaries(user.userId);
+
+      const response = { status: 200, jsonBody: { success: true, data: result } };
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { success: false, error: err.message },
+      };
+    }
+  },
+});
+
+/**
+ * ✅ Add Advance
+ */
+app.http('addAdvance', {
   methods: ['POST'],
   authLevel: 'anonymous',
-  route: 'trips/create',
+  route: 'salary/advance/{driverId}',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
-log('User decoded:', user);
-      // Only owners can create trips
+
+      // Only owners can add advance
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -35,129 +111,10 @@ log('User decoded:', user);
         };
       }
 
-      const body = await request.json();
-      body.owner_id = user.userId; // Set owner from token
-
-      const result = await createTrip(body);
-      
-      const response = { status: 201, jsonBody: { success: true, data: result } };
-      if (newAccessToken) {
-        response.jsonBody.newAccessToken = newAccessToken;
-      }
-      
-      return response;
-    } catch (err) {
-      return {
-        status: err.status || 500,
-        jsonBody: { success: false, error: err.message },
-      };
-    }
-  },
-});
-
-/**
- * ✅ Get All Trips for Owner
- */
-app.http('getAllTrips', {
-  methods: ['GET'],
-  authLevel: 'anonymous',
-  route: 'trips',
-  handler: async (request) => {
-    try {
-      await connectDB();
-      
-      const { decoded: user, newAccessToken } = await verifyToken(request);
-
-      // Only owners can view their trips
-      if (user.role !== 'owner') {
-        return {
-          status: 403,
-          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
-        };
-      }
-
-      const filterParams = request.query;
-      const result = await getAllTrips(user.userId, filterParams);
-
-      const response = { status: 200, jsonBody: { success: true, data: result } };
-      if (newAccessToken) {
-        response.jsonBody.newAccessToken = newAccessToken;
-      }
-      
-      return response;
-    } catch (err) {
-      return {
-        status: err.status || 500,
-        jsonBody: { success: false, error: err.message },
-      };
-    }
-  },
-});
-
-/**
- * ✅ Get Trip by ID
- */
-app.http('getTripById', {
-  methods: ['GET'],
-  authLevel: 'anonymous',
-  route: 'trips/{tripId}',
-  handler: async (request) => {
-    try {
-      await connectDB();
-      
-      const { decoded: user, newAccessToken } = await verifyToken(request);
-
-      // Only owners can view their trips
-      if (user.role !== 'owner') {
-        return {
-          status: 403,
-          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
-        };
-      }
-
-      const { tripId } = request.params;
-      const result = await getTripById(tripId, user.userId);
-
-      const response = { status: 200, jsonBody: { success: true, data: result } };
-      if (newAccessToken) {
-        response.jsonBody.newAccessToken = newAccessToken;
-      }
-      
-      return response;
-    } catch (err) {
-      return {
-        status: err.status || 500,
-        jsonBody: { success: false, error: err.message },
-      };
-    }
-  },
-});
-
-/**
- * ✅ Update Trip
- */
-app.http('updateTrip', {
-  methods: ['PUT'],
-  authLevel: 'anonymous',
-  route: 'trips/update/{tripId}',
-  handler: async (request) => {
-    try {
-      await connectDB();
-      
-      const { decoded: user, newAccessToken } = await verifyToken(request);
-
-      // Only owners can update their trips
-      if (user.role !== 'owner') {
-        return {
-          status: 403,
-          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
-        };
-      }
-
-      const { tripId } = request.params;
+      const { driverId } = request.params;
       const body = await request.json();
 
-      const result = await updateTrip(tripId, user.userId, body);
+      const result = await addAdvance(user.userId, driverId, body);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -175,19 +132,19 @@ app.http('updateTrip', {
 });
 
 /**
- * ✅ Delete Trip
+ * ✅ Deduct Advance
  */
-app.http('deleteTrip', {
-  methods: ['DELETE'],
+app.http('deductAdvance', {
+  methods: ['POST'],
   authLevel: 'anonymous',
-  route: 'trips/delete/{tripId}',
+  route: 'salary/deduct-advance/{driverId}',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can delete their trips
+      // Only owners can deduct advance
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -195,57 +152,10 @@ app.http('deleteTrip', {
         };
       }
 
-      const { tripId } = request.params;
-      const result = await deleteTrip(tripId, user.userId);
-
-      const response = { status: 200, jsonBody: { success: true, data: result } };
-      if (newAccessToken) {
-        response.jsonBody.newAccessToken = newAccessToken;
-      }
-      
-      return response;
-    } catch (err) {
-      return {
-        status: err.status || 500,
-        jsonBody: { success: false, error: err.message },
-      };
-    }
-  },
-});
-
-/**
- * ✅ Update Trip Status
- */
-app.http('updateTripStatus', {
-  methods: ['PATCH'],
-  authLevel: 'anonymous',
-  route: 'trips/status/{tripId}',
-  handler: async (request) => {
-    try {
-      await connectDB();
-      
-      const { decoded: user, newAccessToken } = await verifyToken(request);
-
-      // Only owners can update trip status
-      if (user.role !== 'owner') {
-        return {
-          status: 403,
-          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
-        };
-      }
-
-      const { tripId } = request.params;
+      const { driverId } = request.params;
       const body = await request.json();
-      const { status } = body;
 
-      if (!status) {
-        return {
-          status: 400,
-          jsonBody: { success: false, error: 'Status is required' },
-        };
-      }
-
-      const result = await updateTripStatus(tripId, user.userId, status);
+      const result = await deductAdvance(user.userId, driverId, body);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -263,12 +173,94 @@ app.http('updateTripStatus', {
 });
 
 /**
- * ✅ Get Trip Statistics
+ * ✅ Add Bonus
  */
-app.http('getTripStats', {
+app.http('addBonus', {
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  route: 'salary/bonus/{driverId}',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      // Only owners can add bonus
+      if (user.role !== 'owner') {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
+        };
+      }
+
+      const { driverId } = request.params;
+      const body = await request.json();
+
+      const result = await addBonus(user.userId, driverId, body);
+
+      const response = { status: 200, jsonBody: { success: true, data: result } };
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { success: false, error: err.message },
+      };
+    }
+  },
+});
+
+/**
+ * ✅ Make Salary Payment
+ */
+app.http('makePayment', {
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  route: 'salary/payment/{driverId}',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      // Only owners can make payments
+      if (user.role !== 'owner') {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
+        };
+      }
+
+      const { driverId } = request.params;
+      const body = await request.json();
+
+      const result = await makePayment(user.userId, driverId, body);
+
+      const response = { status: 200, jsonBody: { success: true, data: result } };
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { success: false, error: err.message },
+      };
+    }
+  },
+});
+
+/**
+ * ✅ Get Salary Statistics
+ */
+app.http('getSalaryStats', {
   methods: ['GET'],
   authLevel: 'anonymous',
-  route: 'trips/stats/{period}',
+  route: 'salary/stats',
   handler: async (request) => {
     try {
       await connectDB();
@@ -283,8 +275,7 @@ app.http('getTripStats', {
         };
       }
 
-      const { period } = request.params;
-      const result = await getTripStats(user.userId, period);
+      const result = await getSalaryStats(user.userId);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -301,21 +292,20 @@ app.http('getTripStats', {
   },
 });
 
-
 /**
- * ✅ Get Trip Form Data (Customers, Drivers, Crushers, Lorries)
+ * ✅ Get Driver Salary Summary
  */
-app.http('getTripFormData', {
+app.http('getDriverSalarySummary', {
   methods: ['GET'],
   authLevel: 'anonymous',
-  route: 'form-data/trips', // Completely different path
+  route: 'salary/summary/{driverId}',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can access form data
+      // Only owners can view salary summary
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -323,7 +313,8 @@ app.http('getTripFormData', {
         };
       }
 
-      const result = await getTripFormData(user.userId);
+      const { driverId } = request.params;
+      const result = await getDriverSalarySummary(user.userId, driverId);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {

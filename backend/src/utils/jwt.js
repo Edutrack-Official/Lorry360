@@ -12,13 +12,14 @@ const signAccessToken = (userId, role) => {
   }
 };
 
-const signRefreshToken = (userId) => {
+const signRefreshToken = (userId, role) => {
   try {
-    return jwt.sign({ userId }, REFRESH_SECRET, { expiresIn: '2d' }); // 7 days
+    return jwt.sign({ userId, role }, REFRESH_SECRET, { expiresIn: '2d' });
   } catch (error) {
     throw new Error('Failed to sign refresh token');
   }
 };
+
 
 const verifyAccessToken = (token) => {
   try {

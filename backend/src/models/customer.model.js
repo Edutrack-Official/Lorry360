@@ -28,7 +28,11 @@ const customerSchema = new mongoose.Schema({
   site_addresses: [{
     type: String,
     trim: true
-  }]
+  }],
+    isActive: {
+    type: Boolean,
+    default: true
+  }
 }, {
   timestamps: true
 });

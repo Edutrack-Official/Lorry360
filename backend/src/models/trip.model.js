@@ -15,6 +15,11 @@ const tripSchema = new mongoose.Schema({
     required: true
   },
   
+  dc_number: {
+    type: String,
+    trim: true
+  },
+  
   // Vehicle and Driver
   lorry_id: {
     type: mongoose.Schema.Types.ObjectId,
@@ -35,7 +40,7 @@ const tripSchema = new mongoose.Schema({
     required: [true, 'Crusher is required']
   },
   
-  material_id: {
+  material_name: {
     type: String,
     required: [true, 'Material ID is required'],
     trim: true
@@ -48,9 +53,15 @@ const tripSchema = new mongoose.Schema({
     min: 0
   },
   
-  no_of_unit: {
+  no_of_unit_crusher: {
     type: Number,
-    required: [true, 'Number of units is required'],
+    required: [true, 'Number of units at crusher is required'],
+    min: 0
+  },
+  
+  no_of_unit_customer: {
+    type: Number,
+    required: [true, 'Number of units at customer is required'],
     min: 0
   },
   
@@ -132,43 +143,5 @@ const tripSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Auto-generate trip number with monthly reset and calculate profit before saving
-tripSchema.pre('save', async function(next) {
-  if (this.isNew) {
-    const now = new Date();
-    const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
-    
-    // Count trips for current month
-    const count = await mongoose.model('Trip').countDocuments({
-      createdAt: {
-        $gte: new Date(now.getFullYear(), now.getMonth(), 1),
-        $lt: new Date(now.getFullYear(), now.getMonth() + 1, 1)
-      }
-    });
-    
-    this.trip_number = `TR${yearMonth}${String(count + 1).padStart(4, '0')}`;
-    
-    // Auto-calculate profit
-    if (this.customer_amount && this.crusher_amount) {
-      this.profit = this.customer_amount - this.crusher_amount;
-    }
-  }
-  next();
-});
-
-// Auto-calculate profit when amounts change
-tripSchema.pre('findOneAndUpdate', function(next) {
-  const update = this.getUpdate();
-  
-  if (update.customer_amount || update.crusher_amount) {
-    const customer_amount = update.customer_amount || this.customer_amount;
-    const crusher_amount = update.crusher_amount || this.crusher_amount;
-    
-    if (customer_amount && crusher_amount) {
-      update.profit = customer_amount - crusher_amount;
-    }
-  }
-  next();
-});
 
 module.exports = mongoose.model('Trip', tripSchema);

@@ -20,7 +20,7 @@ const loginUser = async ({ email, password }) => {
   if (!match) throw new Error('Invalid email or password');
 
   const accessToken = signAccessToken(user._id, user.role);
-  const refreshToken = signRefreshToken(user._id);
+  const refreshToken = signRefreshToken(user._id, user.role);
   const frontend_version = process.env.FRONTEND_VERSION;
 
   // Prepare user response based on role

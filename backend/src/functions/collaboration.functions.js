@@ -1,33 +1,33 @@
 const { app } = require('@azure/functions');
 const connectDB = require('../utils/db');
 const {
-  createTrip,
-  getAllTrips,
-  getTripById,
-  updateTrip,
-  deleteTrip,
-  updateTripStatus,
-  getTripStats,
-   getTripFormData  // Add this
-
-} = require('../controllers/trip.controller');
+  sendCollaborationRequest,
+  getCollaborationRequests,
+  getMySentRequests,
+  getActiveCollaborations,
+  acceptCollaboration,
+  rejectCollaboration,
+  cancelCollaborationRequest,
+  endCollaboration,
+  getCollaborationById,
+  searchOwners
+} = require('../controllers/collaboration.controller');
 const { verifyToken } = require('../middleware/auth.middleware');
-const { log } = require('console');
 
 /**
- * ✅ Create Trip
+ * ✅ Send Collaboration Request
  */
-app.http('createTrip', {
+app.http('sendCollaborationRequest', {
   methods: ['POST'],
   authLevel: 'anonymous',
-  route: 'trips/create',
+  route: 'collaborations/send-request',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
-log('User decoded:', user);
-      // Only owners can create trips
+
+      // Only owners can send collaboration requests
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -36,9 +36,9 @@ log('User decoded:', user);
       }
 
       const body = await request.json();
-      body.owner_id = user.userId; // Set owner from token
+      body.from_owner_id = user.userId; // Set sender from token
 
-      const result = await createTrip(body);
+      const result = await sendCollaborationRequest(body);
       
       const response = { status: 201, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -56,19 +56,19 @@ log('User decoded:', user);
 });
 
 /**
- * ✅ Get All Trips for Owner
+ * ✅ Get Collaboration Requests (Received)
  */
-app.http('getAllTrips', {
+app.http('getCollaborationRequests', {
   methods: ['GET'],
   authLevel: 'anonymous',
-  route: 'trips',
+  route: 'collaborations/requests',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can view their trips
+      // Only owners can view requests
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -76,8 +76,7 @@ app.http('getAllTrips', {
         };
       }
 
-      const filterParams = request.query;
-      const result = await getAllTrips(user.userId, filterParams);
+      const result = await getCollaborationRequests(user.userId);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -95,19 +94,19 @@ app.http('getAllTrips', {
 });
 
 /**
- * ✅ Get Trip by ID
+ * ✅ Get My Sent Requests
  */
-app.http('getTripById', {
+app.http('getMySentRequests', {
   methods: ['GET'],
   authLevel: 'anonymous',
-  route: 'trips/{tripId}',
+  route: 'collaborations/sent-requests',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can view their trips
+      // Only owners can view sent requests
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -115,8 +114,7 @@ app.http('getTripById', {
         };
       }
 
-      const { tripId } = request.params;
-      const result = await getTripById(tripId, user.userId);
+      const result = await getMySentRequests(user.userId);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -134,19 +132,19 @@ app.http('getTripById', {
 });
 
 /**
- * ✅ Update Trip
+ * ✅ Get Active Collaborations
  */
-app.http('updateTrip', {
-  methods: ['PUT'],
+app.http('getActiveCollaborations', {
+  methods: ['GET'],
   authLevel: 'anonymous',
-  route: 'trips/update/{tripId}',
+  route: 'collaborations/active',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can update their trips
+      // Only owners can view collaborations
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -154,10 +152,7 @@ app.http('updateTrip', {
         };
       }
 
-      const { tripId } = request.params;
-      const body = await request.json();
-
-      const result = await updateTrip(tripId, user.userId, body);
+      const result = await getActiveCollaborations(user.userId);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -175,58 +170,19 @@ app.http('updateTrip', {
 });
 
 /**
- * ✅ Delete Trip
+ * ✅ Accept Collaboration
  */
-app.http('deleteTrip', {
-  methods: ['DELETE'],
-  authLevel: 'anonymous',
-  route: 'trips/delete/{tripId}',
-  handler: async (request) => {
-    try {
-      await connectDB();
-      
-      const { decoded: user, newAccessToken } = await verifyToken(request);
-
-      // Only owners can delete their trips
-      if (user.role !== 'owner') {
-        return {
-          status: 403,
-          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
-        };
-      }
-
-      const { tripId } = request.params;
-      const result = await deleteTrip(tripId, user.userId);
-
-      const response = { status: 200, jsonBody: { success: true, data: result } };
-      if (newAccessToken) {
-        response.jsonBody.newAccessToken = newAccessToken;
-      }
-      
-      return response;
-    } catch (err) {
-      return {
-        status: err.status || 500,
-        jsonBody: { success: false, error: err.message },
-      };
-    }
-  },
-});
-
-/**
- * ✅ Update Trip Status
- */
-app.http('updateTripStatus', {
+app.http('acceptCollaboration', {
   methods: ['PATCH'],
   authLevel: 'anonymous',
-  route: 'trips/status/{tripId}',
+  route: 'collaborations/accept/{collabId}',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can update trip status
+      // Only owners can accept collaborations
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -234,96 +190,210 @@ app.http('updateTripStatus', {
         };
       }
 
-      const { tripId } = request.params;
-      const body = await request.json();
-      const { status } = body;
+      const { collabId } = request.params;
+      const result = await acceptCollaboration(collabId, user.userId);
 
-      if (!status) {
+      const response = { status: 200, jsonBody: { success: true, data: result } };
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { success: false, error: err.message },
+      };
+    }
+  },
+});
+
+/**
+ * ✅ Reject Collaboration
+ */
+app.http('rejectCollaboration', {
+  methods: ['PATCH'],
+  authLevel: 'anonymous',
+  route: 'collaborations/reject/{collabId}',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      // Only owners can reject collaborations
+      if (user.role !== 'owner') {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
+        };
+      }
+
+      const { collabId } = request.params;
+      const result = await rejectCollaboration(collabId, user.userId);
+
+      const response = { status: 200, jsonBody: { success: true, data: result } };
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { success: false, error: err.message },
+      };
+    }
+  },
+});
+
+/**
+ * ✅ Cancel Collaboration Request
+ */
+app.http('cancelCollaborationRequest', {
+  methods: ['DELETE'],
+  authLevel: 'anonymous',
+  route: 'collaborations/cancel/{collabId}',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      // Only owners can cancel requests
+      if (user.role !== 'owner') {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
+        };
+      }
+
+      const { collabId } = request.params;
+      const result = await cancelCollaborationRequest(collabId, user.userId);
+
+      const response = { status: 200, jsonBody: { success: true, data: result } };
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { success: false, error: err.message },
+      };
+    }
+  },
+});
+
+/**
+ * ✅ End Collaboration
+ */
+app.http('endCollaboration', {
+  methods: ['DELETE'],
+  authLevel: 'anonymous',
+  route: 'collaborations/end/{collabId}',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      // Only owners can end collaborations
+      if (user.role !== 'owner') {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
+        };
+      }
+
+      const { collabId } = request.params;
+      const result = await endCollaboration(collabId, user.userId);
+
+      const response = { status: 200, jsonBody: { success: true, data: result } };
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { success: false, error: err.message },
+      };
+    }
+  },
+});
+
+/**
+ * ✅ Get Collaboration by ID
+ */
+app.http('getCollaborationById', {
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  route: 'collaborations/{collabId}',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      // Only owners can view collaborations
+      if (user.role !== 'owner') {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
+        };
+      }
+
+      const { collabId } = request.params;
+      const result = await getCollaborationById(collabId, user.userId);
+
+      const response = { status: 200, jsonBody: { success: true, data: result } };
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { success: false, error: err.message },
+      };
+    }
+  },
+});
+
+/**
+ * ✅ Search Owners
+ */
+app.http('searchOwners', {
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  route: 'collaborations/search-owners',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      // Only owners can search other owners
+      if (user.role !== 'owner') {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
+        };
+      }
+
+      const { search } = request.query;
+      if (!search) {
         return {
           status: 400,
-          jsonBody: { success: false, error: 'Status is required' },
+          jsonBody: { success: false, error: 'Search term is required' },
         };
       }
 
-      const result = await updateTripStatus(tripId, user.userId, status);
-
-      const response = { status: 200, jsonBody: { success: true, data: result } };
-      if (newAccessToken) {
-        response.jsonBody.newAccessToken = newAccessToken;
-      }
-      
-      return response;
-    } catch (err) {
-      return {
-        status: err.status || 500,
-        jsonBody: { success: false, error: err.message },
-      };
-    }
-  },
-});
-
-/**
- * ✅ Get Trip Statistics
- */
-app.http('getTripStats', {
-  methods: ['GET'],
-  authLevel: 'anonymous',
-  route: 'trips/stats/{period}',
-  handler: async (request) => {
-    try {
-      await connectDB();
-      
-      const { decoded: user, newAccessToken } = await verifyToken(request);
-
-      // Only owners can view stats
-      if (user.role !== 'owner') {
-        return {
-          status: 403,
-          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
-        };
-      }
-
-      const { period } = request.params;
-      const result = await getTripStats(user.userId, period);
-
-      const response = { status: 200, jsonBody: { success: true, data: result } };
-      if (newAccessToken) {
-        response.jsonBody.newAccessToken = newAccessToken;
-      }
-      
-      return response;
-    } catch (err) {
-      return {
-        status: err.status || 500,
-        jsonBody: { success: false, error: err.message },
-      };
-    }
-  },
-});
-
-
-/**
- * ✅ Get Trip Form Data (Customers, Drivers, Crushers, Lorries)
- */
-app.http('getTripFormData', {
-  methods: ['GET'],
-  authLevel: 'anonymous',
-  route: 'form-data/trips', // Completely different path
-  handler: async (request) => {
-    try {
-      await connectDB();
-      
-      const { decoded: user, newAccessToken } = await verifyToken(request);
-
-      // Only owners can access form data
-      if (user.role !== 'owner') {
-        return {
-          status: 403,
-          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
-        };
-      }
-
-      const result = await getTripFormData(user.userId);
+      const result = await searchOwners(user.userId, search);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {

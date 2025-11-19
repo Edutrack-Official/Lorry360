@@ -63,6 +63,7 @@ app.http('getAllLorries', {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
+console.log('User decoded:', user);
 
       // Only owners can view their lorries
       if (user.role !== 'owner') {
