@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const ATTENDANCE_STATUS_ENUM = ['fullduty', 'halfduty','doubleduty', 'absent'];
+const ATTENDANCE_STATUS_ENUM = ['fullduty', 'halfduty','doubleduty', 'absent', 'tripduty', 'custom'];
 
 const attendanceSchema = new mongoose.Schema({
   owner_id: {
@@ -35,6 +35,11 @@ const attendanceSchema = new mongoose.Schema({
     },
     required: [true, 'Attendance status is required'],
     default: 'fullduty'
+  },
+   salary_amount: {
+    type: Number,
+    min: 0,
+    default: 0
   }
 }, {
   timestamps: true
