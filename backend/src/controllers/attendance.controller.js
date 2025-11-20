@@ -6,7 +6,8 @@ const createAttendance = async (attendanceData) => {
     driver_id,
     lorry_id,
     date,
-    status
+    status,
+    salary_amount
   } = attendanceData;
 
   if (!owner_id || !driver_id || !lorry_id || !date || !status) {
@@ -20,7 +21,8 @@ const createAttendance = async (attendanceData) => {
     driver_id,
     lorry_id,
     date,
-    status
+    status,
+    salary_amount: salary_amount || 0
   });
 
   await newAttendance.save();
@@ -43,7 +45,7 @@ const getAllAttendance = async (owner_id, filterParams = {}) => {
   }
 
   const attendance = await Attendance.find(query)
-    .populate('driver_id', 'name phone')
+    .populate('driver_id', 'name phone salary_per_duty salary_per_trip')
     .populate('lorry_id', 'registration_number nick_name')
     .sort({ date: -1, createdAt: -1 });
 
@@ -55,7 +57,7 @@ const getAllAttendance = async (owner_id, filterParams = {}) => {
 
 const getAttendanceById = async (id, owner_id) => {
   const attendance = await Attendance.findOne({ _id: id, owner_id })
-    .populate('driver_id', 'name phone')
+    .populate('driver_id', 'name phone salary_per_duty salary_per_trip')
     .populate('lorry_id', 'registration_number nick_name');
 
   if (!attendance) {
@@ -72,7 +74,7 @@ const updateAttendance = async (id, owner_id, updateData) => {
     updateData,
     { new: true, runValidators: true }
   )
-    .populate('driver_id', 'name phone')
+    .populate('driver_id', 'name phone salary_per_duty salary_per_trip')
     .populate('lorry_id', 'registration_number nick_name');
 
   if (!updatedAttendance) {
@@ -117,24 +119,19 @@ const getAttendanceStats = async (owner_id, period = 'month') => {
   const attendance = await Attendance.find({
     owner_id,
     date: { $gte: startDate }
-  }).populate('driver_id', 'name salary_per_duty');
+  }).populate('driver_id', 'name salary_per_duty salary_per_trip');
 
   const totalRecords = attendance.length;
   const fulldutyCount = attendance.filter(a => a.status === 'fullduty').length;
   const halfdutyCount = attendance.filter(a => a.status === 'halfduty').length;
+  const doubledutyCount = attendance.filter(a => a.status === 'doubleduty').length;
+  const tripdutyCount = attendance.filter(a => a.status === 'tripduty').length;
+  const customCount = attendance.filter(a => a.status === 'custom').length;
   const absentCount = attendance.filter(a => a.status === 'absent').length;
 
-  // Calculate total salary cost
+  // Calculate total salary cost using salary_amount field
   const totalSalaryCost = attendance.reduce((sum, record) => {
-    const driver = record.driver_id;
-    if (driver && driver.salary_per_duty) {
-      if (record.status === 'fullduty') {
-        return sum + driver.salary_per_duty;
-      } else if (record.status === 'halfduty') {
-        return sum + (driver.salary_per_duty / 2);
-      }
-    }
-    return sum;
+    return sum + (record.salary_amount || 0);
   }, 0);
 
   return {
@@ -142,11 +139,17 @@ const getAttendanceStats = async (owner_id, period = 'month') => {
     total_records: totalRecords,
     fullduty_count: fulldutyCount,
     halfduty_count: halfdutyCount,
+    doubleduty_count: doubledutyCount,
+    tripduty_count: tripdutyCount,
+    custom_count: customCount,
     absent_count: absentCount,
     total_salary_cost: totalSalaryCost,
     attendance_by_status: {
       fullduty: fulldutyCount,
       halfduty: halfdutyCount,
+      doubleduty: doubledutyCount,
+      tripduty: tripdutyCount,
+      custom: customCount,
       absent: absentCount
     }
   };
@@ -163,26 +166,21 @@ const getAttendanceByDriver = async (owner_id, driver_id, start_date, end_date) 
   }
 
   const attendance = await Attendance.find(query)
-    .populate('driver_id', 'name salary_per_duty')
+    .populate('driver_id', 'name salary_per_duty salary_per_trip')
     .populate('lorry_id', 'registration_number nick_name')
     .sort({ date: -1 });
 
   const totalDays = attendance.length;
   const fulldutyDays = attendance.filter(a => a.status === 'fullduty').length;
   const halfdutyDays = attendance.filter(a => a.status === 'halfduty').length;
+  const doubledutyDays = attendance.filter(a => a.status === 'doubleduty').length;
+  const tripdutyDays = attendance.filter(a => a.status === 'tripduty').length;
+  const customDays = attendance.filter(a => a.status === 'custom').length;
   const absentDays = attendance.filter(a => a.status === 'absent').length;
 
-  // Calculate total earnings
+  // Calculate total earnings using salary_amount field
   const totalEarnings = attendance.reduce((sum, record) => {
-    const driver = record.driver_id;
-    if (driver && driver.salary_per_duty) {
-      if (record.status === 'fullduty') {
-        return sum + driver.salary_per_duty;
-      } else if (record.status === 'halfduty') {
-        return sum + (driver.salary_per_duty / 2);
-      }
-    }
-    return sum;
+    return sum + (record.salary_amount || 0);
   }, 0);
 
   return {
@@ -190,6 +188,9 @@ const getAttendanceByDriver = async (owner_id, driver_id, start_date, end_date) 
     total_days: totalDays,
     fullduty_days: fulldutyDays,
     halfduty_days: halfdutyDays,
+    doubleduty_days: doubledutyDays,
+    tripduty_days: tripdutyDays,
+    custom_days: customDays,
     absent_days: absentDays,
     total_earnings: totalEarnings,
     attendance
