@@ -10,6 +10,7 @@ interface FormData {
   phone: string;
   address: string;
   salary_per_duty: number;
+  salary_per_trip: number;
   status: "active" | "inactive";
 }
 
@@ -18,6 +19,8 @@ interface FormErrors {
   phone?: string;
   address?: string;
   salary_per_duty?: string;
+  salary_per_trip?: string;
+  salary?: string;
 }
 
 const initialFormData: FormData = {
@@ -25,6 +28,7 @@ const initialFormData: FormData = {
   phone: "+91-",
   address: "",
   salary_per_duty: 0,
+  salary_per_trip: 0,
   status: "active",
 };
 
@@ -50,6 +54,7 @@ const ManageDriverForm: React.FC = () => {
             phone: driverData.phone || "+91-",
             address: driverData.address || "",
             salary_per_duty: driverData.salary_per_duty || 0,
+            salary_per_trip: driverData.salary_per_trip || 0,
             status: driverData.status || "active",
           });
         })
@@ -79,8 +84,10 @@ const ManageDriverForm: React.FC = () => {
       newErrors.address = "Address is required";
     }
 
-    if (!formData.salary_per_duty || formData.salary_per_duty <= 0) {
-      newErrors.salary_per_duty = "Salary per duty must be greater than 0";
+    // Validate that at least one salary type is provided
+    if ((!formData.salary_per_duty || formData.salary_per_duty <= 0) && 
+        (!formData.salary_per_trip || formData.salary_per_trip <= 0)) {
+      newErrors.salary = "At least one salary type (Per Duty or Per Trip) must be provided";
     }
 
     setErrors(newErrors);
@@ -107,7 +114,7 @@ const ManageDriverForm: React.FC = () => {
         ...prev,
         [name]: formattedValue,
       }));
-    } else if (name === "salary_per_duty") {
+    } else if (name === "salary_per_duty" || name === "salary_per_trip") {
       // Only allow numbers
       const numericValue = value.replace(/\D/g, "");
       setFormData((prev) => ({
@@ -123,6 +130,11 @@ const ManageDriverForm: React.FC = () => {
 
     if (errors[name as keyof FormErrors]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
+
+    // Clear salary error when user starts typing in either field
+    if ((name === "salary_per_duty" || name === "salary_per_trip") && errors.salary) {
+      setErrors((prev) => ({ ...prev, salary: undefined }));
     }
   };
 
@@ -224,7 +236,7 @@ const ManageDriverForm: React.FC = () => {
             {/* Salary per Duty */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Salary per Duty *
+                Salary per Duty
               </label>
               <div className="relative">
                 <input
@@ -232,14 +244,11 @@ const ManageDriverForm: React.FC = () => {
                   name="salary_per_duty"
                   value={formData.salary_per_duty || ""}
                   onChange={handleChange}
-                  placeholder="Enter salary amount"
+                  placeholder="Enter salary per duty"
                   className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 />
                 <IndianRupee className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
               </div>
-              {errors.salary_per_duty && (
-                <p className="mt-1 text-sm text-red-600">{errors.salary_per_duty}</p>
-              )}
               {formData.salary_per_duty > 0 && (
                 <p className="mt-1 text-xs text-gray-500">
                   Formatted: {formatSalary(formData.salary_per_duty)}
@@ -247,21 +256,64 @@ const ManageDriverForm: React.FC = () => {
               )}
             </div>
 
-            {/* Status */}
+            {/* Salary per Trip */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Status *
+                Salary per Trip
               </label>
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
+              <div className="relative">
+                <input
+                  type="text"
+                  name="salary_per_trip"
+                  value={formData.salary_per_trip || ""}
+                  onChange={handleChange}
+                  placeholder="Enter salary per trip"
+                  className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                />
+                <IndianRupee className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+              </div>
+              {formData.salary_per_trip > 0 && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Formatted: {formatSalary(formData.salary_per_trip)}
+                </p>
+              )}
             </div>
+
+            {/* Salary Validation Error */}
+            {errors.salary && (
+              <div className="md:col-span-2">
+                <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
+                  {errors.salary}
+                </p>
+              </div>
+            )}
+
+            {/* Salary Summary */}
+            {(formData.salary_per_duty > 0 || formData.salary_per_trip > 0) && (
+              <div className="md:col-span-2">
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <h4 className="font-medium text-blue-800 mb-2">Salary Summary</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    {formData.salary_per_duty > 0 && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-blue-700">Per Duty:</span>
+                        <span className="font-semibold text-blue-800">
+                          {formatSalary(formData.salary_per_duty)}
+                        </span>
+                      </div>
+                    )}
+                    {formData.salary_per_trip > 0 && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-blue-700">Per Trip:</span>
+                        <span className="font-semibold text-blue-800">
+                          {formatSalary(formData.salary_per_trip)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Address */}
             <div className="md:col-span-2">
@@ -312,8 +364,6 @@ const ManageDriverForm: React.FC = () => {
           </div>
         </form>
       </div>
-
-
     </div>
   );
 };

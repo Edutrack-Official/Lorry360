@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Users, Search, MapPin, Phone, IndianRupee, X, Mail, Clock } from "lucide-react";
+import { Users, Search, MapPin, Phone, IndianRupee, X, Mail, Clock, Car } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { FaPlus } from "react-icons/fa6";
@@ -14,6 +14,7 @@ interface Driver {
   phone: string;
   address: string;
   salary_per_duty: number;
+  salary_per_trip: number;
   status: "active" | "inactive";
   isActive: boolean;
   owner_id: string;
@@ -204,12 +205,6 @@ const Drivers = () => {
     return status === "active" ? "border-l-green-500" : "border-l-yellow-500";
   };
 
-  // In your Drivers component, update the card click handler:
-  const handleCardClick = (driverId: string, driver: Driver) => {
-    navigate(`/drivers/${driverId}`);
-    localStorage.setItem('selectedDriver', JSON.stringify(driver));
-  };
-
   const formatSalary = (salary: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -217,6 +212,28 @@ const Drivers = () => {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(salary);
+  };
+
+  const getSalaryType = (driver: Driver) => {
+    if (driver.salary_per_duty > 0 && driver.salary_per_trip > 0) {
+      return "Duty + Trip";
+    } else if (driver.salary_per_duty > 0) {
+      return "Per Duty";
+    } else if (driver.salary_per_trip > 0) {
+      return "Per Trip";
+    }
+    return "Not Set";
+  };
+
+  const getSalaryTypeColor = (driver: Driver) => {
+    if (driver.salary_per_duty > 0 && driver.salary_per_trip > 0) {
+      return "bg-purple-100 text-purple-800 border-purple-200";
+    } else if (driver.salary_per_duty > 0) {
+      return "bg-blue-100 text-blue-800 border-blue-200";
+    } else if (driver.salary_per_trip > 0) {
+      return "bg-green-100 text-green-800 border-green-200";
+    }
+    return "bg-gray-100 text-gray-800 border-gray-200";
   };
 
   if (loading) {
@@ -417,23 +434,36 @@ const Drivers = () => {
                 </div>
               </div>
 
-              {/* Status and Quick Info */}
+              {/* Status and Salary Type */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   {getStatusBadge(driver.status, driver.isActive)}
-                  <span className={`w-2 h-2 rounded-full ${driver.isActive && driver.status === 'active'
-                      ? 'bg-green-500 animate-pulse'
-                      : 'bg-gray-400'
-                    }`}></span>
                 </div>
 
-                {/* Quick Salary Info */}
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-gray-900">
-                    {formatSalary(driver.salary_per_duty)}
-                  </p>
-                  <p className="text-xs text-gray-500">per duty</p>
-                </div>
+                {/* Salary Type Badge */}
+                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getSalaryTypeColor(driver)}`}>
+                  {getSalaryType(driver)}
+                </span>
+              </div>
+
+              {/* Salary Information */}
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                {driver.salary_per_duty > 0 && (
+                  <div className="text-center p-2 bg-blue-50 rounded-lg">
+                    <p className="text-sm font-semibold text-blue-900">
+                      {formatSalary(driver.salary_per_duty)}
+                    </p>
+                    <p className="text-xs text-blue-600">per duty</p>
+                  </div>
+                )}
+                {driver.salary_per_trip > 0 && (
+                  <div className="text-center p-2 bg-green-50 rounded-lg">
+                    <p className="text-sm font-semibold text-green-900">
+                      {formatSalary(driver.salary_per_trip)}
+                    </p>
+                    <p className="text-xs text-green-600">per trip</p>
+                  </div>
+                )}
               </div>
 
               {/* Driver Details Grid */}
@@ -457,7 +487,7 @@ const Drivers = () => {
                 </div>
 
                 {/* Join Date */}
-                <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg group-hover:bg-blue-50 transition-colors">
+                {/* <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg group-hover:bg-blue-50 transition-colors">
                   <div className="p-1.5 bg-white rounded-md shadow-sm">
                     <Clock className="h-3.5 w-3.5 text-purple-600" />
                   </div>
@@ -469,7 +499,7 @@ const Drivers = () => {
                       {Math.floor((new Date().getTime() - new Date(driver.createdAt).getTime()) / (1000 * 60 * 60 * 24))} days ago
                     </p>
                   </div>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>
@@ -564,9 +594,24 @@ const Drivers = () => {
                   <p className="text-gray-900">{selectedDriver.phone}</p>
                 </div>
 
+                {/* Salary Information */}
+                {selectedDriver.salary_per_duty > 0 && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Salary per Duty</label>
+                    <p className="text-gray-900">{formatSalary(selectedDriver.salary_per_duty)}</p>
+                  </div>
+                )}
+
+                {selectedDriver.salary_per_trip > 0 && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Salary per Trip</label>
+                    <p className="text-gray-900">{formatSalary(selectedDriver.salary_per_trip)}</p>
+                  </div>
+                )}
+
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Salary per Duty</label>
-                  <p className="text-gray-900">{formatSalary(selectedDriver.salary_per_duty)}</p>
+                  <label className="text-sm font-medium text-gray-700">Salary Type</label>
+                  <p className="text-gray-900">{getSalaryType(selectedDriver)}</p>
                 </div>
 
                 <div>
