@@ -29,10 +29,12 @@ const driverSchema = new mongoose.Schema({
   },  
   salary_per_duty: {
     type: Number,
-    required: [true, 'Salary per day is required'],
     min: 0
   },
-  
+   salary_per_trip: {
+    type: Number,
+    min: 0
+  },
   status: {
     type: String,
     enum: {

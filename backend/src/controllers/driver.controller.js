@@ -7,11 +7,20 @@ const createDriver = async (driverData) => {
     phone,
     address,
     salary_per_duty,
+    salary_per_trip,
     status
   } = driverData;
 
-  if (!owner_id || !name || !phone || !address || !salary_per_duty) {
-    const err = new Error('Owner ID, name, phone, address, and salary per duty are required');
+  // Validate required fields
+  if (!owner_id || !name || !phone || !address) {
+    const err = new Error('Owner ID, name, phone, and address are required');
+    err.status = 400;
+    throw err;
+  }
+
+  // Validate that at least one salary type is provided
+  if ((!salary_per_duty || salary_per_duty === 0) && (!salary_per_trip || salary_per_trip === 0)) {
+    const err = new Error('At least one salary type (salary_per_duty or salary_per_trip) must be provided');
     err.status = 400;
     throw err;
   }
@@ -21,7 +30,8 @@ const createDriver = async (driverData) => {
     name,
     phone,
     address,
-    salary_per_duty,
+    salary_per_duty: salary_per_duty || 0,
+    salary_per_trip: salary_per_trip || 0,
     status: status || 'active'
   });
 
@@ -58,6 +68,15 @@ const getDriverById = async (id, owner_id) => {
 };
 
 const updateDriver = async (id, owner_id, updateData) => {
+  // Validate that at least one salary type is provided when updating
+  if (updateData.salary_per_duty !== undefined && updateData.salary_per_trip !== undefined) {
+    if (updateData.salary_per_duty === 0 && updateData.salary_per_trip === 0) {
+      const err = new Error('At least one salary type (salary_per_duty or salary_per_trip) must be provided');
+      err.status = 400;
+      throw err;
+    }
+  }
+
   const updatedDriver = await Driver.findOneAndUpdate(
     { _id: id, owner_id },
     updateData,
@@ -106,15 +125,29 @@ const getDriverStats = async (owner_id) => {
   const activeDrivers = drivers.filter(d => d.status === 'active').length;
   const inactiveDrivers = drivers.filter(d => d.status === 'inactive').length;
   
-  const totalSalaryPerDuty = drivers.reduce((sum, driver) => sum + driver.salary_per_duty, 0);
-  const averageSalary = totalDrivers > 0 ? totalSalaryPerDuty / totalDrivers : 0;
+  const totalSalaryPerDuty = drivers.reduce((sum, driver) => sum + (driver.salary_per_duty || 0), 0);
+  const totalSalaryPerTrip = drivers.reduce((sum, driver) => sum + (driver.salary_per_trip || 0), 0);
+  const averageSalaryPerDuty = totalDrivers > 0 ? totalSalaryPerDuty / totalDrivers : 0;
+  const averageSalaryPerTrip = totalDrivers > 0 ? totalSalaryPerTrip / totalDrivers : 0;
+
+  // Count drivers by salary type
+  const driversWithDutySalary = drivers.filter(d => d.salary_per_duty > 0).length;
+  const driversWithTripSalary = drivers.filter(d => d.salary_per_trip > 0).length;
+  const driversWithBothSalary = drivers.filter(d => d.salary_per_duty > 0 && d.salary_per_trip > 0).length;
 
   return {
     total_drivers: totalDrivers,
     active_drivers: activeDrivers,
     inactive_drivers: inactiveDrivers,
     total_salary_per_duty: totalSalaryPerDuty,
-    average_salary_per_duty: averageSalary
+    total_salary_per_trip: totalSalaryPerTrip,
+    average_salary_per_duty: averageSalaryPerDuty,
+    average_salary_per_trip: averageSalaryPerTrip,
+    salary_type_breakdown: {
+      duty_only: driversWithDutySalary - driversWithBothSalary,
+      trip_only: driversWithTripSalary - driversWithBothSalary,
+      both: driversWithBothSalary
+    }
   };
 };
 
