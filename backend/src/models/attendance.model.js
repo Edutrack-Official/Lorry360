@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const ATTENDANCE_STATUS_ENUM = ['fullduty', 'halfduty', 'absent'];
+const ATTENDANCE_STATUS_ENUM = ['fullduty', 'halfduty','doubleduty', 'absent'];
 
 const attendanceSchema = new mongoose.Schema({
   owner_id: {

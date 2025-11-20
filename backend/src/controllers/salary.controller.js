@@ -18,7 +18,23 @@ const createSalary = async (salaryData) => {
     return existingSalary;
   }
 
+        // Generate salary number with monthly reset
+  const now = new Date();
+  const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
+    // Count salary records for current month
+  const count = await Salary.countDocuments({
+    createdAt: {
+      $gte: new Date(now.getFullYear(), now.getMonth(), 1),
+      $lt: new Date(now.getFullYear(), now.getMonth() + 1, 1)
+    }
+  });
+
+
+  const salary_number = `SL${yearMonth}${String(count + 1).padStart(4, '0')}`;
+
+
   const newSalary = new Salary({
+    salary_number,
     owner_id,
     driver_id
   });

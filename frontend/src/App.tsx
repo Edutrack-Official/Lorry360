@@ -65,6 +65,8 @@ import LorryTrips from './pages/Lorries/LorryTrips';
 import TripForm from './pages/Lorries/TripForm';
 import Drivers from './pages/Drivers/Drivers';
 import ManageDriverForm from './pages/Drivers/ManageDriverForm';
+import DriverDetails from './pages/Drivers/DriverDetails';
+import AddAttendance from './pages/Drivers/AddAttendance';
 
 
 function App() {
@@ -180,10 +182,13 @@ function App() {
                       <Route path="/crushers/create" element={<ManageCrusherForm />} />
                       <Route path="/crushers/edit/:id" element={<ManageCrusherForm />} />
 
-           {/* drivers Management */}
+                      {/* drivers Management */}
                       <Route path="/drivers" element={<Drivers />} />
                       <Route path="/drivers/create" element={<ManageDriverForm />} />
                       <Route path="/drivers/edit/:id" element={<ManageDriverForm />} />
+                      <Route path="/drivers/:driverId" element={<DriverDetails />} />
+
+                      <Route path="/attendance/create" element={<AddAttendance />} />
 
 
                       {/* Owners Management */}
