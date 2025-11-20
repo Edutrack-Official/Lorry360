@@ -40,6 +40,11 @@ const attendanceSchema = new mongoose.Schema({
     type: Number,
     min: 0,
     default: 0
+  },
+   no_of_trips: {
+    type: Number,
+    min: 0,
+    default: 0
   }
 }, {
   timestamps: true

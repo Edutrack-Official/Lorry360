@@ -7,7 +7,8 @@ const createAttendance = async (attendanceData) => {
     lorry_id,
     date,
     status,
-    salary_amount
+    salary_amount,
+    no_of_trips
   } = attendanceData;
 
   if (!owner_id || !driver_id || !lorry_id || !date || !status) {
@@ -22,7 +23,8 @@ const createAttendance = async (attendanceData) => {
     lorry_id,
     date,
     status,
-    salary_amount: salary_amount || 0
+    salary_amount: salary_amount || 0,
+    no_of_trips: no_of_trips || 0
   });
 
   await newAttendance.save();
@@ -134,6 +136,11 @@ const getAttendanceStats = async (owner_id, period = 'month') => {
     return sum + (record.salary_amount || 0);
   }, 0);
 
+  // Calculate total trips for tripduty records
+  const totalTrips = attendance.reduce((sum, record) => {
+    return sum + (record.no_of_trips || 0);
+  }, 0);
+
   return {
     period,
     total_records: totalRecords,
@@ -144,6 +151,7 @@ const getAttendanceStats = async (owner_id, period = 'month') => {
     custom_count: customCount,
     absent_count: absentCount,
     total_salary_cost: totalSalaryCost,
+    total_trips: totalTrips,
     attendance_by_status: {
       fullduty: fulldutyCount,
       halfduty: halfdutyCount,
@@ -183,6 +191,11 @@ const getAttendanceByDriver = async (owner_id, driver_id, start_date, end_date) 
     return sum + (record.salary_amount || 0);
   }, 0);
 
+  // Calculate total trips
+  const totalTrips = attendance.reduce((sum, record) => {
+    return sum + (record.no_of_trips || 0);
+  }, 0);
+
   return {
     driver_id,
     total_days: totalDays,
@@ -193,6 +206,7 @@ const getAttendanceByDriver = async (owner_id, driver_id, start_date, end_date) 
     custom_days: customDays,
     absent_days: absentDays,
     total_earnings: totalEarnings,
+    total_trips: totalTrips,
     attendance
   };
 };

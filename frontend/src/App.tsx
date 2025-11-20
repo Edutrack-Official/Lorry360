@@ -66,7 +66,8 @@ import TripForm from './pages/Lorries/TripForm';
 import Drivers from './pages/Drivers/Drivers';
 import ManageDriverForm from './pages/Drivers/ManageDriverForm';
 import DriverDetails from './pages/Drivers/DriverDetails';
-import AddAttendance from './pages/Drivers/AddAttendance';
+import AddAttendance from './pages/Drivers/ManageAttendanceForm';
+import ManageAttendanceForm from './pages/Drivers/ManageAttendanceForm';
 
 
 function App() {
@@ -188,7 +189,9 @@ function App() {
                       <Route path="/drivers/edit/:id" element={<ManageDriverForm />} />
                       <Route path="/drivers/:driverId" element={<DriverDetails />} />
 
-                      <Route path="/attendance/create" element={<AddAttendance />} />
+                      <Route path="/attendance/create" element={<ManageAttendanceForm />} />
+                      <Route path="/attendance/edit/:id" element={<ManageAttendanceForm />} />
+
 
 
                       {/* Owners Management */}
