@@ -208,6 +208,21 @@ const deactivateUser = async (id) => {
   return { message: 'User deactivated successfully', user };
 };
 
+const getAllOwners = async (filterParams = {}) => {
+  const { isActive } = filterParams;
+  const query = { role: 'owner' };
+  
+  if (isActive !== undefined) query.isActive = isActive === 'true';
+
+  const owners = await User.find(query)
+    .select('-passwordHash')
+    .sort({ createdAt: -1 });
+
+  return {
+    count: owners.length,
+    owners
+  };
+};
 module.exports = {
   createUser,
   getAllUsers,

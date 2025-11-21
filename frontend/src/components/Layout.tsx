@@ -57,6 +57,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: "Lorries", href: "/lorries", icon: Truck, roles: ["owner", "admin"] },
     { name: "Customers", href: "/customers", icon: Users, roles: ["owner", "admin"] },
    { name: "Drivers", href: "/drivers", icon: Users, roles: ["owner", "admin"] },
+        { name: "Collab", href: "/collaborations", icon: Users, roles: ["owner"] },
 
     { name: "Crushers", href: "/crushers", icon: Package, roles: ["owner", "admin"] },
     { name: "Trips", href: "/trips", icon: MapPin, roles: ["owner", "admin"] },
@@ -64,6 +65,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: "Reports", href: "/reports", icon: BarChart3, roles: ["owner", "admin"] },
     { name: "Settings", href: "/settings", icon: Settings, roles: ["owner", "admin"] },
     { name: "Owners", href: "/owners", icon: Users, roles: ["admin"] },
+
   ];
 
   const filteredNavigation = navigation.filter((item) =>

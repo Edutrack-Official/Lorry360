@@ -68,6 +68,9 @@ import ManageDriverForm from './pages/Drivers/ManageDriverForm';
 import DriverDetails from './pages/Drivers/DriverDetails';
 import AddAttendance from './pages/Drivers/ManageAttendanceForm';
 import ManageAttendanceForm from './pages/Drivers/ManageAttendanceForm';
+import CollaborationDashboard from './pages/Collaboration/CollaborationDashboard';
+import CollaboratorsTab from './pages/Collaboration/CollaboratorsTab';
+import CollaborationRequestsTab from './pages/Collaboration/CollaborationRequestsTab';
 
 
 function App() {
@@ -182,6 +185,11 @@ function App() {
                       <Route path="/crushers" element={<Crushers />} />
                       <Route path="/crushers/create" element={<ManageCrusherForm />} />
                       <Route path="/crushers/edit/:id" element={<ManageCrusherForm />} />
+
+              {/* Collaboration Management */}
+              <Route path="/collaborations" element={<CollaborationDashboard />} />
+              <Route path="/collaborations/transactions/:collaborationId" element={<CollaboratorsTab />} />
+              <Route path="/collaborations/requests" element={<CollaborationRequestsTab />} />
 
                       {/* drivers Management */}
                       <Route path="/drivers" element={<Drivers />} />

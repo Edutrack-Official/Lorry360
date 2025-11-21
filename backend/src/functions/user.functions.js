@@ -315,3 +315,45 @@ app.http('deactivateUser', {
     }
   },
 });
+
+
+/**
+ * ✅ Get All Owners
+ */
+app.http('getAllOwners', {
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  route: 'users/owners',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      // ✅ Verify token
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      // Only authenticated users can view owners
+      if (!user) {
+        return {
+          status: 401,
+          jsonBody: { success: false, error: 'Authentication required' },
+        };
+      }
+
+      const filterParams = request.query;
+      const result = await getAllOwners(filterParams);
+
+      // ✅ Include new access token if generated
+      const response = { status: 200, jsonBody: { success: true, data: result } };
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { success: false, error: err.message },
+      };
+    }
+  },
+});
