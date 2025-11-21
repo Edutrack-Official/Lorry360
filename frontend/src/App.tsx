@@ -71,6 +71,10 @@ import ManageAttendanceForm from './pages/Drivers/ManageAttendanceForm';
 import CollaborationDashboard from './pages/Collaboration/CollaborationDashboard';
 import CollaboratorsTab from './pages/Collaboration/CollaboratorsTab';
 import CollaborationRequestsTab from './pages/Collaboration/CollaborationRequestsTab';
+import ExpenseForm from './pages/Lorries/ExpenseForm';
+import LorryExpenses from './pages/Lorries/LorryExpenses';
+import LorryDetails from './pages/Lorries/LorryDetails';
+
 
 
 function App() {
@@ -172,9 +176,17 @@ function App() {
                       <Route path="/lorries/edit/:id" element={<ManageLorryForm />} />
 
 
-                        <Route path="/lorries/:lorryId/trips" element={<LorryTrips />} />
+                        {/* Lorry Details with nested routes */}
+                        <Route path="/lorries/:lorryId" element={<LorryDetails />}>
+                          <Route path="trips" element={<LorryTrips />} />
+                          <Route path="expenses" element={<LorryExpenses />} />
+                        </Route>
+
+                        {/* Standalone forms */}
                         <Route path="/trips/create" element={<TripForm />} />
                         <Route path="/trips/edit/:tripId" element={<TripForm />} />
+                        <Route path="/expenses/create" element={<ExpenseForm />} />
+                        <Route path="/expenses/edit/:expenseId" element={<ExpenseForm />} />
 
                       {/* Customers Management */}
                       <Route path="/customers" element={<Customers />} />
@@ -186,10 +198,10 @@ function App() {
                       <Route path="/crushers/create" element={<ManageCrusherForm />} />
                       <Route path="/crushers/edit/:id" element={<ManageCrusherForm />} />
 
-              {/* Collaboration Management */}
-              <Route path="/collaborations" element={<CollaborationDashboard />} />
-              <Route path="/collaborations/transactions/:collaborationId" element={<CollaboratorsTab />} />
-              <Route path="/collaborations/requests" element={<CollaborationRequestsTab />} />
+                      {/* Collaboration Management */}
+                      <Route path="/collaborations" element={<CollaborationDashboard />} />
+                      <Route path="/collaborations/transactions/:collaborationId" element={<CollaboratorsTab />} />
+                      <Route path="/collaborations/requests" element={<CollaborationRequestsTab />} />
 
                       {/* drivers Management */}
                       <Route path="/drivers" element={<Drivers />} />
