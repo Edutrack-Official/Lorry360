@@ -34,7 +34,6 @@ app.http('createCollabTransaction', {
       }
 
       const body = await request.json();
-      body.from_owner_id = user.userId; // Set creator from token
 
       const result = await createTransaction(body);
       

@@ -26,6 +26,10 @@ const createTransaction = async (transactionData) => {
     throw err;
   }
 
+  console.log('Collaboration found:', collaboration);
+  console.log('From Owner ID:', from_owner_id);
+    console.log('To Owner ID:', to_owner_id);   
+
   // Verify owners are part of collaboration
   const isValidOwner = (
     (collaboration.from_owner_id.toString() === from_owner_id && collaboration.to_owner_id.toString() === to_owner_id) ||
@@ -187,44 +191,46 @@ const getCollabSummary = async (collaboration_id, owner_id) => {
     .populate('to_owner_id', 'name');
 
   let summary = {
-    total_to_pay: 0,
-    total_to_receive: 0,
-    pending_payments: 0,
-    pending_receivables: 0,
-    total_paid: 0,
-    total_received: 0
+    payment_to_be_paid: 0,      // You need to pay others (approved payments)
+    payment_to_be_received: 0,  // Others need to pay you (approved payments)
+    net_balance: 0,
+    amount_to_be_approved: 0    // Pending approval transactions
   };
 
   transactions.forEach(transaction => {
     const isFromMe = transaction.from_owner_id._id.toString() === owner_id;
     const isToMe = transaction.to_owner_id._id.toString() === owner_id;
 
-    if (isFromMe && transaction.type === 'need_payment') {
-      // I need to pay partner
-      summary.total_to_pay += transaction.amount;
-      if (transaction.status === 'approved') summary.pending_payments += transaction.amount;
-      if (transaction.status === 'paid') summary.total_paid += transaction.amount;
-    } else if (isFromMe && transaction.type === 'give_payment') {
-      // Partner needs to pay me
-      summary.total_to_receive += transaction.amount;
-      if (transaction.status === 'approved') summary.pending_receivables += transaction.amount;
-      if (transaction.status === 'paid') summary.total_received += transaction.amount;
-    } else if (isToMe && transaction.type === 'need_payment') {
-      // Partner needs to pay me
-      summary.total_to_receive += transaction.amount;
-      if (transaction.status === 'approved') summary.pending_receivables += transaction.amount;
-      if (transaction.status === 'paid') summary.total_received += transaction.amount;
-    } else if (isToMe && transaction.type === 'give_payment') {
-      // I need to pay partner
-      summary.total_to_pay += transaction.amount;
-      if (transaction.status === 'approved') summary.pending_payments += transaction.amount;
-      if (transaction.status === 'paid') summary.total_paid += transaction.amount;
+    if (transaction.status === 'pending') {
+      // Count pending transactions for approval (only those where I'm the receiver)
+      if (isToMe) {
+        summary.amount_to_be_approved += transaction.amount;
+      }
     }
+
+    if (isFromMe) {
+      // Transactions where I requested payment (I'm the from_owner)
+      if (transaction.status === 'approved') {
+        // Partner approved my request - I should receive this amount
+        summary.payment_to_be_received += transaction.amount;
+      } else if (transaction.status === 'pending') {
+        // My request is pending partner approval - not counted in payment to be received yet
+      }
+    } else if (isToMe) {
+      // Transactions where partner requested payment from me (I'm the to_owner)
+      if (transaction.status === 'approved') {
+        // I approved partner's request - I should pay this amount
+        summary.payment_to_be_paid += transaction.amount;
+      } else if (transaction.status === 'pending') {
+        // Partner's request is pending my approval - not counted in payment to be paid yet
+      }
+    }
+
+    // Paid transactions are settled and don't affect the balance
   });
 
-  // Calculate net balance
-  summary.net_balance = (summary.total_received + summary.pending_receivables) - 
-                       (summary.total_paid + summary.pending_payments);
+  // Calculate net balance: (To be received) - (To be paid)
+  summary.net_balance = summary.payment_to_be_received - summary.payment_to_be_paid;
 
   return summary;
 };

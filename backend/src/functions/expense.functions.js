@@ -1,33 +1,30 @@
 const { app } = require('@azure/functions');
 const connectDB = require('../utils/db');
 const {
-  sendCollaborationRequest,
-  getCollaborationRequests,
-  getMySentRequests,
-  getActiveCollaborations,
-  acceptCollaboration,
-  rejectCollaboration,
-  cancelCollaborationRequest,
-  endCollaboration,
-  getCollaborationById,
-  searchOwners
-} = require('../controllers/collaboration.controller');
+  createExpense,
+  getAllExpenses,
+  getExpenseById,
+  updateExpense,
+  deleteExpense,
+  getExpenseStats,
+  getExpensesByLorry
+} = require('../controllers/expense.controller');
 const { verifyToken } = require('../middleware/auth.middleware');
 
 /**
- * ✅ Send Collaboration Request
+ * ✅ Create Expense
  */
-app.http('sendCollaborationRequest', {
+app.http('createExpense', {
   methods: ['POST'],
   authLevel: 'anonymous',
-  route: 'collaborations/send-request',
+  route: 'expenses/create',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can send collaboration requests
+      // Only owners can create expenses
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -36,9 +33,9 @@ app.http('sendCollaborationRequest', {
       }
 
       const body = await request.json();
-      body.from_owner_id = user.userId; // Set sender from token
+      body.owner_id = user.userId; // Set owner from token
 
-      const result = await sendCollaborationRequest(body);
+      const result = await createExpense(body);
       
       const response = { status: 201, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -56,19 +53,19 @@ app.http('sendCollaborationRequest', {
 });
 
 /**
- * ✅ Get Collaboration Requests (Received)
+ * ✅ Get All Expenses for Owner
  */
-app.http('getCollaborationRequests', {
+app.http('getAllExpenses', {
   methods: ['GET'],
   authLevel: 'anonymous',
-  route: 'collaborations/requests/received', // Changed to avoid conflict
+  route: 'expenses',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can view requests
+      // Only owners can view their expenses
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -76,7 +73,8 @@ app.http('getCollaborationRequests', {
         };
       }
 
-      const result = await getCollaborationRequests(user.userId);
+      const filterParams = request.query;
+      const result = await getAllExpenses(user.userId, filterParams);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -94,19 +92,19 @@ app.http('getCollaborationRequests', {
 });
 
 /**
- * ✅ Get My Sent Requests
+ * ✅ Get Expense by ID
  */
-app.http('getMySentRequests', {
+app.http('getExpenseById', {
   methods: ['GET'],
   authLevel: 'anonymous',
-  route: 'collaborations/requests/sent', // Changed to avoid conflict
+  route: 'expenses/{expenseId}',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can view sent requests
+      // Only owners can view their expenses
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -114,7 +112,8 @@ app.http('getMySentRequests', {
         };
       }
 
-      const result = await getMySentRequests(user.userId);
+      const { expenseId } = request.params;
+      const result = await getExpenseById(expenseId, user.userId);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -132,19 +131,19 @@ app.http('getMySentRequests', {
 });
 
 /**
- * ✅ Get Active Collaborations
+ * ✅ Update Expense
  */
-app.http('getActiveCollaborations', {
-  methods: ['GET'],
+app.http('updateExpense', {
+  methods: ['PUT'],
   authLevel: 'anonymous',
-  route: 'collaborations/active',
+  route: 'expenses/update/{expenseId}',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can view collaborations
+      // Only owners can update their expenses
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -152,7 +151,10 @@ app.http('getActiveCollaborations', {
         };
       }
 
-      const result = await getActiveCollaborations(user.userId);
+      const { expenseId } = request.params;
+      const body = await request.json();
+
+      const result = await updateExpense(expenseId, user.userId, body);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -170,97 +172,19 @@ app.http('getActiveCollaborations', {
 });
 
 /**
- * ✅ Accept Collaboration
+ * ✅ Delete Expense
  */
-app.http('acceptCollaboration', {
-  methods: ['PATCH'],
-  authLevel: 'anonymous',
-  route: 'collaborations/{collabId}/accept',
-  handler: async (request) => {
-    try {
-      await connectDB();
-      
-      const { decoded: user, newAccessToken } = await verifyToken(request);
-
-      // Only owners can accept collaborations
-      if (user.role !== 'owner') {
-        return {
-          status: 403,
-          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
-        };
-      }
-
-      const { collabId } = request.params;
-      const result = await acceptCollaboration(collabId, user.userId);
-
-      const response = { status: 200, jsonBody: { success: true, data: result } };
-      if (newAccessToken) {
-        response.jsonBody.newAccessToken = newAccessToken;
-      }
-      
-      return response;
-    } catch (err) {
-      return {
-        status: err.status || 500,
-        jsonBody: { success: false, error: err.message },
-      };
-    }
-  },
-});
-
-/**
- * ✅ Reject Collaboration
- */
-app.http('rejectCollaboration', {
-  methods: ['PATCH'],
-  authLevel: 'anonymous',
-  route: 'collaborations/{collabId}/reject',
-  handler: async (request) => {
-    try {
-      await connectDB();
-      
-      const { decoded: user, newAccessToken } = await verifyToken(request);
-
-      // Only owners can reject collaborations
-      if (user.role !== 'owner') {
-        return {
-          status: 403,
-          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
-        };
-      }
-
-      const { collabId } = request.params;
-      const result = await rejectCollaboration(collabId, user.userId);
-
-      const response = { status: 200, jsonBody: { success: true, data: result } };
-      if (newAccessToken) {
-        response.jsonBody.newAccessToken = newAccessToken;
-      }
-      
-      return response;
-    } catch (err) {
-      return {
-        status: err.status || 500,
-        jsonBody: { success: false, error: err.message },
-      };
-    }
-  },
-});
-
-/**
- * ✅ Cancel Collaboration Request
- */
-app.http('cancelCollaborationRequest', {
+app.http('deleteExpense', {
   methods: ['DELETE'],
   authLevel: 'anonymous',
-  route: 'collaborations/{collabId}/cancel',
+  route: 'expenses/delete/{expenseId}',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can cancel requests
+      // Only owners can delete their expenses
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -268,8 +192,8 @@ app.http('cancelCollaborationRequest', {
         };
       }
 
-      const { collabId } = request.params;
-      const result = await cancelCollaborationRequest(collabId, user.userId);
+      const { expenseId } = request.params;
+      const result = await deleteExpense(expenseId, user.userId);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -287,58 +211,19 @@ app.http('cancelCollaborationRequest', {
 });
 
 /**
- * ✅ End Collaboration
+ * ✅ Get Expense Statistics
  */
-app.http('endCollaboration', {
-  methods: ['DELETE'],
-  authLevel: 'anonymous',
-  route: 'collaborations/{collabId}/end',
-  handler: async (request) => {
-    try {
-      await connectDB();
-      
-      const { decoded: user, newAccessToken } = await verifyToken(request);
-
-      // Only owners can end collaborations
-      if (user.role !== 'owner') {
-        return {
-          status: 403,
-          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
-        };
-      }
-
-      const { collabId } = request.params;
-      const result = await endCollaboration(collabId, user.userId);
-
-      const response = { status: 200, jsonBody: { success: true, data: result } };
-      if (newAccessToken) {
-        response.jsonBody.newAccessToken = newAccessToken;
-      }
-      
-      return response;
-    } catch (err) {
-      return {
-        status: err.status || 500,
-        jsonBody: { success: false, error: err.message },
-      };
-    }
-  },
-});
-
-/**
- * ✅ Get Collaboration by ID
- */
-app.http('getCollaborationById', {
+app.http('getExpenseStats', {
   methods: ['GET'],
   authLevel: 'anonymous',
-  route: 'collaborations/{collabId}',
+  route: 'expenses/stats/{period}',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can view collaborations
+      // Only owners can view stats
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -346,8 +231,8 @@ app.http('getCollaborationById', {
         };
       }
 
-      const { collabId } = request.params;
-      const result = await getCollaborationById(collabId, user.userId);
+      const { period } = request.params;
+      const result = await getExpenseStats(user.userId, period);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -365,19 +250,19 @@ app.http('getCollaborationById', {
 });
 
 /**
- * ✅ Search Owners
+ * ✅ Get Expenses by Lorry
  */
-app.http('searchOwners', {
+app.http('getExpensesByLorry', {
   methods: ['GET'],
   authLevel: 'anonymous',
-  route: 'collaborations/owners/search',
+  route: 'expenses/lorry/{lorryId}',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can search other owners
+      // Only owners can view their expenses
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -385,16 +270,8 @@ app.http('searchOwners', {
         };
       }
 
-        const search = request.query.get("search");
-
-      if (!search) {
-        return {
-          status: 400,
-          jsonBody: { success: false, error: 'Search term is required' },
-        };
-      }
-
-      const result = await searchOwners(user.userId, search);
+      const { lorryId } = request.params;
+      const result = await getExpensesByLorry(user.userId, lorryId);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {

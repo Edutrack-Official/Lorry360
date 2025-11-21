@@ -5,11 +5,10 @@ import { API_BASE } from "../api/client";
 
 interface User {
   id: string;
+  userId: string; // Add this to match what you're using in collaboration code
   name: string;
   email: string;
-  role: 'superadmin' | 'contentadmin' | 'trainer' | 'student' | 'centeradmin';
-  center?: any;
-  studentDetails?: any;
+  role: 'owner' | 'admin'; // Fixed type
 }
 
 interface AuthContextType {
@@ -57,17 +56,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const storedUser = localStorage.getItem('user');
 
       if (storedToken && storedRefreshToken && storedUser) {
-        axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
-        axios.defaults.headers.common['x-refresh-token'] = storedRefreshToken;
+        try {
+          axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+          axios.defaults.headers.common['x-refresh-token'] = storedRefreshToken;
 
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
+          const userData = JSON.parse(storedUser);
+          // Ensure user object has both id and userId for compatibility
+          const normalizedUser = {
+            ...userData,
+            userId: userData.userId || userData.id, // Map id to userId if needed
+            id: userData.id || userData.userId
+          };
+          
+          setToken(storedToken);
+          setUser(normalizedUser);
+        } catch (error) {
+          console.error('Error parsing stored user data:', error);
+          logout();
+        }
       }
       setLoading(false);
     };
 
     initializeAuth();
-  }, []);
+  }, [logout]);
 
   // Axios response interceptor for 401 and token refresh
   useEffect(() => {
@@ -113,19 +125,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const response = await axios.post(`${API_BASE}/loginUser`, { email, password });
       const { accessToken, refreshToken, frontend_version, user } = response.data;
 
+      // Normalize user object to have both id and userId
+      const normalizedUser = {
+        ...user,
+        userId: user.userId || user.id,
+        id: user.id || user.userId
+      };
+
       setToken(accessToken);
-      setUser(user);
+      setUser(normalizedUser);
 
       localStorage.setItem('token', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
-      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('user', JSON.stringify(normalizedUser));
       localStorage.setItem('appVersion', frontend_version);
+
+      axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+      axios.defaults.headers.common['x-refresh-token'] = refreshToken;
 
       toast.success('Login successful!');
     } catch (error: any) {
       const message = error.response?.data?.message || 'Login failed';
       toast.error(message);
-      throw error; // keep throwing so caller can handle
+      throw error;
     }
   };
 
@@ -148,9 +170,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const response = await axios.post(`${API_BASE}/auth/register`, userData);
       const { token: newToken, user: newUser } = response.data;
 
+      // Normalize user object
+      const normalizedUser = {
+        ...newUser,
+        userId: newUser.userId || newUser.id,
+        id: newUser.id || newUser.userId
+      };
+
       setToken(newToken);
-      setUser(newUser);
+      setUser(normalizedUser);
       localStorage.setItem('token', newToken);
+      localStorage.setItem('user', JSON.stringify(normalizedUser));
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
 
       toast.success('Registration successful!');
