@@ -191,6 +191,7 @@ const getAttendanceByDriver = async (owner_id, driver_id, start_date, end_date) 
     return sum + (record.salary_amount || 0);
   }, 0);
 
+
   // Calculate total trips
   const totalTrips = attendance.reduce((sum, record) => {
     return sum + (record.no_of_trips || 0);
