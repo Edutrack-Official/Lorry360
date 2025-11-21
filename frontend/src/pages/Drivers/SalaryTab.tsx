@@ -367,14 +367,14 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
               </div>
             )}
 
-            <button
+            {/* <button
               onClick={fetchAttendanceData}
               disabled={loading}
               className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
             >
               <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
               Refresh
-            </button>
+            </button> */}
           </div>
         </div>
 
@@ -519,7 +519,7 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
             Make Payment
           </button>
 
-          <button
+          {/* <button
             onClick={() => {
               onUpdate();
               fetchAttendanceData();
@@ -529,7 +529,7 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Refresh
-          </button>
+          </button> */}
         </div>
       </div>
 
@@ -767,7 +767,7 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Reason
+                      Notes
                     </label>
                     <input
                       type="text"
@@ -775,7 +775,7 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
                       value={bonusForm.reason}
                       onChange={(e) => setBonusForm(prev => ({ ...prev, reason: e.target.value }))}
                       className="input input-bordered w-full"
-                      placeholder="Enter reason for bonus"
+                      placeholder="Optional notes"
                     />
                   </div>
                   <div className="flex gap-3 pt-4">
