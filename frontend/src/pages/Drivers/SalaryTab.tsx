@@ -1,6 +1,19 @@
-
 import React, { useState, useEffect } from "react";
-import { IndianRupee, Plus, TrendingUp, Clock, ArrowUp, ArrowDown, RefreshCw, AlertCircle, Calculator, Calendar, CreditCard } from "lucide-react";
+import { 
+  IndianRupee, 
+  Plus, 
+  TrendingUp, 
+  Clock, 
+  ArrowUp, 
+  ArrowDown, 
+  RefreshCw, 
+  AlertCircle, 
+  Calculator, 
+  Calendar, 
+  CreditCard,
+  Trash2,
+  X
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -63,6 +76,8 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
   const [showAdvanceModal, setShowAdvanceModal] = useState(false);
   const [showBonusModal, setShowBonusModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteItem, setDeleteItem] = useState<{ type: 'advance' | 'bonus' | 'payment'; id: string; description: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [attendanceData, setAttendanceData] = useState<Attendance[]>([]);
@@ -267,6 +282,48 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
     }
   };
 
+  // Soft Delete Functions
+  const handleDeleteClick = (type: 'advance' | 'bonus' | 'payment', id: string, description: string) => {
+    setDeleteItem({ type, id, description });
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteItem) return;
+
+    setLoading(true);
+    try {
+      let endpoint = '';
+      let successMessage = '';
+
+      switch (deleteItem.type) {
+        case 'advance':
+          endpoint = `/salary/advance/${driverId}/${deleteItem.id}`;
+          successMessage = 'Advance transaction deleted successfully';
+          break;
+        case 'bonus':
+          endpoint = `/salary/bonus/${driverId}/${deleteItem.id}`;
+          successMessage = 'Bonus deleted successfully';
+          break;
+        case 'payment':
+          endpoint = `/salary/payment/${driverId}/${deleteItem.id}`;
+          successMessage = 'Payment deleted successfully';
+          break;
+      }
+
+      await api.delete(endpoint);
+      toast.success(successMessage);
+      setShowDeleteModal(false);
+      setDeleteItem(null);
+      onUpdate();
+      fetchAttendanceData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || "Failed to delete transaction");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -366,15 +423,6 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
                 />
               </div>
             )}
-
-            {/* <button
-              onClick={fetchAttendanceData}
-              disabled={loading}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </button> */}
           </div>
         </div>
 
@@ -485,8 +533,6 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
             </div>
           </div>
         </div>
-
-    
       </div>
 
       {/* Salary Actions */}
@@ -518,18 +564,6 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
             <IndianRupee className="h-4 w-4" />
             Make Payment
           </button>
-
-          {/* <button
-            onClick={() => {
-              onUpdate();
-              fetchAttendanceData();
-            }}
-            disabled={loading}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </button> */}
         </div>
       </div>
 
@@ -563,7 +597,7 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
             {salary.advance_transactions.length > 0 ? (
               <div className="space-y-3">
                 {salary.advance_transactions.map((transaction) => (
-                  <div key={transaction._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  <div key={transaction._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group">
                     <div className="flex items-center gap-3">
                       <div className={`p-2 rounded-full ${
                         transaction.type === 'given' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
@@ -579,11 +613,20 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
                         </p>
                       </div>
                     </div>
-                    <p className={`font-semibold text-lg ${
-                      transaction.type === 'given' ? 'text-red-600' : 'text-green-600'
-                    }`}>
-                      {transaction.type === 'given' ? '+' : '-'}{formatCurrency(transaction.amount)}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className={`font-semibold text-lg ${
+                        transaction.type === 'given' ? 'text-red-600' : 'text-green-600'
+                      }`}>
+                        {transaction.type === 'given' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                      </p>
+                      <button
+                        onClick={() => handleDeleteClick('advance', transaction._id, `Advance ${transaction.type === 'given' ? 'Given' : 'Deducted'} of ${formatCurrency(transaction.amount)}`)}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                        title="Delete transaction"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -601,7 +644,7 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
             {salary.bonus.length > 0 ? (
               <div className="space-y-3">
                 {salary.bonus.map((bonus) => (
-                  <div key={bonus._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  <div key={bonus._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-green-100 text-green-600 rounded-full">
                         <TrendingUp className="h-4 w-4" />
@@ -613,9 +656,18 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
                         </p>
                       </div>
                     </div>
-                    <p className="font-semibold text-green-600 text-lg">
-                      +{formatCurrency(bonus.amount)}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-green-600 text-lg">
+                        +{formatCurrency(bonus.amount)}
+                      </p>
+                      <button
+                        onClick={() => handleDeleteClick('bonus', bonus._id, `Bonus of ${formatCurrency(bonus.amount)} for ${bonus.reason}`)}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                        title="Delete bonus"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -633,7 +685,7 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
             {salary.amountpaid.length > 0 ? (
               <div className="space-y-3">
                 {salary.amountpaid.map((payment) => (
-                  <div key={payment._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  <div key={payment._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-blue-100 text-blue-600 rounded-full">
                         <IndianRupee className="h-4 w-4" />
@@ -652,15 +704,24 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-blue-600 text-lg">
-                        +{formatCurrency(payment.amount)}
-                      </p>
-                      {payment.deducted_from_advance && (
-                        <p className="text-sm text-gray-500">
-                          Cash: {formatCurrency(payment.cash_paid)}
+                    <div className="flex items-center gap-2">
+                      <div className="text-right">
+                        <p className="font-semibold text-blue-600 text-lg">
+                          +{formatCurrency(payment.amount)}
                         </p>
-                      )}
+                        {payment.deducted_from_advance && (
+                          <p className="text-sm text-gray-500">
+                            Cash: {formatCurrency(payment.cash_paid)}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleDeleteClick('payment', payment._id, `Salary payment of ${formatCurrency(payment.amount)} via ${payment.payment_mode}`)}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                        title="Delete payment"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -907,6 +968,57 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
                     </button>
                   </div>
                 </form>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteModal && deleteItem && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-xl max-w-md w-full"
+            >
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-red-100 text-red-600 rounded-lg">
+                    <Trash2 className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">Delete Transaction</h3>
+                    <p className="text-sm text-gray-600">This action cannot be undone</p>
+                  </div>
+                </div>
+                
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                  <p className="text-red-800 font-medium">Are you sure you want to delete this transaction?</p>
+                  <p className="text-red-700 text-sm mt-1">{deleteItem.description}</p>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowDeleteModal(false);
+                      setDeleteItem(null);
+                    }}
+                    className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleConfirmDelete}
+                    disabled={loading}
+                    className="flex-1 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                  >
+                    {loading ? 'Deleting...' : 'Delete'}
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>

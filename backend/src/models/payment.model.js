@@ -63,6 +63,11 @@ const paymentSchema = new mongoose.Schema({
     },
     required: [true, 'Payment mode is required']
   },
+
+  isActive: {
+    type: Boolean,
+    default: true // Changed from false to true
+  },
   
   notes: {
     type: String,
@@ -79,8 +84,9 @@ paymentSchema.pre('save', async function(next) {
     const now = new Date();
     const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
     
-    // Count payments for current month
+    // Count ACTIVE payments for current month only
     const count = await mongoose.model('Payment').countDocuments({
+      isActive: true,
       createdAt: {
         $gte: new Date(now.getFullYear(), now.getMonth(), 1),
         $lt: new Date(now.getFullYear(), now.getMonth() + 1, 1)
