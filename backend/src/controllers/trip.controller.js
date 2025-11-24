@@ -74,13 +74,15 @@ const createTrip = async (tripData) => {
 };
 
 const getAllTrips = async (owner_id, filterParams = {}) => {
-  const { status, start_date, end_date, lorry_id, driver_id, customer_id } = filterParams;
+  const { status, start_date, end_date, lorry_id, driver_id, customer_id, crusher_id  } = filterParams;
   const query = { owner_id };
   
   if (status) query.status = status;
   if (lorry_id) query.lorry_id = lorry_id;
   if (driver_id) query.driver_id = driver_id;
   if (customer_id) query.customer_id = customer_id;
+  if (crusher_id) query.crusher_id = crusher_id; // Add this line
+
   
   // Date range filter
   if (start_date || end_date) {

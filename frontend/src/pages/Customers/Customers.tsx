@@ -66,7 +66,7 @@ const Customers = () => {
       customer.name.toLowerCase().includes(searchText.toLowerCase()) ||
       customer.phone.toLowerCase().includes(searchText.toLowerCase()) ||
       customer.address.toLowerCase().includes(searchText.toLowerCase()) ||
-      customer.site_addresses.some(site => 
+      customer.site_addresses.some(site =>
         site.toLowerCase().includes(searchText.toLowerCase())
       );
 
@@ -167,7 +167,8 @@ const Customers = () => {
           {filtered.map((customer) => (
             <div
               key={customer._id}
-              className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200"
+              className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
+              onClick={() => navigate(`/customers/${customer._id}/trips`)}
             >
               <div className="p-5">
                 {/* Header */}
@@ -177,11 +178,11 @@ const Customers = () => {
                       {customer.name}
                     </h3>
                     {/* <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Building className="h-3 w-3" />
-                      <span className="truncate">{customer.owner_id?.name || "-"}</span>
-                    </div> */}
+              <Building className="h-3 w-3" />
+              <span className="truncate">{customer.owner_id?.name || "-"}</span>
+            </div> */}
                   </div>
-                  
+
                   {/* Action Menu */}
                   <div className="relative">
                     <button
@@ -259,7 +260,6 @@ const Customers = () => {
                   </div>
                 )}
               </div>
-
             </div>
           ))}
         </div>
@@ -268,7 +268,7 @@ const Customers = () => {
           <User className="h-16 w-16 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No customers found</h3>
           <p className="text-gray-600 mb-6">
-            {searchText 
+            {searchText
               ? "Try adjusting your search terms"
               : "Get started by adding your first customer"
             }
@@ -315,14 +315,14 @@ const Customers = () => {
                     ✕
                   </button>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Contact Information */}
                   <div className="space-y-4">
                     <h4 className="font-semibold text-gray-900 border-b border-gray-200 pb-2">
                       Contact Information
                     </h4>
-                    
+
                     <div>
                       <label className="text-sm font-medium text-gray-700">Phone</label>
                       <div className="flex items-center gap-2 mt-1 text-gray-900">
@@ -330,7 +330,7 @@ const Customers = () => {
                         {selectedCustomer.phone}
                       </div>
                     </div>
-                    
+
                     {/* <div>
                       <label className="text-sm font-medium text-gray-700">Owner</label>
                       <div className="flex items-center gap-2 mt-1 text-gray-900">
@@ -345,7 +345,7 @@ const Customers = () => {
                     <h4 className="font-semibold text-gray-900 border-b border-gray-200 pb-2">
                       Address Information
                     </h4>
-                    
+
                     <div>
                       <label className="text-sm font-medium text-gray-700">Primary Address</label>
                       <div className="flex items-start gap-2 mt-1 text-gray-900">
@@ -391,7 +391,7 @@ const Customers = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
                   <button
                     onClick={() => navigate(`/customers/edit/${selectedCustomer._id}`)}

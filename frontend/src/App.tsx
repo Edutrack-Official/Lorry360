@@ -74,6 +74,15 @@ import CollaborationRequestsTab from './pages/Collaboration/CollaborationRequest
 import ExpenseForm from './pages/Lorries/ExpenseForm';
 import LorryExpenses from './pages/Lorries/LorryExpenses';
 import LorryDetails from './pages/Lorries/LorryDetails';
+import CustomerDetails from './pages/Customers/CustomerDetails';
+import CustomerExpenses from './pages/Customers/CustomerTrips';
+import CustomerTrips from './pages/Customers/CustomerTrips';
+import CustomerPayments from './pages/Customers/CustomerPayments';
+import CustomerTripForm from './pages/Customers/CustomerTripForm';
+import CustomerPaymentForm from './pages/Customers/CustomerPaymentForm';
+import CrusherTrips from './pages/Crushers/CrusherTrips';
+import CrusherPayments from './pages/Crushers/CrusherPayments';
+import CrusherDetails from './pages/Crushers/CrusherDetails';
 
 
 
@@ -176,27 +185,41 @@ function App() {
                       <Route path="/lorries/edit/:id" element={<ManageLorryForm />} />
 
 
-                        {/* Lorry Details with nested routes */}
-                        <Route path="/lorries/:lorryId" element={<LorryDetails />}>
-                          <Route path="trips" element={<LorryTrips />} />
-                          <Route path="expenses" element={<LorryExpenses />} />
-                        </Route>
+                      {/* Lorry Details with nested routes */}
+                      <Route path="/lorries/:lorryId" element={<LorryDetails />}>
+                        <Route path="trips" element={<LorryTrips />} />
+                        <Route path="expenses" element={<LorryExpenses />} />
+                      </Route>
 
-                        {/* Standalone forms */}
-                        <Route path="/trips/create" element={<TripForm />} />
-                        <Route path="/trips/edit/:tripId" element={<TripForm />} />
-                        <Route path="/expenses/create" element={<ExpenseForm />} />
-                        <Route path="/expenses/edit/:expenseId" element={<ExpenseForm />} />
+                      {/* Standalone forms */}
+                      <Route path="/trips/create" element={<TripForm />} />
+                      <Route path="/trips/edit/:tripId" element={<TripForm />} />
+                      <Route path="/expenses/create" element={<ExpenseForm />} />
+                      <Route path="/expenses/edit/:expenseId" element={<ExpenseForm />} />
 
                       {/* Customers Management */}
                       <Route path="/customers" element={<Customers />} />
                       <Route path="/customers/create" element={<ManageCustomerForm />} />
                       <Route path="/customers/edit/:id" element={<ManageCustomerForm />} />
+                      <Route path="customers/:customerId" element={<CustomerDetails />}>
+                        <Route index element={<Navigate to="trips" replace />} />
+                        <Route path="trips" element={<CustomerTrips />} />
+                        <Route path="payments" element={<CustomerPayments />} />
+                      </Route>
+                      <Route path="/customers/:customerId/trips/create" element={<CustomerTripForm />} />
+                      <Route path="/customers/:customerId/payments/create" element={<CustomerPaymentForm />} />
+
+
 
                       {/* Crushers Management */}
                       <Route path="/crushers" element={<Crushers />} />
                       <Route path="/crushers/create" element={<ManageCrusherForm />} />
                       <Route path="/crushers/edit/:id" element={<ManageCrusherForm />} />
+                      <Route path="crushers/:crusherId" element={<CrusherDetails />}>
+                        <Route index element={<Navigate to="trips" replace />} />
+                        <Route path="trips" element={<CrusherTrips />} />
+                        <Route path="payments" element={<CrusherPayments />} />
+                      </Route>
 
                       {/* Collaboration Management */}
                       <Route path="/collaborations" element={<CollaborationDashboard />} />
