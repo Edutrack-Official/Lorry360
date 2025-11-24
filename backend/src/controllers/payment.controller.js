@@ -34,7 +34,23 @@ const createPayment = async (paymentData) => {
     throw err;
   }
 
+   // Generate payment number (ADD THIS)
+  const now = new Date();
+  const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
+  
+  // Count payments for current month
+  const count = await Payment.countDocuments({
+    isActive: true,
+    createdAt: {
+      $gte: new Date(now.getFullYear(), now.getMonth(), 1),
+      $lt: new Date(now.getFullYear(), now.getMonth() + 1, 1)
+    }
+  });
+
+  const payment_number = `PMT${yearMonth}${String(count + 1).padStart(4, '0')}`;
+
   const newPayment = new Payment({
+    payment_number,
     owner_id,
     payment_type,
     crusher_id,

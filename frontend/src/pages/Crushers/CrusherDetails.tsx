@@ -1,0 +1,412 @@
+import React, { useEffect, useState } from "react";
+import { useParams, Link, useNavigate, Outlet } from "react-router-dom";
+import api from "../../api/client";
+import { Trash2 } from "lucide-react";
+import { useLocation } from "react-router-dom";
+import {
+  Building,
+  Package,
+  Receipt,
+  Calendar,
+  Edit,
+  MoreVertical,
+  ArrowLeft,
+  Plus,
+  BadgeAlert,
+  MapPin,
+  Phone,
+  Home
+} from "lucide-react";
+import toast from "react-hot-toast";
+import { motion, AnimatePresence } from "framer-motion";
+
+interface Crusher {
+  _id: string;
+  name: string;
+  materials: Array<{
+    material_name: string;
+    price_per_unit: number;
+  }>;
+  isActive: boolean;
+  owner_id: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Trip {
+  _id: string;
+  trip_number: string;
+  status: string;
+  trip_date: string;
+  profit: number;
+  crusher_amount: number;
+  material_name: string;
+  crusher_id: {
+    _id: string;
+    name: string;
+  };
+  customer_id?: {
+    _id: string;
+    name: string;
+  };
+  lorry_id?: {
+    _id: string;
+    registration_number: string;
+  };
+}
+
+interface Payment {
+  _id: string;
+  payment_number: string;
+  payment_type: string;
+  amount: number;
+  payment_date: string;
+  payment_mode: string;
+  notes?: string;
+  crusher_id: string;
+}
+
+const CrusherDetails = () => {
+  const { crusherId } = useParams<{ crusherId: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  const [crusher, setCrusher] = useState<Crusher | null>(null);
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showActionMenu, setShowActionMenu] = useState(false);
+
+  // Determine active tab from current route
+  const getActiveTab = () => {
+    const path = location.pathname;
+    if (path.includes('/payments')) return 'payments';
+    return 'trips'; // Default to trips tab
+  };
+
+  const activeTab = getActiveTab();
+
+  const fetchCrusher = async () => {
+    try {
+      const res = await api.get(`/crushers/${crusherId}`);
+      setCrusher(res.data.data);
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || "Failed to fetch crusher details");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchTrips = async () => {
+    try {
+      const res = await api.get(`/trips`);
+      const allTrips = res.data.data?.trips || [];
+      const crusherTrips = allTrips.filter((trip: Trip) => 
+        trip.crusher_id && trip.crusher_id._id === crusherId
+      );
+      setTrips(crusherTrips);
+    } catch (error: any) {
+      console.error("Failed to fetch trips:", error);
+      toast.error("Failed to fetch trips");
+    }
+  };
+
+  const fetchPayments = async () => {
+    try {
+      const res = await api.get(`/payments/crusher/${crusherId}`);
+      const paymentsData = res.data.data?.payments || [];
+      setPayments(paymentsData);
+    } catch (error: any) {
+      console.error("Failed to fetch payments:", error);
+      toast.error("Failed to fetch payments");
+    }
+  };
+
+  useEffect(() => {
+    if (crusherId) {
+      fetchCrusher();
+      fetchTrips();
+      fetchPayments();
+    }
+  }, [crusherId]);
+
+  const handleDeleteCrusher = async () => {
+    if (!window.confirm(`Are you sure you want to delete ${crusher?.name}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await api.delete(`/crushers/delete/${crusherId}`);
+      toast.success("Crusher deleted successfully");
+      navigate("/crushers");
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || "Failed to delete crusher");
+    }
+  };
+
+  const getStatusBadge = (isActive: boolean) => {
+    const config = isActive 
+      ? { color: "bg-green-100 text-green-800 border-green-200", icon: "✅", label: "Active" }
+      : { color: "bg-red-100 text-red-800 border-red-200", icon: "⏸️", label: "Inactive" };
+    
+    return (
+      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium border ${config.color}`}>
+        <span>{config.icon}</span>
+        {config.label}
+      </span>
+    );
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(amount);
+  };
+
+  const calculateStats = () => {
+    const totalTrips = trips.length;
+    const totalPayments = payments.length;
+    const totalCrusherAmount = trips.reduce((sum, trip) => sum + (trip.crusher_amount || 0), 0);
+    const totalPaymentAmount = payments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+    const pendingAmount = totalCrusherAmount - totalPaymentAmount;
+
+    return {
+      totalTrips,
+      totalPayments,
+      totalCrusherAmount,
+      totalPaymentAmount,
+      pendingAmount
+    };
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!crusher) {
+    return (
+      <div className="text-center py-12">
+        <Building className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Crusher not found</h3>
+        <button
+          onClick={() => navigate("/crushers")}
+          className="text-blue-600 hover:text-blue-700 font-medium"
+        >
+          Back to Crushers
+        </button>
+      </div>
+    );
+  }
+
+  const stats = calculateStats();
+
+  return (
+    <div className="space-y-6 fade-in p-6">
+      {/* Header */}
+      <div className="bg-white p-6 rounded-xl border shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <button
+              onClick={() => navigate("/crushers")}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors mt-1"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            
+            <div className="p-3 bg-orange-100 rounded-xl">
+              <Building className="h-8 w-8 text-orange-600" />
+            </div>
+            
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {crusher.name}
+                </h1>
+                {getStatusBadge(crusher.isActive)}
+              </div>
+              
+              <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-4 w-4" />
+                  Added {formatDate(crusher.createdAt)}
+                </div>
+                <div className="flex items-center gap-1">
+                  <BadgeAlert className="h-4 w-4" />
+                  Last updated {formatDate(crusher.updatedAt)}
+                </div>
+              </div>
+
+              {/* Materials */}
+              {crusher.materials && crusher.materials.length > 0 && (
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                    <Package className="h-4 w-4" />
+                    Materials ({crusher.materials.length})
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {crusher.materials.map((material, index) => (
+                      <span
+                        key={index}
+                        className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm"
+                      >
+                        {material.material_name} - {formatCurrency(material.price_per_unit)}/unit
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Link
+              to={`/crushers/edit/${crusherId}`}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm"
+            >
+              <Edit className="h-4 w-4" />
+              Edit Crusher
+            </Link>
+
+            <div className="relative">
+              <button
+                onClick={() => setShowActionMenu(!showActionMenu)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <MoreVertical className="h-5 w-5 text-gray-500" />
+              </button>
+
+              <AnimatePresence>
+                {showActionMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="absolute right-0 top-12 z-10 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1"
+                  >
+                    <Link
+                      to={`/trips/create?crusher=${crusherId}`}
+                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Trip
+                    </Link>
+                    <Link
+                      to={`/payments/create?crusher=${crusherId}`}
+                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add Payment
+                    </Link>
+                    <div className="border-t border-gray-200 my-1"></div>
+                    <button
+                      onClick={handleDeleteCrusher}
+                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete Crusher
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mt-6 pt-6 border-t border-gray-200">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-gray-900">{stats.totalTrips}</div>
+            <div className="text-sm text-gray-600">Total Trips</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-blue-600">
+              {formatCurrency(stats.totalCrusherAmount)}
+            </div>
+            <div className="text-sm text-gray-600">Total Amount</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-green-600">
+              {formatCurrency(stats.totalPaymentAmount)}
+            </div>
+            <div className="text-sm text-gray-600">Payments Made</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-purple-600">
+              {formatCurrency(stats.pendingAmount)}
+            </div>
+            <div className="text-sm text-gray-600">Pending Amount</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-orange-600">
+              {stats.totalPayments}
+            </div>
+            <div className="text-sm text-gray-600">Payment Count</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-indigo-600">
+              {crusher.materials?.length || 0}
+            </div>
+            <div className="text-sm text-gray-600">Materials</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="bg-white rounded-xl border shadow-sm">
+        <div className="border-b border-gray-200">
+          <nav className="flex space-x-8 px-6">
+            <Link
+              to={`/crushers/${crusherId}/trips`}
+              className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+                activeTab === 'trips'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Package className="h-4 w-4" />
+              Trips
+              <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+                {trips.length}
+              </span>
+            </Link>
+            <Link
+              to={`/crushers/${crusherId}/payments`}
+              className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+                activeTab === 'payments'
+                  ? 'border-green-500 text-green-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Receipt className="h-4 w-4" />
+              Payments
+              <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+                {payments.length}
+              </span>
+            </Link>
+          </nav>
+        </div>
+
+        <div className="p-6">
+          {/* This will render either CrusherTrips or CrusherPayments component */}
+          <Outlet />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default CrusherDetails;

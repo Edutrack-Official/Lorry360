@@ -96,7 +96,7 @@ const createTrip = async (tripData) => {
 };
 
 const getAllTrips = async (owner_id, filterParams = {}) => {
-  const { status, start_date, end_date, lorry_id, driver_id, customer_id, collab_owner_id, trip_type } = filterParams;
+  const { status, start_date, end_date, lorry_id, driver_id, customer_id, collab_owner_id, trip_type, crusher_id  } = filterParams;
   const query = { owner_id };
   
   if (status) query.status = status;

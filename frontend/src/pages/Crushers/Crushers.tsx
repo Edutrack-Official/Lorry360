@@ -256,6 +256,7 @@ const Crushers = () => {
               key={crusher._id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
+                onClick={() => navigate(`/crushers/${crusher._id}/trips`)}
               className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden group"
             >
               {/* Card Header */}
