@@ -34,8 +34,8 @@ const CollabTransactionForm = ({ collaboration, currentUser, onClose, onSuccess 
       // Always: Partner is from_owner (needs to pay), Current user is to_owner (will receive)
       await api.post('/collab-transactions/create', {
         collaboration_id: collaboration._id,
-        from_owner_id: partner._id,  // Partner needs to pay
-        to_owner_id: currentUser.userId,  // I will receive
+        from_owner_id:currentUser.userId ,  // Partner needs to pay
+        to_owner_id:partner._id,  // I will receive
         amount: parseFloat(formData.amount),
         type: 'need_payment',  // Partner needs to pay me
         note: formData.note,

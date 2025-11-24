@@ -3,6 +3,8 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import api from "../../api/client";
 import toast from "react-hot-toast";
 import BackButton from "../../components/BackButton";
+import { useAuth } from '../../contexts/AuthContext';
+
 import {
   Truck,
   User,
@@ -16,6 +18,7 @@ import {
   Package,
   Navigation,
   Hash,
+  Users
 } from "lucide-react";
 
 interface FormData {
@@ -28,6 +31,7 @@ interface FormData {
   no_of_unit_customer: number;
   crusher_amount: number;
   customer_id: string;
+  collab_owner_id: string;
   location: string;
   customer_amount: number;
   trip_date: string;
@@ -54,9 +58,32 @@ interface FormDataResponse {
       price_per_unit: number;
     }>;
   }>;
+  collaborative_owners: Array<{
+    _id: string;
+    name: string;
+    company_name: string;
+    phone: string;
+    email: string;
+  }>;
+}
+
+interface Collaboration {
+  _id: string;
+  from_owner_id: {
+    _id: string;
+    name: string;
+    company_name: string;
+  };
+  to_owner_id: {
+    _id: string;
+    name: string;
+    company_name: string;
+  };
+  status: string;
 }
 
 const TripForm = () => {
+    const { user } = useAuth();
   const { tripId } = useParams();
   const [searchParams] = useSearchParams();
   const lorryId = searchParams.get('lorry');
@@ -72,6 +99,7 @@ const TripForm = () => {
     no_of_unit_customer: 0,
     crusher_amount: 0,
     customer_id: "",
+    collab_owner_id: "",
     location: "",
     customer_amount: 0,
     trip_date: new Date().toISOString().split('T')[0],
@@ -82,9 +110,11 @@ const TripForm = () => {
   const [formOptions, setFormOptions] = useState<FormDataResponse>({
     customers: [],
     drivers: [],
-    crushers: []
+    crushers: [],
+    collaborative_owners: []
   });
 
+  const [collaborations, setCollaborations] = useState<Collaboration[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -92,6 +122,7 @@ const TripForm = () => {
   const [availableMaterials, setAvailableMaterials] = useState<Array<{material_name: string; price_per_unit: number}>>([]);
   const [lorryName, setLorryName] = useState("");
   const [isCustomMaterial, setIsCustomMaterial] = useState(false);
+  const [destinationType, setDestinationType] = useState<'customer' | 'collaborative'>('customer');
 
   const isEditMode = Boolean(tripId);
 
@@ -116,22 +147,33 @@ const TripForm = () => {
     }
   }, [lorryId]);
 
-  // Fetch form data
+  // Fetch form data and collaborations
   useEffect(() => {
     const fetchFormData = async () => {
       setLoading(true);
       try {
+        // Fetch form data
         const response = await api.get('/form-data/trips');
         const data = response.data.data;
         setFormOptions({
           customers: data.customers || [],
           drivers: data.drivers || [],
-          crushers: data.crushers || []
+          crushers: data.crushers || [],
+          collaborative_owners: data.collaborative_owners || []
         });
+
+        // Fetch active collaborations
+        const collabResponse = await api.get('/collaborations/active');
+        
+        setCollaborations(collabResponse.data.data?.collaborations || []);
 
         if (isEditMode) {
           const tripRes = await api.get(`/trips/${tripId}`);
           const tripData = tripRes.data.data;
+          
+          // Determine destination type
+          const isCollaborative = !!tripData.collab_owner_id;
+          setDestinationType(isCollaborative ? 'collaborative' : 'customer');
           
           setFormData({
             lorry_id: tripData.lorry_id?._id || lorryId || "",
@@ -143,6 +185,7 @@ const TripForm = () => {
             no_of_unit_customer: tripData.no_of_unit_customer || 0,
             crusher_amount: tripData.crusher_amount || 0,
             customer_id: tripData.customer_id?._id || "",
+            collab_owner_id: tripData.collab_owner_id?._id || "",
             location: tripData.location || "",
             customer_amount: tripData.customer_amount || 0,
             trip_date: tripData.trip_date ? new Date(tripData.trip_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
@@ -186,7 +229,7 @@ const TripForm = () => {
 
   // Handle customer selection
   useEffect(() => {
-    if (formData.customer_id) {
+    if (formData.customer_id && destinationType === 'customer') {
       const customer = formOptions.customers.find(c => c._id === formData.customer_id);
       if (customer) {
         const addresses = [
@@ -202,7 +245,7 @@ const TripForm = () => {
     } else {
       setSelectedCustomerAddresses([]);
     }
-  }, [formData.customer_id, formOptions.customers]);
+  }, [formData.customer_id, formOptions.customers, destinationType]);
 
   // Handle crusher selection
   useEffect(() => {
@@ -323,6 +366,32 @@ const TripForm = () => {
     setFormData(prev => ({ ...prev, location: address }));
   };
 
+  const handleDestinationTypeChange = (type: 'customer' | 'collaborative') => {
+    setDestinationType(type);
+    // Clear the other destination field
+    if (type === 'customer') {
+      setFormData(prev => ({ ...prev, collab_owner_id: "" }));
+    } else {
+      setFormData(prev => ({ ...prev, customer_id: "", location: "" }));
+      setSelectedCustomerAddresses([]);
+    }
+  };
+
+  // Get collaborative partners from active collaborations
+const getCollaborativePartners = (currentUserId: any) => {
+    const allPartners = collaborations.flatMap(collab => [
+        collab.from_owner_id,
+        collab.to_owner_id
+    ]).filter(partner => 
+        partner && partner._id && partner._id !== currentUserId
+    );
+
+    // Remove duplicates
+    return allPartners.filter((partner, index, self) => 
+        index === self.findIndex(p => p._id === partner._id)
+    );
+};
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -330,7 +399,17 @@ const TripForm = () => {
     if (!formData.driver_id) newErrors.driver_id = "Driver is required";
     if (!formData.crusher_id) newErrors.crusher_id = "Crusher is required";
     if (!formData.material_name) newErrors.material_name = "Material is required";
-    if (!formData.customer_id) newErrors.customer_id = "Customer is required";
+    
+    // Validate destination based on type
+    if (destinationType === 'customer') {
+
+     if (!formData.customer_id) 
+        newErrors.customer_id = "Customer is required";
+
+    } else {
+      if (!formData.collab_owner_id) newErrors.collab_owner_id = "Collaborative owner is required";
+    }
+    
     if (!formData.location) newErrors.location = "Location is required";
     if (formData.rate_per_unit <= 0) newErrors.rate_per_unit = "Rate per unit must be greater than 0";
     if (formData.no_of_unit_crusher <= 0) newErrors.no_of_unit_crusher = "Crusher units must be greater than 0";
@@ -388,6 +467,7 @@ const TripForm = () => {
   };
 
   const profit = formData.customer_amount - formData.crusher_amount;
+  const collaborativePartners = getCollaborativePartners(user?.id);
 
   if (loading) {
     return (
@@ -458,27 +538,84 @@ const TripForm = () => {
                 {errors.driver_id && <p className="mt-1 text-sm text-red-600">{errors.driver_id}</p>}
               </div>
 
-              {/* Customer Selection */}
+              {/* Destination Type Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <User className="h-4 w-4 inline mr-2" />
-                  Customer *
+                  Destination Type *
                 </label>
-                <select
-                  name="customer_id"
-                  value={formData.customer_id}
-                  onChange={handleTextChange}
-                  className="w-full input input-bordered"
-                >
-                  <option value="">Select Customer</option>
-                  {formOptions.customers.map((customer) => (
-                    <option key={customer._id} value={customer._id}>
-                      {customer.name}
-                    </option>
-                  ))}
-                </select>
-                {errors.customer_id && <p className="mt-1 text-sm text-red-600">{errors.customer_id}</p>}
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="destinationType"
+                      checked={destinationType === 'customer'}
+                      onChange={() => handleDestinationTypeChange('customer')}
+                      className="text-blue-600"
+                    />
+                    <User className="h-4 w-4" />
+                    Customer
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="destinationType"
+                      checked={destinationType === 'collaborative'}
+                      onChange={() => handleDestinationTypeChange('collaborative')}
+                      className="text-blue-600"
+                    />
+                    <Users className="h-4 w-4" />
+                    Collaborative Owner
+                  </label>
+                </div>
               </div>
+
+              {/* Customer Selection */}
+              {destinationType === 'customer' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <User className="h-4 w-4 inline mr-2" />
+                    Customer *
+                  </label>
+                  <select
+                    name="customer_id"
+                    value={formData.customer_id}
+                    onChange={handleTextChange}
+                    className="w-full input input-bordered"
+                  >
+                    <option value="">Select Customer</option>
+                    {formOptions.customers.map((customer) => (
+                      <option key={customer._id} value={customer._id}>
+                        {customer.name}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.customer_id && <p className="mt-1 text-sm text-red-600">{errors.customer_id}</p>}
+                </div>
+              )}
+
+              {/* Collaborative Owner Selection */}
+              {destinationType === 'collaborative' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Users className="h-4 w-4 inline mr-2" />
+                    Collaborative Owner *
+                  </label>
+                  <select
+                    name="collab_owner_id"
+                    value={formData.collab_owner_id}
+                    onChange={handleTextChange}
+                    className="w-full input input-bordered"
+                  >
+                    <option value="">Select Collaborative Owner</option>
+                    {collaborativePartners.map((partner) => (
+                      <option key={partner._id} value={partner._id}>
+                        {partner.name} ({partner.company_name})
+                      </option>
+                    ))}
+                  </select>
+                  {errors.collab_owner_id && <p className="mt-1 text-sm text-red-600">{errors.collab_owner_id}</p>}
+                </div>
+              )}
 
               {/* DC Number */}
               <div>
@@ -512,8 +649,8 @@ const TripForm = () => {
                 {errors.trip_date && <p className="mt-1 text-sm text-red-600">{errors.trip_date}</p>}
               </div>
 
-              {/* Customer Address Selection */}
-              {selectedCustomerAddresses.length > 0 && (
+              {/* Customer Address Selection - Only for Customer destination */}
+              {destinationType === 'customer' && selectedCustomerAddresses.length > 0 && (
                 <div className="lg:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     <MapPin className="h-4 w-4 inline mr-2" />
@@ -541,7 +678,7 @@ const TripForm = () => {
                 </div>
               )}
 
-              {/* Manual Location Input */}
+              {/* Location Input */}
               <div className="lg:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <MapPin className="h-4 w-4 inline mr-2" />
@@ -553,7 +690,11 @@ const TripForm = () => {
                   value={formData.location}
                   onChange={handleTextChange}
                   className="w-full input input-bordered"
-                  placeholder="Enter delivery address or select from above"
+                  placeholder={
+                    destinationType === 'customer' 
+                      ? "Enter delivery address or select from above"
+                      : "Enter delivery address for collaborative owner"
+                  }
                 />
                 {errors.location && <p className="mt-1 text-sm text-red-600">{errors.location}</p>}
               </div>

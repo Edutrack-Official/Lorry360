@@ -75,9 +75,11 @@ const tripSchema = new mongoose.Schema({
   customer_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Customer',
-    required: [true, 'Customer is required']
   },
-  
+  collab_owner_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  },
   location: {
     type: String,
     required: [true, 'Location is required'],

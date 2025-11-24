@@ -1,36 +1,32 @@
 const { app } = require('@azure/functions');
 const connectDB = require('../utils/db');
 const {
-  createTrip,
-  getAllTrips,
-  getCollaborativeTripsForMe,
-  getTripById,
-  getCollaborativeTripById,
-  updateTrip,
-  deleteTrip,
-  updateTripStatus,
-  getTripStats,
-  getTripsAnalytics,
-  getTripFormData
-} = require('../controllers/trip.controller');
+  calculateNetSettlement,
+  createSettlement,
+  getAllSettlements,
+  getSettlementById,
+  addPayment,
+  approvePayment,
+  rejectPayment,
+  getSettlementStats,
+  getCollaborativePartners
+} = require('../controllers/settlement.controller');
 const { verifyToken } = require('../middleware/auth.middleware');
-const { log } = require('console');
 
 /**
- * ✅ Create Trip (Customer or Collaborative)
+ * ✅ Calculate Net Settlement
  */
-app.http('createTrip', {
+app.http('calculateNetSettlement', {
   methods: ['POST'],
   authLevel: 'anonymous',
-  route: 'trips/create',
+  route: 'settlements/calculate',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
-      log('User decoded:', user);
 
-      // Only owners can create trips
+      // Only owners can calculate settlements
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -39,10 +35,58 @@ app.http('createTrip', {
       }
 
       const body = await request.json();
-      body.owner_id = user.userId; // Set owner from token
+      const { owner_B_id, from_date, to_date } = body;
 
-      const result = await createTrip(body);
+      if (!owner_B_id || !from_date || !to_date) {
+        return {
+          status: 400,
+          jsonBody: { success: false, error: 'owner_B_id, from_date and to_date are required' },
+        };
+      }
+
+      const result = await calculateNetSettlement(user.userId, owner_B_id, from_date, to_date);
+
+      const response = { status: 200, jsonBody: { success: true, data: result } };
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
       
+      return response;
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { success: false, error: err.message },
+      };
+    }
+  },
+});
+
+/**
+ * ✅ Create Settlement
+ */
+app.http('createSettlement', {
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  route: 'settlements/create',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      // Only owners can create settlements
+      if (user.role !== 'owner') {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
+        };
+      }
+
+      const body = await request.json();
+      body.owner_A_id = user.userId; // Set owner A from token
+
+      const result = await createSettlement(body);
+
       const response = { status: 201, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
         response.jsonBody.newAccessToken = newAccessToken;
@@ -59,19 +103,19 @@ app.http('createTrip', {
 });
 
 /**
- * ✅ Get All Trips for Owner (with filters)
+ * ✅ Get All Settlements
  */
-app.http('getAllTrips', {
+app.http('getAllSettlements', {
   methods: ['GET'],
   authLevel: 'anonymous',
-  route: 'trips',
+  route: 'settlements',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can view their trips
+      // Only owners can view settlements
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -80,7 +124,7 @@ app.http('getAllTrips', {
       }
 
       const filterParams = request.query;
-      const result = await getAllTrips(user.userId, filterParams);
+      const result = await getAllSettlements(user.userId, filterParams);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -98,19 +142,19 @@ app.http('getAllTrips', {
 });
 
 /**
- * ✅ Get Collaborative Trips For Me (trips delivered to me)
+ * ✅ Get Settlement by ID
  */
-app.http('getCollaborativeTripsForMe', {
+app.http('getSettlementById', {
   methods: ['GET'],
   authLevel: 'anonymous',
-  route: 'trips/collaborative/for-me',
+  route: 'settlements/{settlementId}',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can view collaborative trips
+      // Only owners can view settlements
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -118,8 +162,8 @@ app.http('getCollaborativeTripsForMe', {
         };
       }
 
-      const filterParams = request.query;
-      const result = await getCollaborativeTripsForMe(user.userId, filterParams);
+      const { settlementId } = request.params;
+      const result = await getSettlementById(settlementId, user.userId);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -137,19 +181,19 @@ app.http('getCollaborativeTripsForMe', {
 });
 
 /**
- * ✅ Get Trip by ID (My trips)
+ * ✅ Add Payment to Settlement
  */
-app.http('getTripById', {
-  methods: ['GET'],
+app.http('addPayment', {
+  methods: ['POST'],
   authLevel: 'anonymous',
-  route: 'trips/{tripId}',
+  route: 'settlements/{settlementId}/payments',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can view their trips
+      // Only owners can add payments
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -157,90 +201,12 @@ app.http('getTripById', {
         };
       }
 
-      const { tripId } = request.params;
-      const result = await getTripById(tripId, user.userId);
-
-      const response = { status: 200, jsonBody: { success: true, data: result } };
-      if (newAccessToken) {
-        response.jsonBody.newAccessToken = newAccessToken;
-      }
-      
-      return response;
-    } catch (err) {
-      return {
-        status: err.status || 500,
-        jsonBody: { success: false, error: err.message },
-      };
-    }
-  },
-});
-
-/**
- * ✅ Get Collaborative Trip by ID (trips delivered to me)
- */
-app.http('getCollaborativeTripById', {
-  methods: ['GET'],
-  authLevel: 'anonymous',
-  route: 'trips/collaborative/{tripId}',
-  handler: async (request) => {
-    try {
-      await connectDB();
-      
-      const { decoded: user, newAccessToken } = await verifyToken(request);
-
-      // Only owners can view collaborative trips
-      if (user.role !== 'owner') {
-        return {
-          status: 403,
-          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
-        };
-      }
-
-      const { tripId } = request.params;
-      const result = await getCollaborativeTripById(tripId, user.userId);
-
-      const response = { status: 200, jsonBody: { success: true, data: result } };
-      if (newAccessToken) {
-        response.jsonBody.newAccessToken = newAccessToken;
-      }
-      
-      return response;
-    } catch (err) {
-      return {
-        status: err.status || 500,
-        jsonBody: { success: false, error: err.message },
-      };
-    }
-  },
-});
-
-/**
- * ✅ Update Trip
- */
-app.http('updateTrip', {
-  methods: ['PUT'],
-  authLevel: 'anonymous',
-  route: 'trips/update/{tripId}',
-  handler: async (request) => {
-    try {
-      await connectDB();
-      
-      const { decoded: user, newAccessToken } = await verifyToken(request);
-
-      // Only owners can update their trips
-      if (user.role !== 'owner') {
-        return {
-          status: 403,
-          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
-        };
-      }
-
-      const { tripId } = request.params;
+      const { settlementId } = request.params;
       const body = await request.json();
 
-      const result = await updateTrip(tripId, user.userId, body);
+      const result = await addPayment(settlementId, body, user.userId);
 
-      const response = { status: 200, jsonBody: { success: true, data: result } };
+      const response = { status: 201, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
         response.jsonBody.newAccessToken = newAccessToken;
       }
@@ -256,58 +222,19 @@ app.http('updateTrip', {
 });
 
 /**
- * ✅ Delete Trip
+ * ✅ Approve Payment
  */
-app.http('deleteTrip', {
-  methods: ['DELETE'],
-  authLevel: 'anonymous',
-  route: 'trips/delete/{tripId}',
-  handler: async (request) => {
-    try {
-      await connectDB();
-      
-      const { decoded: user, newAccessToken } = await verifyToken(request);
-
-      // Only owners can delete their trips
-      if (user.role !== 'owner') {
-        return {
-          status: 403,
-          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
-        };
-      }
-
-      const { tripId } = request.params;
-      const result = await deleteTrip(tripId, user.userId);
-
-      const response = { status: 200, jsonBody: { success: true, data: result } };
-      if (newAccessToken) {
-        response.jsonBody.newAccessToken = newAccessToken;
-      }
-      
-      return response;
-    } catch (err) {
-      return {
-        status: err.status || 500,
-        jsonBody: { success: false, error: err.message },
-      };
-    }
-  },
-});
-
-/**
- * ✅ Update Trip Status
- */
-app.http('updateTripStatus', {
+app.http('approvePayment', {
   methods: ['PATCH'],
   authLevel: 'anonymous',
-  route: 'trips/status/{tripId}',
+  route: 'settlements/{settlementId}/payments/{paymentIndex}/approve',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can update trip status
+      // Only owners can approve payments
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -315,18 +242,10 @@ app.http('updateTripStatus', {
         };
       }
 
-      const { tripId } = request.params;
+      const { settlementId, paymentIndex } = request.params;
       const body = await request.json();
-      const { status } = body;
 
-      if (!status) {
-        return {
-          status: 400,
-          jsonBody: { success: false, error: 'Status is required' },
-        };
-      }
-
-      const result = await updateTripStatus(tripId, user.userId, status);
+      const result = await approvePayment(settlementId, parseInt(paymentIndex), user.userId, body.notes);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -344,12 +263,53 @@ app.http('updateTripStatus', {
 });
 
 /**
- * ✅ Get Trip Statistics
+ * ✅ Reject Payment
  */
-app.http('getTripStats', {
+app.http('rejectPayment', {
+  methods: ['PATCH'],
+  authLevel: 'anonymous',
+  route: 'settlements/{settlementId}/payments/{paymentIndex}/reject',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      // Only owners can reject payments
+      if (user.role !== 'owner') {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
+        };
+      }
+
+      const { settlementId, paymentIndex } = request.params;
+      const body = await request.json();
+
+      const result = await rejectPayment(settlementId, parseInt(paymentIndex), user.userId, body.rejection_reason);
+
+      const response = { status: 200, jsonBody: { success: true, data: result } };
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { success: false, error: err.message },
+      };
+    }
+  },
+});
+
+/**
+ * ✅ Get Settlement Statistics
+ */
+app.http('getSettlementStats', {
   methods: ['GET'],
   authLevel: 'anonymous',
-  route: 'trips/stats/{period}',
+  route: 'settlements/stats/{period}',
   handler: async (request) => {
     try {
       await connectDB();
@@ -365,7 +325,7 @@ app.http('getTripStats', {
       }
 
       const { period } = request.params;
-      const result = await getTripStats(user.userId, period);
+      const result = await getSettlementStats(user.userId, period);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -383,19 +343,19 @@ app.http('getTripStats', {
 });
 
 /**
- * ✅ Get Trips Analytics with Date Range
+ * ✅ Get Collaborative Partners
  */
-app.http('getTripsAnalytics', {
+app.http('getCollaborativePartners', {
   methods: ['GET'],
   authLevel: 'anonymous',
-  route: 'trips/analytics',
+  route: 'settlements/partners',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can view analytics
+      // Only owners can view partners
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -403,54 +363,7 @@ app.http('getTripsAnalytics', {
         };
       }
 
-      const { start_date, end_date } = request.query;
-      
-      if (!start_date || !end_date) {
-        return {
-          status: 400,
-          jsonBody: { success: false, error: 'start_date and end_date are required' },
-        };
-      }
-
-      const result = await getTripsAnalytics(user.userId, start_date, end_date);
-
-      const response = { status: 200, jsonBody: { success: true, data: result } };
-      if (newAccessToken) {
-        response.jsonBody.newAccessToken = newAccessToken;
-      }
-      
-      return response;
-    } catch (err) {
-      return {
-        status: err.status || 500,
-        jsonBody: { success: false, error: err.message },
-      };
-    }
-  },
-});
-
-/**
- * ✅ Get Trip Form Data (Customers, Drivers, Crushers, Lorries, Collaborative Owners)
- */
-app.http('getTripFormData', {
-  methods: ['GET'],
-  authLevel: 'anonymous',
-  route: 'form-data/trips',
-  handler: async (request) => {
-    try {
-      await connectDB();
-      
-      const { decoded: user, newAccessToken } = await verifyToken(request);
-
-      // Only owners can access form data
-      if (user.role !== 'owner') {
-        return {
-          status: 403,
-          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
-        };
-      }
-
-      const result = await getTripFormData(user.userId);
+      const result = await getCollaborativePartners(user.userId);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {

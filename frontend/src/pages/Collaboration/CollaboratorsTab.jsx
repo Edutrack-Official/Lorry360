@@ -357,7 +357,7 @@ const TransactionCard = ({ transaction, currentUserId, onApprove, onMarkAsPaid, 
   // - Can only delete before approving if raised by me
   // - Partner needs to approve payments raised by me
   const canApprove = isToMe && transaction.status === 'pending'; // Partner can approve payments raised by me
-  const canMarkAsPaid = isFromMe && transaction.status === 'approved'; // I can mark as paid after partner approves
+  const canMarkAsPaid = isToMe && transaction.status === 'approved'; // I can mark as paid after partner approves
   const canDelete = isFromMe && transaction.status === 'pending'; // I can delete only before approval
 
   const formatCurrency = (amount) => {

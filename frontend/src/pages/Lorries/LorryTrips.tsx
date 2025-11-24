@@ -13,7 +13,9 @@ import {
   MapPin,
   DollarSign,
   ArrowLeft,
-  Plus
+  Plus,
+  Users,
+  Building
 } from "lucide-react";
 import { FaPlus } from "react-icons/fa6";
 import toast from "react-hot-toast";
@@ -22,18 +24,23 @@ import { motion, AnimatePresence } from "framer-motion";
 interface Trip {
   _id: string;
   trip_number: string;
+  owner_id: string;
+  lorry_id: { _id: string; registration_number: string; nick_name?: string };
   driver_id: { _id: string; name: string; phone: string };
-  crusher_id: { _id: string; name: string };
-  customer_id: { _id: string; name: string; phone: string; address?: string };
-  material_id: string;
+  crusher_id: { _id: string; name: string; materials?: string[] };
+  customer_id?: { _id: string; name: string; phone: string; address?: string; site_addresses?: any[] };
+  collab_owner_id?: { _id: string; name: string; company_name?: string; phone: string; email?: string };
+  material_name: string;
   rate_per_unit: number;
-  no_of_unit: number;
+  no_of_unit_crusher: number;
+  no_of_unit_customer: number;
   crusher_amount: number;
   customer_amount: number;
   profit: number;
   location: string;
   trip_date: string;
   status: 'scheduled' | 'dispatched' | 'loaded' | 'in_transit' | 'delivered' | 'completed' | 'cancelled';
+  dc_number?: string;
   notes?: string;
   dispatched_at?: string;
   loaded_at?: string;
@@ -78,7 +85,7 @@ const LorryTrips = () => {
       const res = await api.get(`/trips`);
       // Filter trips by lorry_id on client side since backend might not support filtering by lorry_id
       const allTrips = res.data.data?.trips || [];
-      const lorryTrips = allTrips.filter((trip: any) => trip.lorry_id?._id === lorryId);
+      const lorryTrips = allTrips.filter((trip: Trip) => trip.lorry_id?._id === lorryId);
       setTrips(lorryTrips);
     } catch (error: any) {
       toast.error(error.response?.data?.error || "Failed to fetch trips");
@@ -125,8 +132,11 @@ const LorryTrips = () => {
     const matchesSearch =
       trip.trip_number.toLowerCase().includes(searchText.toLowerCase()) ||
       trip.driver_id.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      trip.customer_id.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      trip.location.toLowerCase().includes(searchText.toLowerCase());
+      (trip.customer_id?.name?.toLowerCase().includes(searchText.toLowerCase()) || 
+       trip.collab_owner_id?.name?.toLowerCase().includes(searchText.toLowerCase()) ||
+       trip.collab_owner_id?.company_name?.toLowerCase().includes(searchText.toLowerCase())) ||
+      trip.location.toLowerCase().includes(searchText.toLowerCase()) ||
+      trip.material_name.toLowerCase().includes(searchText.toLowerCase());
     
     const matchesStatus = filterStatus === "all" || trip.status === filterStatus;
     
@@ -154,6 +164,30 @@ const LorryTrips = () => {
         {config.label}
       </span>
     );
+  };
+
+  const getDestinationInfo = (trip: Trip) => {
+    if (trip.customer_id) {
+      return {
+        type: 'customer',
+        name: trip.customer_id.name,
+        icon: <User className="h-4 w-4 text-blue-500" />,
+        label: 'Customer'
+      };
+    } else if (trip.collab_owner_id) {
+      return {
+        type: 'collaborative',
+        name: trip.collab_owner_id.company_name || trip.collab_owner_id.name,
+        icon: <Building className="h-4 w-4 text-green-500" />,
+        label: 'Collaborative Owner'
+      };
+    }
+    return {
+      type: 'unknown',
+      name: 'Unknown',
+      icon: <Users className="h-4 w-4 text-gray-500" />,
+      label: 'Unknown'
+    };
   };
 
   const formatDate = (dateString: string) => {
@@ -266,7 +300,7 @@ const LorryTrips = () => {
             <Search className="absolute left-3 top-2.5 text-gray-400 h-4 w-4" />
             <input
               type="text"
-              placeholder="Search trips by number, driver, customer..."
+              placeholder="Search trips by number, driver, customer, material..."
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               className="input input-bordered pl-9 w-full"
@@ -307,156 +341,187 @@ const LorryTrips = () => {
         </div>
       ) : filteredTrips.length > 0 ? (
         <div className="space-y-4">
-          {filteredTrips.map((trip) => (
-            <div
-              key={trip._id}
-              className="bg-white rounded-xl border shadow-sm hover:shadow-md transition-all duration-200 p-6"
-            >
-              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-                {/* Trip Info */}
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Package className="h-4 w-4 text-gray-400" />
-                      <span className="font-semibold text-gray-900">{trip.trip_number}</span>
+          {filteredTrips.map((trip) => {
+            const destination = getDestinationInfo(trip);
+            
+            return (
+              <div
+                key={trip._id}
+                className="bg-white rounded-xl border shadow-sm hover:shadow-md transition-all duration-200 p-6"
+              >
+                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                  {/* Trip Info */}
+                  <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Package className="h-4 w-4 text-gray-400" />
+                        <span className="font-semibold text-gray-900">{trip.trip_number}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Calendar className="h-4 w-4" />
+                        {formatDate(trip.trip_date)}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Calendar className="h-4 w-4" />
-                      {formatDate(trip.trip_date)}
+
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <User className="h-4 w-4 text-gray-400" />
+                        <span className="font-medium">{trip.driver_id.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        {destination.icon}
+                        <span>{destination.name}</span>
+                        <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">
+                          {destination.label}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <MapPin className="h-4 w-4 text-gray-400" />
+                        <span className="font-medium">{trip.location}</span>
+                      </div>
+                      <div className="text-sm text-gray-600">{trip.material_name}</div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <DollarSign className="h-4 w-4 text-gray-400" />
+                        <span className="font-medium">{formatCurrency(trip.profit)}</span>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {trip.no_of_unit_customer} units × {formatCurrency(trip.rate_per_unit)}
+                      </div>
                     </div>
                   </div>
 
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <User className="h-4 w-4 text-gray-400" />
-                      <span className="font-medium">{trip.driver_id.name}</span>
+                  {/* Status and Actions */}
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <div className="mb-2">{getStatusBadge(trip.status)}</div>
+                      <div className="text-sm text-gray-500">
+                        Updated {formatDate(trip.updatedAt)}
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-600">{trip.customer_id.name}</div>
-                  </div>
 
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <MapPin className="h-4 w-4 text-gray-400" />
-                      <span className="font-medium">{trip.location}</span>
-                    </div>
-                    <div className="text-sm text-gray-600">{trip.material_id}</div>
-                  </div>
+                    {/* Action Menu */}
+                    <div className="relative">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowActionMenu(showActionMenu === trip._id ? null : trip._id);
+                        }}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      >
+                        <MoreVertical className="h-4 w-4 text-gray-500" />
+                      </button>
 
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <DollarSign className="h-4 w-4 text-gray-400" />
-                      <span className="font-medium">{formatCurrency(trip.profit)}</span>
+                      <AnimatePresence>
+                        {showActionMenu === trip._id && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="absolute right-0 top-10 z-10 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1"
+                          >
+                            <button
+                              onClick={() => navigate(`/trips/edit/${trip._id}`)}
+                              className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            >
+                              <Edit className="h-4 w-4" />
+                              Edit Trip
+                            </button>
+                            
+                            {/* Status Update Options */}
+                            {trip.status !== 'completed' && trip.status !== 'cancelled' && (
+                              <>
+                                <div className="border-t border-gray-200 my-1"></div>
+                                <div className="px-3 py-1 text-xs font-medium text-gray-500">
+                                  Update Status
+                                </div>
+                                {['dispatched', 'loaded', 'in_transit', 'delivered', 'completed', 'cancelled'].map((status) => (
+                                  <button
+                                    key={status}
+                                    onClick={() => handleStatusUpdate(trip._id, status)}
+                                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                  >
+                                    <span className="w-2 h-2 rounded-full bg-gray-400"></span>
+                                    {status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
+                                  </button>
+                                ))}
+                              </>
+                            )}
+                            
+                            <div className="border-t border-gray-200 my-1"></div>
+                            <button
+                              onClick={() => handleDeleteTrip(trip._id, trip.trip_number)}
+                              className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Delete Trip
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
+                  </div>
+                </div>
+
+                {/* Additional Details */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-200 text-sm">
+                  <div>
+                    <span className="text-gray-600">Crusher:</span>
+                    <div className="font-medium">{trip.crusher_id.name}</div>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Customer Amount:</span>
+                    <div className="font-medium text-green-600">{formatCurrency(trip.customer_amount)}</div>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Crusher Amount:</span>
+                    <div className="font-medium text-orange-600">{formatCurrency(trip.crusher_amount)}</div>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Profit:</span>
+                    <div className={`font-medium ${trip.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatCurrency(trip.profit)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Units Information */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3 text-sm">
+                  <div>
+                    <span className="text-gray-600">Crusher Units:</span>
+                    <div className="font-medium">{trip.no_of_unit_crusher}</div>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Customer Units:</span>
+                    <div className="font-medium">{trip.no_of_unit_customer}</div>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Rate per Unit:</span>
+                    <div className="font-medium">{formatCurrency(trip.rate_per_unit)}</div>
+                  </div>
+                  {trip.dc_number && (
+                    <div>
+                      <span className="text-gray-600">DC Number:</span>
+                      <div className="font-medium">{trip.dc_number}</div>
+                    </div>
+                  )}
+                </div>
+
+                {trip.notes && (
+                  <div className="mt-3 p-3 bg-gray-50 rounded-lg">
                     <div className="text-sm text-gray-600">
-                      {trip.no_of_unit} units × {formatCurrency(trip.rate_per_unit)}
+                      <strong>Notes:</strong> {trip.notes}
                     </div>
                   </div>
-                </div>
-
-                {/* Status and Actions */}
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <div className="mb-2">{getStatusBadge(trip.status)}</div>
-                    <div className="text-sm text-gray-500">
-                      Updated {formatDate(trip.updatedAt)}
-                    </div>
-                  </div>
-
-                  {/* Action Menu */}
-                  <div className="relative">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowActionMenu(showActionMenu === trip._id ? null : trip._id);
-                      }}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                      <MoreVertical className="h-4 w-4 text-gray-500" />
-                    </button>
-
-                    <AnimatePresence>
-                      {showActionMenu === trip._id && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.95 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          className="absolute right-0 top-10 z-10 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1"
-                        >
-                          <button
-                            onClick={() =>
-                                 navigate(`/trips/edit/${trip._id}`)}
-                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                          >
-                            <Edit className="h-4 w-4" />
-                            Edit Trip
-                          </button>
-                          
-                          {/* Status Update Options */}
-                          {trip.status !== 'completed' && trip.status !== 'cancelled' && (
-                            <>
-                              <div className="border-t border-gray-200 my-1"></div>
-                              <div className="px-3 py-1 text-xs font-medium text-gray-500">
-                                Update Status
-                              </div>
-                              {['dispatched', 'loaded', 'in_transit', 'delivered', 'completed', 'cancelled'].map((status) => (
-                                <button
-                                  key={status}
-                                  onClick={() => handleStatusUpdate(trip._id, status)}
-                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                                >
-                                  <span className="w-2 h-2 rounded-full bg-gray-400"></span>
-                                  {status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
-                                </button>
-                              ))}
-                            </>
-                          )}
-                          
-                          <div className="border-t border-gray-200 my-1"></div>
-                          <button
-                            onClick={() => handleDeleteTrip(trip._id, trip.trip_number)}
-                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Delete Trip
-                          </button>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </div>
+                )}
               </div>
-
-              {/* Additional Details */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-200 text-sm">
-                <div>
-                  <span className="text-gray-600">Crusher:</span>
-                  <div className="font-medium">{trip.crusher_id.name}</div>
-                </div>
-                <div>
-                  <span className="text-gray-600">Customer Amount:</span>
-                  <div className="font-medium text-green-600">{formatCurrency(trip.customer_amount)}</div>
-                </div>
-                <div>
-                  <span className="text-gray-600">Crusher Amount:</span>
-                  <div className="font-medium text-orange-600">{formatCurrency(trip.crusher_amount)}</div>
-                </div>
-                <div>
-                  <span className="text-gray-600">Profit:</span>
-                  <div className={`font-medium ${trip.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {formatCurrency(trip.profit)}
-                  </div>
-                </div>
-              </div>
-
-              {trip.notes && (
-                <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="text-sm text-gray-600">
-                    <strong>Notes:</strong> {trip.notes}
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="bg-white rounded-xl border shadow-sm p-12 text-center">

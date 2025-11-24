@@ -74,6 +74,7 @@ import CollaborationRequestsTab from './pages/Collaboration/CollaborationRequest
 import ExpenseForm from './pages/Lorries/ExpenseForm';
 import LorryExpenses from './pages/Lorries/LorryExpenses';
 import LorryDetails from './pages/Lorries/LorryDetails';
+import SettlementTab from './Settlement/SettlementTab';
 
 
 
@@ -202,6 +203,9 @@ function App() {
                       <Route path="/collaborations" element={<CollaborationDashboard />} />
                       <Route path="/collaborations/transactions/:collaborationId" element={<CollaboratorsTab />} />
                       <Route path="/collaborations/requests" element={<CollaborationRequestsTab />} />
+
+                      
+                      <Route path="/settlement" element={<SettlementTab />} />
 
                       {/* drivers Management */}
                       <Route path="/drivers" element={<Drivers />} />
