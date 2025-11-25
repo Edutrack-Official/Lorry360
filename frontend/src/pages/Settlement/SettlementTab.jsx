@@ -91,8 +91,8 @@
 // // Settlement Card Component
 // const SettlementCard = ({ settlement, user, onViewDetails, onAddPayment }) => {
 //   const getUserRoleInSettlement = (settlement) => {
-//     if (settlement.owner_A_id._id === user.userId) return 'owner_A';
-//     if (settlement.owner_B_id._id === user.userId) return 'owner_B';
+//     if (settlement.owner_A_id._id === user.id) return 'owner_A';
+//     if (settlement.owner_B_id._id === user.id) return 'owner_B';
 //     return null;
 //   };
 
@@ -107,10 +107,22 @@
 //     return partner.name;
 //   };
 
+//   const getPartnerCompany = (settlement) => {
+//     const userRole = getUserRoleInSettlement(settlement);
+//     const partner = userRole === 'owner_A' ? settlement.owner_B_id : settlement.owner_A_id;
+//     return partner.company_name;
+//   };
+
 //   const statusConfig = getStatusConfig(settlement.status);
 //   const userRole = getUserRoleInSettlement(settlement);
 //   const isPayable = isUserPayable(settlement);
 //   const partnerName = getPartnerName(settlement);
+//   const partnerCompany = getPartnerCompany(settlement);
+
+//   // Calculate payment summary
+//   const approvedPayments = settlement.payments?.filter(p => p.status === 'approved') || [];
+//   const totalApproved = approvedPayments.reduce((sum, payment) => sum + payment.amount, 0);
+//   const remainingDue = settlement.net_amount - totalApproved;
 
 //   return (
 //     <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all">
@@ -127,7 +139,8 @@
 //           </div>
 //           <div>
 //             <h4 className="font-semibold text-gray-900">{partnerName}</h4>
-//             <p className="text-sm text-gray-600">
+//             <p className="text-sm text-gray-600">{partnerCompany}</p>
+//             <p className="text-xs text-gray-500">
 //               {formatDate(settlement.from_date)} - {formatDate(settlement.to_date)}
 //             </p>
 //           </div>
@@ -146,22 +159,22 @@
 //           <p className="font-semibold text-gray-900">{formatCurrency(settlement.net_amount)}</p>
 //         </div>
 //         <div>
-//           <p className="text-sm text-gray-600">Paid</p>
-//           <p className="font-semibold text-green-600">{formatCurrency(settlement.paid_amount)}</p>
+//           <p className="text-sm text-gray-600">Approved</p>
+//           <p className="font-semibold text-green-600">{formatCurrency(totalApproved)}</p>
 //         </div>
 //         <div>
 //           <p className="text-sm text-gray-600">Due</p>
-//           <p className="font-semibold text-orange-600">{formatCurrency(settlement.due_amount)}</p>
+//           <p className="font-semibold text-orange-600">{formatCurrency(remainingDue)}</p>
 //         </div>
 //         <div>
 //           <p className="text-sm text-gray-600">Trips</p>
-//           <p className="font-semibold text-gray-900">{settlement.trip_ids.length}</p>
+//           <p className="font-semibold text-gray-900">{settlement.trip_ids?.length || 0}</p>
 //         </div>
 //       </div>
 
 //       <div className="flex items-center justify-between">
 //         <div className="text-sm text-gray-600">
-//           {isPayable ? `You owe ${formatCurrency(settlement.due_amount)}` : `Owes you ${formatCurrency(settlement.due_amount)}`}
+//           {isPayable ? `You owe ${formatCurrency(remainingDue)}` : `Owes you ${formatCurrency(remainingDue)}`}
 //         </div>
 //         <div className="flex items-center gap-2">
 //           <button
@@ -170,7 +183,7 @@
 //           >
 //             View Details
 //           </button>
-//           {isPayable && settlement.due_amount > 0 && (
+//           {isPayable && remainingDue > 0 && (
 //             <button
 //               onClick={onAddPayment}
 //               className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -222,6 +235,7 @@
 //           <p className="text-xs text-gray-400">
 //             {formatDate(payment.payment_date)}
 //             {payment.approved_at && ` • Approved on ${formatDate(payment.approved_at)}`}
+//             {payment.rejection_reason && ` • Rejected: ${payment.rejection_reason}`}
 //           </p>
 //         </div>
 //       </div>
@@ -274,8 +288,10 @@
 // // Settlement Details Component
 // const SettlementDetails = ({ settlementData, user, onApprovePayment, onRejectPayment, onAddPayment }) => {
 //   const getUserRoleInSettlement = (settlement) => {
-//     if (settlement.owner_A_id._id === user.userId) return 'owner_A';
-//     if (settlement.owner_B_id._id === user.userId) return 'owner_B';
+// console.log("settlement", settlement);
+
+//     if (settlement.owner_A_id._id === user.id) return 'owner_A';
+//     if (settlement.owner_B_id._id === user.id) return 'owner_B';
 //     return null;
 //   };
 
@@ -290,11 +306,31 @@
 //     return partner.name;
 //   };
 
-//   const { settlement, payment_summary } = settlementData;
+//   const getPartnerCompany = (settlement) => {
+//     const userRole = getUserRoleInSettlement(settlement);
+//     const partner = userRole === 'owner_A' ? settlement.owner_B_id : settlement.owner_A_id;
+//     return partner.company_name;
+//   };
+
+//   const settlement = settlementData;
 //   const statusConfig = getStatusConfig(settlement.status);
 //   const userRole = getUserRoleInSettlement(settlement);
 //   const isPayable = isUserPayable(settlement);
 //   const partnerName = getPartnerName(settlement);
+//   const partnerCompany = getPartnerCompany(settlement);
+
+//   // Calculate payment summary
+//   const approvedPayments = settlement.payments?.filter(p => p.status === 'approved') || [];
+//   const pendingPayments = settlement.payments?.filter(p => p.status === 'pending') || [];
+//   const totalApproved = approvedPayments.reduce((sum, payment) => sum + payment.amount, 0);
+//   const totalPending = pendingPayments.reduce((sum, payment) => sum + payment.amount, 0);
+//   const remainingDue = settlement.net_amount - totalApproved;
+
+//   // Calculate trip amounts by direction
+//   const aToBTrips = settlement.trip_breakdown?.filter(trip => trip.direction === 'a_to_b') || [];
+//   const bToATrips = settlement.trip_breakdown?.filter(trip => trip.direction === 'b_to_a') || [];
+//   const aToBAmount = aToBTrips.reduce((sum, trip) => sum + trip.amount, 0);
+//   const bToAAmount = bToATrips.reduce((sum, trip) => sum + trip.amount, 0);
 
 //   return (
 //     <div className="space-y-6">
@@ -303,7 +339,8 @@
 //         <div className="flex items-center justify-between mb-4">
 //           <div>
 //             <h4 className="text-xl font-bold text-gray-900">Settlement with {partnerName}</h4>
-//             <p className="text-gray-600">
+//             <p className="text-gray-600">{partnerCompany}</p>
+//             <p className="text-sm text-gray-500">
 //               {formatDate(settlement.from_date)} - {formatDate(settlement.to_date)}
 //             </p>
 //           </div>
@@ -321,20 +358,20 @@
 //           </div>
 //           <div className="text-center p-4 bg-green-50 rounded-lg">
 //             <p className="text-sm text-green-600">Approved Payments</p>
-//             <p className="text-2xl font-bold text-green-600">{formatCurrency(payment_summary.total_approved)}</p>
+//             <p className="text-2xl font-bold text-green-600">{formatCurrency(totalApproved)}</p>
 //           </div>
 //           <div className="text-center p-4 bg-yellow-50 rounded-lg">
 //             <p className="text-sm text-yellow-600">Pending Payments</p>
-//             <p className="text-2xl font-bold text-yellow-600">{formatCurrency(payment_summary.total_pending)}</p>
+//             <p className="text-2xl font-bold text-yellow-600">{formatCurrency(totalPending)}</p>
 //           </div>
 //           <div className="text-center p-4 bg-orange-50 rounded-lg">
 //             <p className="text-sm text-orange-600">Remaining Due</p>
-//             <p className="text-2xl font-bold text-orange-600">{formatCurrency(payment_summary.remaining_due)}</p>
+//             <p className="text-2xl font-bold text-orange-600">{formatCurrency(remainingDue)}</p>
 //           </div>
 //         </div>
 
 //         {/* Action Buttons */}
-//         {isPayable && settlement.due_amount > 0 && (
+//         {isPayable && remainingDue > 0 && (
 //           <div className="mt-4 flex justify-end">
 //             <button
 //               onClick={onAddPayment}
@@ -347,11 +384,41 @@
 //         )}
 //       </div>
 
+//       {/* Amount Breakdown */}
+//       <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+//         <h5 className="text-lg font-semibold text-gray-900 mb-4">Amount Breakdown</h5>
+//         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+//           <div className="space-y-3">
+//             <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+//               <span className="font-medium text-blue-900">A → B Trips</span>
+//               <span className="font-semibold text-blue-900">{formatCurrency(aToBAmount)}</span>
+//             </div>
+//             <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+//               <span className="font-medium text-green-900">B → A Trips</span>
+//               <span className="font-semibold text-green-900">{formatCurrency(bToAAmount)}</span>
+//             </div>
+//           </div>
+//           <div className="space-y-3">
+//             <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
+//               <span className="font-medium text-orange-900">Net Amount</span>
+//               <span className="font-semibold text-orange-900">{formatCurrency(settlement.net_amount)}</span>
+//             </div>
+//             <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+//               <span className="font-medium text-purple-900">Payable By</span>
+//               <span className="font-semibold text-purple-900">
+//                 {settlement.amount_breakdown.net_payable_by === 'owner_A' ? 'Owner A' : 
+//                  settlement.amount_breakdown.net_payable_by === 'owner_B' ? 'Owner B' : 'None'}
+//               </span>
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+
 //       {/* Trip Breakdown */}
 //       <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-//         <h5 className="text-lg font-semibold text-gray-900 mb-4">Trip Breakdown</h5>
+//         <h5 className="text-lg font-semibold text-gray-900 mb-4">Trip Breakdown ({settlement.trip_breakdown?.length || 0} trips)</h5>
 //         <div className="space-y-3">
-//           {settlement.trip_breakdown.map((trip, index) => (
+//           {settlement.trip_breakdown?.map((trip, index) => (
 //             <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
 //               <div className="flex items-center gap-3">
 //                 <div className={`p-2 rounded ${
@@ -377,8 +444,13 @@
 
 //       {/* Payment History */}
 //       <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-//         <h5 className="text-lg font-semibold text-gray-900 mb-4">Payment History</h5>
-//         {settlement.payments.length > 0 ? (
+//         <div className="flex items-center justify-between mb-4">
+//           <h5 className="text-lg font-semibold text-gray-900">Payment History</h5>
+//           <span className="text-sm text-gray-500">
+//             {settlement.payments?.length || 0} payments
+//           </span>
+//         </div>
+//         {settlement.payments && settlement.payments.length > 0 ? (
 //           <div className="space-y-3">
 //             {settlement.payments.map((payment, index) => (
 //               <PaymentCard
@@ -414,7 +486,7 @@
 //   const [showPaymentForm, setShowPaymentForm] = useState(false);
 //   const [selectedPartner, setSelectedPartner] = useState(null);
 //   const [selectedSettlement, setSelectedSettlement] = useState(null);
-//   const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'settlements', 'partners'
+//   const [activeTab, setActiveTab] = useState('overview');
 
 //   useEffect(() => {
 //     if (user) {
@@ -433,6 +505,7 @@
 //         api.get('/settlements/stats/month')
 //       ]);
 
+//       // Handle API response structure
 //       setCollaborativePartners(partnersRes.data.data || []);
 //       setSettlements(settlementsRes.data.data?.settlements || []);
 //       setSettlementStats(statsRes.data.data || {});
@@ -463,6 +536,7 @@
 //     try {
 //       await api.post('/settlements/create', settlementData);
 //       toast.success('Settlement created successfully');
+//       setShowCreateForm(false);
 //       fetchData();
 //     } catch (error) {
 //       toast.error(error.response?.data?.error || 'Failed to create settlement');
@@ -474,6 +548,7 @@
 //     try {
 //       await api.post(`/settlements/${settlementId}/payments`, paymentData);
 //       toast.success('Payment added successfully');
+//       setShowPaymentForm(false);
 //       fetchData();
 //     } catch (error) {
 //       toast.error(error.response?.data?.error || 'Failed to add payment');
@@ -512,6 +587,39 @@
 //       throw error;
 //     }
 //   };
+
+//   // Calculate stats from settlements data
+//   const calculateStats = () => {
+//     const totalSettlements = settlements.length;
+//     const completedSettlements = settlements.filter(s => s.status === 'completed').length;
+//     const pendingSettlements = settlements.filter(s => s.status === 'pending' || s.status === 'partially_paid').length;
+//     const totalAmount = settlements.reduce((sum, s) => sum + s.net_amount, 0);
+    
+//     const totalApproved = settlements.reduce((sum, settlement) => {
+//       const approvedPayments = settlement.payments?.filter(p => p.status === 'approved') || [];
+//       return sum + approvedPayments.reduce((paymentSum, payment) => paymentSum + payment.amount, 0);
+//     }, 0);
+    
+//     const totalDue = settlements.reduce((sum, settlement) => {
+//       const approvedPayments = settlement.payments?.filter(p => p.status === 'approved') || [];
+//       const totalApproved = approvedPayments.reduce((paymentSum, payment) => paymentSum + payment.amount, 0);
+//       return sum + (settlement.net_amount - totalApproved);
+//     }, 0);
+
+//     const completionRate = totalSettlements > 0 ? Math.round((completedSettlements / totalSettlements) * 100) : 0;
+
+//     return {
+//       total_settlements: totalSettlements,
+//       completed_settlements: completedSettlements,
+//       pending_settlements: pendingSettlements,
+//       total_amount: totalAmount,
+//       total_paid: totalApproved,
+//       total_due: totalDue,
+//       completion_rate: completionRate
+//     };
+//   };
+
+//   const stats = calculateStats();
 
 //   if (loading) {
 //     return (
@@ -566,14 +674,14 @@
 //               <div className="flex items-center justify-between">
 //                 <div>
 //                   <p className="text-sm font-medium text-gray-600">Total Settlements</p>
-//                   <p className="text-2xl font-bold text-gray-900">{settlementStats.total_settlements || 0}</p>
+//                   <p className="text-2xl font-bold text-gray-900">{stats.total_settlements}</p>
 //                 </div>
 //                 <div className="p-3 bg-blue-100 rounded-lg">
 //                   <FileText className="h-6 w-6 text-blue-600" />
 //                 </div>
 //               </div>
 //               <p className="text-sm text-gray-500 mt-2">
-//                 {settlementStats.completed_settlements || 0} completed
+//                 {stats.completed_settlements} completed
 //               </p>
 //             </div>
 
@@ -582,7 +690,7 @@
 //                 <div>
 //                   <p className="text-sm font-medium text-gray-600">Total Amount</p>
 //                   <p className="text-2xl font-bold text-gray-900">
-//                     {formatCurrency(settlementStats.total_amount)}
+//                     {formatCurrency(stats.total_amount)}
 //                   </p>
 //                 </div>
 //                 <div className="p-3 bg-green-100 rounded-lg">
@@ -590,7 +698,7 @@
 //                 </div>
 //               </div>
 //               <p className="text-sm text-gray-500 mt-2">
-//                 {formatCurrency(settlementStats.total_paid)} paid
+//                 {formatCurrency(stats.total_paid)} paid
 //               </p>
 //             </div>
 
@@ -599,7 +707,7 @@
 //                 <div>
 //                   <p className="text-sm font-medium text-gray-600">Pending Amount</p>
 //                   <p className="text-2xl font-bold text-gray-900">
-//                     {formatCurrency(settlementStats.total_due)}
+//                     {formatCurrency(stats.total_due)}
 //                   </p>
 //                 </div>
 //                 <div className="p-3 bg-yellow-100 rounded-lg">
@@ -607,7 +715,7 @@
 //                 </div>
 //               </div>
 //               <p className="text-sm text-gray-500 mt-2">
-//                 {settlementStats.pending_settlements || 0} pending settlements
+//                 {stats.pending_settlements} pending settlements
 //               </p>
 //             </div>
 
@@ -616,7 +724,7 @@
 //                 <div>
 //                   <p className="text-sm font-medium text-gray-600">Completion Rate</p>
 //                   <p className="text-2xl font-bold text-gray-900">
-//                     {Math.round(settlementStats.completion_rate || 0)}%
+//                     {stats.completion_rate}%
 //                   </p>
 //                 </div>
 //                 <div className="p-3 bg-purple-100 rounded-lg">
@@ -648,7 +756,7 @@
 //                         setActiveTab('settlements');
 //                       }}
 //                       onAddPayment={() => {
-//                         setSelectedSettlement({ settlement: settlement });
+//                         setSelectedSettlement(settlement);
 //                         setShowPaymentForm(true);
 //                       }}
 //                     />
@@ -692,7 +800,7 @@
 
 //           {selectedSettlement ? (
 //             <SettlementDetails 
-//               settlementData={selectedSettlement}
+//               settlementData={selectedSettlement.settlement}
 //               user={user}
 //               onApprovePayment={approvePayment}
 //               onRejectPayment={rejectPayment}
@@ -711,7 +819,7 @@
 //                       setSelectedSettlement(details);
 //                     }}
 //                     onAddPayment={() => {
-//                       setSelectedSettlement({ settlement: settlement });
+//                       setSelectedSettlement(settlement);
 //                       setShowPaymentForm(true);
 //                     }}
 //                   />
@@ -736,58 +844,233 @@
 //       )}
 
 //       {/* Partners Tab */}
-//       {activeTab === 'partners' && (
-//         <div className="space-y-6">
-//           <h3 className="text-lg font-semibold text-gray-900">Collaborative Partners</h3>
-          
-//           {collaborativePartners.length > 0 ? (
-//             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-//               {collaborativePartners.map((partner) => (
-//                 <div
-//                   key={partner._id}
-//                   className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all"
-//                 >
-//                   <div className="flex items-center gap-4 mb-4">
-//                     <div className="p-3 bg-blue-100 rounded-lg">
-//                       <Users className="h-6 w-6 text-blue-600" />
-//                     </div>
-//                     <div>
-//                       <h4 className="font-semibold text-gray-900">{partner.name}</h4>
-//                       <p className="text-sm text-gray-600">{partner.company_name}</p>
-//                     </div>
-//                   </div>
-                  
-//                   <div className="space-y-2 text-sm text-gray-600">
-//                     {partner.phone && (
-//                       <p>📞 {partner.phone}</p>
-//                     )}
-//                     {partner.email && (
-//                       <p>✉️ {partner.email}</p>
-//                     )}
-//                   </div>
+//   {activeTab === 'partners' && (
+//   <div className="space-y-6">
+//     <div className="flex items-center justify-between">
+//       <h3 className="text-lg font-semibold text-gray-900">
+//         {selectedPartner ? `Settlements with ${selectedPartner.name}` : 'Collaborative Partners'}
+//       </h3>
+//       {selectedPartner && (
+//         <button
+//           onClick={() => setSelectedPartner(null)}
+//           className="text-gray-500 hover:text-gray-700"
+//         >
+//           ← Back to all partners
+//         </button>
+//       )}
+//     </div>
 
-//                   <button
-//                     onClick={() => {
-//                       setSelectedPartner(partner);
-//                       setShowCreateForm(true);
-//                     }}
-//                     className="w-full mt-4 inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
-//                   >
-//                     <Plus className="h-4 w-4" />
-//                     Create Settlement
-//                   </button>
-//                 </div>
-//               ))}
+//     {selectedPartner ? (
+//       // Show settlements for selected partner
+//       <div className="space-y-4">
+//         <div className="flex items-center justify-between">
+//           <div className="flex items-center gap-4">
+//             <div className="p-3 bg-blue-100 rounded-lg">
+//               <Users className="h-6 w-6 text-blue-600" />
 //             </div>
+//             <div>
+//               <h4 className="font-semibold text-gray-900">{selectedPartner.name}</h4>
+//               <p className="text-sm text-gray-600">{selectedPartner.company_name}</p>
+//               {selectedPartner.phone && (
+//                 <p className="text-sm text-gray-500">📞 {selectedPartner.phone}</p>
+//               )}
+//             </div>
+//           </div>
+//           <button
+//             onClick={() => {
+//               setShowCreateForm(true);
+//             }}
+//             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+//           >
+//             <Plus className="h-4 w-4" />
+//             Create New Settlement
+//           </button>
+//         </div>
+
+//         {/* Partner Settlement Stats */}
+//         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+//           <div className="bg-white p-4 rounded-lg border border-gray-200">
+//             <p className="text-sm text-gray-600">Total Settlements</p>
+//             <p className="text-xl font-bold text-gray-900">
+//               {settlements.filter(s => 
+//                 s.owner_A_id._id === selectedPartner._id || 
+//                 s.owner_B_id._id === selectedPartner._id
+//               ).length}
+//             </p>
+//           </div>
+//           <div className="bg-white p-4 rounded-lg border border-gray-200">
+//             <p className="text-sm text-gray-600">Completed</p>
+//             <p className="text-xl font-bold text-green-600">
+//               {settlements.filter(s => 
+//                 (s.owner_A_id._id === selectedPartner._id || 
+//                  s.owner_B_id._id === selectedPartner._id) && 
+//                 s.status === 'completed'
+//               ).length}
+//             </p>
+//           </div>
+//           <div className="bg-white p-4 rounded-lg border border-gray-200">
+//             <p className="text-sm text-gray-600">Pending</p>
+//             <p className="text-xl font-bold text-orange-600">
+//               {settlements.filter(s => 
+//                 (s.owner_A_id._id === selectedPartner._id || 
+//                  s.owner_B_id._id === selectedPartner._id) && 
+//                 (s.status === 'pending' || s.status === 'partially_paid')
+//               ).length}
+//             </p>
+//           </div>
+//           <div className="bg-white p-4 rounded-lg border border-gray-200">
+//             <p className="text-sm text-gray-600">Total Amount</p>
+//             <p className="text-xl font-bold text-gray-900">
+//               {formatCurrency(
+//                 settlements
+//                   .filter(s => 
+//                     s.owner_A_id._id === selectedPartner._id || 
+//                     s.owner_B_id._id === selectedPartner._id
+//                   )
+//                   .reduce((sum, s) => sum + s.net_amount, 0)
+//               )}
+//             </p>
+//           </div>
+//         </div>
+
+//         {/* Partner's Settlements */}
+//         <div className="space-y-4">
+//           <h5 className="text-lg font-semibold text-gray-900">Settlement History</h5>
+//           {settlements
+//             .filter(settlement => 
+//               settlement.owner_A_id._id === selectedPartner._id || 
+//               settlement.owner_B_id._id === selectedPartner._id
+//             )
+//             .length > 0 ? (
+//             settlements
+//               .filter(settlement => 
+//                 settlement.owner_A_id._id === selectedPartner._id || 
+//                 settlement.owner_B_id._id === selectedPartner._id
+//               )
+//               .map((settlement) => (
+//                 <SettlementCard
+//                   key={settlement._id}
+//                   settlement={settlement}
+//                   user={user}
+//                   onViewDetails={async () => {
+//                     const details = await getSettlementById(settlement._id);
+//                     setSelectedSettlement(details);
+//                     setActiveTab('settlements');
+//                   }}
+//                   onAddPayment={() => {
+//                     setSelectedSettlement(settlement);
+//                     setShowPaymentForm(true);
+//                   }}
+//                 />
+//               ))
 //           ) : (
-//             <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg">
-//               <Users className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-//               <h4 className="text-lg font-semibold text-gray-900 mb-2">No Collaborative Partners</h4>
-//               <p>You need active collaborations to create settlements</p>
+//             <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+//               <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+//               <h4 className="text-lg font-semibold text-gray-900 mb-2">No Settlements Yet</h4>
+//               <p className="mb-4">Create your first settlement with {selectedPartner.name}</p>
+//               <button
+//                 onClick={() => setShowCreateForm(true)}
+//                 className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+//               >
+//                 <Plus className="h-4 w-4" />
+//                 Create Settlement
+//               </button>
 //             </div>
 //           )}
 //         </div>
-//       )}
+//       </div>
+//     ) : (
+//       // Show all partners grid
+//       collaborativePartners.length > 0 ? (
+//         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+//           {collaborativePartners.map((partner) => {
+//             // Calculate partner-specific stats
+//             const partnerSettlements = settlements.filter(s => 
+//               s.owner_A_id._id === partner._id || s.owner_B_id._id === partner._id
+//             );
+//             const completedSettlements = partnerSettlements.filter(s => s.status === 'completed').length;
+//             const pendingSettlements = partnerSettlements.filter(s => 
+//               s.status === 'pending' || s.status === 'partially_paid'
+//             ).length;
+//             const totalAmount = partnerSettlements.reduce((sum, s) => sum + s.net_amount, 0);
+
+//             return (
+//               <div
+//                 key={partner._id}
+//                 className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all cursor-pointer"
+//                 onClick={() => setSelectedPartner(partner)}
+//               >
+//                 <div className="flex items-center gap-4 mb-4">
+//                   <div className="p-3 bg-blue-100 rounded-lg">
+//                     <Users className="h-6 w-6 text-blue-600" />
+//                   </div>
+//                   <div className="flex-1">
+//                     <h4 className="font-semibold text-gray-900">{partner.name}</h4>
+//                     <p className="text-sm text-gray-600">{partner.company_name}</p>
+//                   </div>
+//                 </div>
+                
+//                 <div className="space-y-2 text-sm text-gray-600 mb-4">
+//                   {partner.phone && (
+//                     <p>📞 {partner.phone}</p>
+//                   )}
+//                   {partner.email && (
+//                     <p>✉️ {partner.email}</p>
+//                   )}
+//                 </div>
+
+//                 {/* Partner Quick Stats */}
+//                 <div className="grid grid-cols-3 gap-2 mb-4 p-3 bg-gray-50 rounded-lg">
+//                   <div className="text-center">
+//                     <p className="text-xs text-gray-600">Settlements</p>
+//                     <p className="text-sm font-semibold text-gray-900">{partnerSettlements.length}</p>
+//                   </div>
+//                   <div className="text-center">
+//                     <p className="text-xs text-gray-600">Completed</p>
+//                     <p className="text-sm font-semibold text-green-600">{completedSettlements}</p>
+//                   </div>
+//                   <div className="text-center">
+//                     <p className="text-xs text-gray-600">Total</p>
+//                     <p className="text-sm font-semibold text-gray-900">{formatCurrency(totalAmount)}</p>
+//                   </div>
+//                 </div>
+
+//                 <div className="flex gap-2">
+//                   <button
+//                     onClick={(e) => {
+//                       e.stopPropagation();
+//                       setSelectedPartner(partner);
+//                     }}
+//                     className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all"
+//                   >
+//                     <FileText className="h-4 w-4" />
+//                     View Settlements
+//                   </button>
+//                   <button
+//                     onClick={(e) => {
+//                       e.stopPropagation();
+//                       setSelectedPartner(partner);
+//                       setShowCreateForm(true);
+//                     }}
+//                     className="inline-flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+//                   >
+//                     <Plus className="h-4 w-4" />
+//                   </button>
+//                 </div>
+//               </div>
+//             );
+//           })}
+//         </div>
+//       ) : (
+//         <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg">
+//           <Users className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+//           <h4 className="text-lg font-semibold text-gray-900 mb-2">No Collaborative Partners</h4>
+//           <p>You need active collaborations to create settlements</p>
+//         </div>
+//       )
+//     )}
+//   </div>
+// )}
 
 //       {/* Modals */}
 //       <AnimatePresence>
@@ -808,7 +1091,7 @@
 //       <AnimatePresence>
 //         {showPaymentForm && selectedSettlement && (
 //           <AddPaymentForm
-//             settlement={selectedSettlement.settlement}
+//             settlement={selectedSettlement}
 //             user={user}
 //             onAddPayment={addPayment}
 //             onClose={() => {
@@ -822,7 +1105,7 @@
 //   );
 // };
 
-// export default SettlementTab;
+// export default SettlementTab;  
 
 
 import React, { useState, useEffect } from 'react';
@@ -844,10 +1127,13 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import api from '../api/client';
-import { useAuth } from '../contexts/AuthContext';
+import api from '../../api/client';
+import { useAuth } from '../../contexts/AuthContext';
 import CreateSettlementForm from './CreateSettlementForm';
 import AddPaymentForm from './AddPaymentForm';
+
+// NEW: import CollaborationRequestsTab to embed inside Partners sub-tab
+import CollaborationRequestsTab from '../Collaboration/CollaborationRequestsTab';
 
 // Helper functions - moved outside the component
 const formatCurrency = (amount) => {
@@ -1115,7 +1401,7 @@ const PaymentCard = ({ payment, paymentIndex, settlementId, user, onApprove, onR
 // Settlement Details Component
 const SettlementDetails = ({ settlementData, user, onApprovePayment, onRejectPayment, onAddPayment }) => {
   const getUserRoleInSettlement = (settlement) => {
-console.log("settlement", settlement);
+    console.log("settlement", settlement);
 
     if (settlement.owner_A_id._id === user.id) return 'owner_A';
     if (settlement.owner_B_id._id === user.id) return 'owner_B';
@@ -1315,6 +1601,10 @@ const SettlementTab = () => {
   const [selectedSettlement, setSelectedSettlement] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
 
+  // NEW: partnerSubTab controls which sub-view inside Partners tab is shown
+  // values: 'partnersList' | 'collabRequests'
+  const [partnerSubTab, setPartnerSubTab] = useState('partnersList');
+
   useEffect(() => {
     if (user) {
       fetchData();
@@ -1461,11 +1751,14 @@ const SettlementTab = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Settlement Management</h2>
-          <p className="text-gray-600">Manage payments and settlements with your collaborators</p>
+          <h2 className="text-2xl font-bold text-gray-900">Collaboration Management</h2>
         </div>
         <button
-          onClick={() => setShowCreateForm(true)}
+          onClick={() => {
+            setShowCreateForm(true);
+            // keep user focused on partners list by default when creating from header
+            setPartnerSubTab('partnersList');
+          }}
           className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm"
         >
           <Plus className="h-4 w-4" />
@@ -1670,234 +1963,269 @@ const SettlementTab = () => {
         </div>
       )}
 
-      {/* Partners Tab */}
-  {activeTab === 'partners' && (
+      {/* Partners Tab with embedded CollaborationRequestsTab */}
+   {activeTab === 'partners' && (
   <div className="space-y-6">
-    <div className="flex items-center justify-between">
-      <h3 className="text-lg font-semibold text-gray-900">
-        {selectedPartner ? `Settlements with ${selectedPartner.name}` : 'Collaborative Partners'}
-      </h3>
-      {selectedPartner && (
-        <button
-          onClick={() => setSelectedPartner(null)}
-          className="text-gray-500 hover:text-gray-700"
-        >
-          ← Back to all partners
-        </button>
-      )}
+    {/* Sub Tabs */}
+    <div className="border-b border-gray-200 flex gap-8">
+
+      <button
+        onClick={() => {
+          setPartnerSubTab('partnersList');
+          setSelectedPartner(null);
+        }}
+        className={`pb-2 text-sm font-medium transition-colors ${
+          partnerSubTab === 'partnersList'
+            ? 'border-b-2 border-blue-600 text-blue-600'
+            : 'text-gray-500 hover:text-gray-700'
+        }`}
+      >
+        Partners List
+      </button>
+
+      <button
+        onClick={() => {
+          setPartnerSubTab('collabRequests');
+          setSelectedPartner(null);
+        }}
+        className={`pb-2 text-sm font-medium transition-colors ${
+          partnerSubTab === 'collabRequests'
+            ? 'border-b-2 border-blue-600 text-blue-600'
+            : 'text-gray-500 hover:text-gray-700'
+        }`}
+      >
+        Collaboration Requests
+      </button>
+
     </div>
 
-    {selectedPartner ? (
-      // Show settlements for selected partner
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <Users className="h-6 w-6 text-blue-600" />
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-900">{selectedPartner.name}</h4>
-              <p className="text-sm text-gray-600">{selectedPartner.company_name}</p>
-              {selectedPartner.phone && (
-                <p className="text-sm text-gray-500">📞 {selectedPartner.phone}</p>
-              )}
-            </div>
-          </div>
-          <button
-            onClick={() => {
-              setShowCreateForm(true);
-            }}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
-          >
-            <Plus className="h-4 w-4" />
-            Create New Settlement
-          </button>
-        </div>
-
-        {/* Partner Settlement Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <p className="text-sm text-gray-600">Total Settlements</p>
-            <p className="text-xl font-bold text-gray-900">
-              {settlements.filter(s => 
-                s.owner_A_id._id === selectedPartner._id || 
-                s.owner_B_id._id === selectedPartner._id
-              ).length}
-            </p>
-          </div>
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <p className="text-sm text-gray-600">Completed</p>
-            <p className="text-xl font-bold text-green-600">
-              {settlements.filter(s => 
-                (s.owner_A_id._id === selectedPartner._id || 
-                 s.owner_B_id._id === selectedPartner._id) && 
-                s.status === 'completed'
-              ).length}
-            </p>
-          </div>
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <p className="text-sm text-gray-600">Pending</p>
-            <p className="text-xl font-bold text-orange-600">
-              {settlements.filter(s => 
-                (s.owner_A_id._id === selectedPartner._id || 
-                 s.owner_B_id._id === selectedPartner._id) && 
-                (s.status === 'pending' || s.status === 'partially_paid')
-              ).length}
-            </p>
-          </div>
-          <div className="bg-white p-4 rounded-lg border border-gray-200">
-            <p className="text-sm text-gray-600">Total Amount</p>
-            <p className="text-xl font-bold text-gray-900">
-              {formatCurrency(
-                settlements
-                  .filter(s => 
-                    s.owner_A_id._id === selectedPartner._id || 
-                    s.owner_B_id._id === selectedPartner._id
-                  )
-                  .reduce((sum, s) => sum + s.net_amount, 0)
-              )}
-            </p>
-          </div>
-        </div>
-
-        {/* Partner's Settlements */}
-        <div className="space-y-4">
-          <h5 className="text-lg font-semibold text-gray-900">Settlement History</h5>
-          {settlements
-            .filter(settlement => 
-              settlement.owner_A_id._id === selectedPartner._id || 
-              settlement.owner_B_id._id === selectedPartner._id
-            )
-            .length > 0 ? (
-            settlements
-              .filter(settlement => 
-                settlement.owner_A_id._id === selectedPartner._id || 
-                settlement.owner_B_id._id === selectedPartner._id
-              )
-              .map((settlement) => (
-                <SettlementCard
-                  key={settlement._id}
-                  settlement={settlement}
-                  user={user}
-                  onViewDetails={async () => {
-                    const details = await getSettlementById(settlement._id);
-                    setSelectedSettlement(details);
-                    setActiveTab('settlements');
-                  }}
-                  onAddPayment={() => {
-                    setSelectedSettlement(settlement);
-                    setShowPaymentForm(true);
-                  }}
-                />
-              ))
-          ) : (
-            <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
-              <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-              <h4 className="text-lg font-semibold text-gray-900 mb-2">No Settlements Yet</h4>
-              <p className="mb-4">Create your first settlement with {selectedPartner.name}</p>
-              <button
-                onClick={() => setShowCreateForm(true)}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
-              >
-                <Plus className="h-4 w-4" />
-                Create Settlement
-              </button>
-            </div>
-          )}
-        </div>
+    {/* SUB TAB CONTENT */}
+    {partnerSubTab === 'collabRequests' ? (
+      <div className="mt-4">
+        <CollaborationRequestsTab />
       </div>
     ) : (
-      // Show all partners grid
-      collaborativePartners.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {collaborativePartners.map((partner) => {
-            // Calculate partner-specific stats
-            const partnerSettlements = settlements.filter(s => 
-              s.owner_A_id._id === partner._id || s.owner_B_id._id === partner._id
-            );
-            const completedSettlements = partnerSettlements.filter(s => s.status === 'completed').length;
-            const pendingSettlements = partnerSettlements.filter(s => 
-              s.status === 'pending' || s.status === 'partially_paid'
-            ).length;
-            const totalAmount = partnerSettlements.reduce((sum, s) => sum + s.net_amount, 0);
+      <>
+        {/* If a partner is selected, show details */}
+        {selectedPartner ? (
+          <div className="space-y-6">
 
-            return (
-              <div
-                key={partner._id}
-                className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all cursor-pointer"
-                onClick={() => setSelectedPartner(partner)}
-              >
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="p-3 bg-blue-100 rounded-lg">
-                    <Users className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900">{partner.name}</h4>
-                    <p className="text-sm text-gray-600">{partner.company_name}</p>
-                  </div>
+            {/* Back Button */}
+            <button
+              onClick={() => setSelectedPartner(null)}
+              className="text-sm text-gray-600 hover:text-gray-800"
+            >
+              ← Back to partners
+            </button>
+
+            {/* Partner Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-blue-100 rounded-lg">
+                  <Users className="h-6 w-6 text-blue-600" />
                 </div>
-                
-                <div className="space-y-2 text-sm text-gray-600 mb-4">
-                  {partner.phone && (
-                    <p>📞 {partner.phone}</p>
+                <div>
+                  <h4 className="font-semibold text-gray-900">{selectedPartner.name}</h4>
+                  <p className="text-sm text-gray-600">{selectedPartner.company_name}</p>
+                  {selectedPartner.phone && (
+                    <p className="text-sm text-gray-500">📞 {selectedPartner.phone}</p>
                   )}
-                  {partner.email && (
-                    <p>✉️ {partner.email}</p>
-                  )}
-                </div>
-
-                {/* Partner Quick Stats */}
-                <div className="grid grid-cols-3 gap-2 mb-4 p-3 bg-gray-50 rounded-lg">
-                  <div className="text-center">
-                    <p className="text-xs text-gray-600">Settlements</p>
-                    <p className="text-sm font-semibold text-gray-900">{partnerSettlements.length}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-gray-600">Completed</p>
-                    <p className="text-sm font-semibold text-green-600">{completedSettlements}</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs text-gray-600">Total</p>
-                    <p className="text-sm font-semibold text-gray-900">{formatCurrency(totalAmount)}</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedPartner(partner);
-                    }}
-                    className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all"
-                  >
-                    <FileText className="h-4 w-4" />
-                    View Settlements
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedPartner(partner);
-                      setShowCreateForm(true);
-                    }}
-                    className="inline-flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </button>
                 </div>
               </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg">
-          <Users className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-          <h4 className="text-lg font-semibold text-gray-900 mb-2">No Collaborative Partners</h4>
-          <p>You need active collaborations to create settlements</p>
-        </div>
-      )
+
+              <button
+                onClick={() => setShowCreateForm(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                Create New Settlement
+              </button>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-white p-4 rounded-lg border border-gray-200">
+                <p className="text-sm text-gray-600">Total Settlements</p>
+                <p className="text-xl font-bold text-gray-900">
+                  {settlements.filter(s =>
+                    s.owner_A_id._id === selectedPartner._id ||
+                    s.owner_B_id._id === selectedPartner._id
+                  ).length}
+                </p>
+              </div>
+
+              <div className="bg-white p-4 rounded-lg border border-gray-200">
+                <p className="text-sm text-gray-600">Completed</p>
+                <p className="text-xl font-bold text-green-600">
+                  {settlements.filter(
+                    s =>
+                      (s.owner_A_id._id === selectedPartner._id ||
+                        s.owner_B_id._id === selectedPartner._id) &&
+                      s.status === 'completed'
+                  ).length}
+                </p>
+              </div>
+
+              <div className="bg-white p-4 rounded-lg border border-gray-200">
+                <p className="text-sm text-gray-600">Pending</p>
+                <p className="text-xl font-bold text-orange-600">
+                  {settlements.filter(
+                    s =>
+                      (s.owner_A_id._id === selectedPartner._id ||
+                        s.owner_B_id._id === selectedPartner._id) &&
+                      (s.status === 'pending' || s.status === 'partially_paid')
+                  ).length}
+                </p>
+              </div>
+
+              <div className="bg-white p-4 rounded-lg border border-gray-200">
+                <p className="text-sm text-gray-600">Total Amount</p>
+                <p className="text-xl font-bold text-gray-900">
+                  {formatCurrency(
+                    settlements
+                      .filter(
+                        s =>
+                          s.owner_A_id._id === selectedPartner._id ||
+                          s.owner_B_id._id === selectedPartner._id
+                      )
+                      .reduce((sum, s) => sum + s.net_amount, 0)
+                  )}
+                </p>
+              </div>
+            </div>
+
+            {/* Settlement history */}
+            <div className="space-y-4">
+              <h5 className="text-lg font-semibold text-gray-900">
+                Settlement History
+              </h5>
+
+              {settlements.filter(
+                s =>
+                  s.owner_A_id._id === selectedPartner._id ||
+                  s.owner_B_id._id === selectedPartner._id
+              ).length > 0 ? (
+                settlements
+                  .filter(
+                    s =>
+                      s.owner_A_id._id === selectedPartner._id ||
+                      s.owner_B_id._id === selectedPartner._id
+                  )
+                  .map(s => (
+                    <SettlementCard
+                      key={s._id}
+                      settlement={s}
+                      user={user}
+                      onViewDetails={async () => {
+                        const details = await getSettlementById(s._id);
+                        setSelectedSettlement(details);
+                        setActiveTab('settlements');
+                      }}
+                      onAddPayment={() => {
+                        setSelectedSettlement(s);
+                        setShowPaymentForm(true);
+                      }}
+                    />
+                  ))
+              ) : (
+                <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+                  <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                    No Settlements Yet
+                  </h4>
+                  <p className="mb-4">
+                    Create your first settlement with {selectedPartner.name}
+                  </p>
+                  <button
+                    onClick={() => setShowCreateForm(true)}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Create Settlement
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          // ALL PARTNERS GRID
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {collaborativePartners.length > 0 ? (
+              collaborativePartners.map(partner => {
+                const partnerSettlements = settlements.filter(
+                  s =>
+                    s.owner_A_id._id === partner._id ||
+                    s.owner_B_id._id === partner._id
+                );
+
+                return (
+                  <div
+                    key={partner._id}
+                    className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all cursor-pointer"
+                    onClick={() => {
+                      setSelectedPartner(partner);
+                      setPartnerSubTab('partnersList');
+                    }}
+                  >
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="p-3 bg-blue-100 rounded-lg">
+                        <Users className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-gray-900">{partner.name}</h4>
+                        <p className="text-sm text-gray-600">{partner.company_name}</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1 text-sm text-gray-600 mb-3">
+                      {partner.phone && <p>📞 {partner.phone}</p>}
+                      {partner.email && <p>✉️ {partner.email}</p>}
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 p-3 bg-gray-50 rounded-lg mb-4">
+                      <div className="text-center">
+                        <p className="text-xs text-gray-600">Settlements</p>
+                        <p className="text-sm font-semibold text-gray-900">{partnerSettlements.length}</p>
+                      </div>
+
+                      <div className="text-center">
+                        <p className="text-xs text-gray-600">Completed</p>
+                        <p className="text-sm font-semibold text-green-600">
+                          {partnerSettlements.filter(s => s.status === 'completed').length}
+                        </p>
+                      </div>
+
+                      <div className="text-center">
+                        <p className="text-xs text-gray-600">Total</p>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {formatCurrency(
+                            partnerSettlements.reduce((sum, s) => sum + s.net_amount, 0)
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all">
+                      <FileText className="h-4 w-4" />
+                      View Settlements
+                    </button>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="col-span-full text-center py-12 text-gray-500 bg-gray-50 rounded-lg">
+                <Users className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">No Collaborative Partners</h4>
+                <p>You need active collaborations to create settlements</p>
+              </div>
+            )}
+          </div>
+        )}
+      </>
     )}
   </div>
 )}
+
 
       {/* Modals */}
       <AnimatePresence>

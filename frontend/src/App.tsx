@@ -83,8 +83,9 @@ import CustomerPaymentForm from './pages/Customers/CustomerPaymentForm';
 import CrusherTrips from './pages/Crushers/CrusherTrips';
 import CrusherPayments from './pages/Crushers/CrusherPayments';
 import CrusherDetails from './pages/Crushers/CrusherDetails';
-import SettlementTab from './Settlement/SettlementTab';
+import SettlementTab from './pages/Settlement/SettlementTab';
 import CrusherTripForm from './pages/Crushers/CrusherTripForm';
+
 
 
 
