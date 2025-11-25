@@ -84,6 +84,7 @@ import CrusherTrips from './pages/Crushers/CrusherTrips';
 import CrusherPayments from './pages/Crushers/CrusherPayments';
 import CrusherDetails from './pages/Crushers/CrusherDetails';
 import SettlementTab from './Settlement/SettlementTab';
+import CrusherTripForm from './pages/Crushers/CrusherTripForm';
 
 
 
@@ -216,9 +217,10 @@ function App() {
                       <Route path="/crushers" element={<Crushers />} />
                       <Route path="/crushers/create" element={<ManageCrusherForm />} />
                       <Route path="/crushers/edit/:id" element={<ManageCrusherForm />} />
-                      <Route path="crushers/:crusherId" element={<CrusherDetails />}>
+                      <Route path="/crushers/:crusherId" element={<CrusherDetails />}>
                         <Route index element={<Navigate to="trips" replace />} />
                         <Route path="trips" element={<CrusherTrips />} />
+                        <Route path="trips/create" element={<CrusherTripForm />} />
                         <Route path="payments" element={<CrusherPayments />} />
                       </Route>
 
@@ -227,7 +229,7 @@ function App() {
                       <Route path="/collaborations/transactions/:collaborationId" element={<CollaboratorsTab />} />
                       <Route path="/collaborations/requests" element={<CollaborationRequestsTab />} />
 
-                      
+
                       <Route path="/settlement" element={<SettlementTab />} />
 
                       {/* drivers Management */}

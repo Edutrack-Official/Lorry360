@@ -538,6 +538,62 @@ const getTripFormData = async (owner_id) => {
   return formData;
 };
 
+// Get all trips for a specific customer
+const getTripsByCustomerId = async (customer_id, filterParams = {}) => {
+  const { status, start_date, end_date } = filterParams;
+  const query = { customer_id };
+  
+  if (status) query.status = status;
+  
+  // Date range filter
+  if (start_date || end_date) {
+    query.trip_date = {};
+    if (start_date) query.trip_date.$gte = new Date(start_date);
+    if (end_date) query.trip_date.$lte = new Date(end_date);
+  }
+
+  const trips = await Trip.find(query)
+    .populate('lorry_id', 'registration_number nick_name')
+    .populate('driver_id', 'name phone')
+    .populate('crusher_id', 'name')
+    .populate('customer_id', 'name phone')
+    .populate('owner_id', 'name company_name phone')
+    .sort({ trip_date: -1, createdAt: -1 });
+
+  return {
+    count: trips.length,
+    trips
+  };
+};
+
+// Get all trips for a specific crusher
+const getTripsByCrusherId = async (crusher_id, filterParams = {}) => {
+  const { status, start_date, end_date } = filterParams;
+  const query = { crusher_id };
+  
+  if (status) query.status = status;
+  
+  // Date range filter
+  if (start_date || end_date) {
+    query.trip_date = {};
+    if (start_date) query.trip_date.$gte = new Date(start_date);
+    if (end_date) query.trip_date.$lte = new Date(end_date);
+  }
+
+  const trips = await Trip.find(query)
+    .populate('lorry_id', 'registration_number nick_name')
+    .populate('driver_id', 'name phone')
+    .populate('crusher_id', 'name')
+    .populate('customer_id', 'name phone')
+    .populate('owner_id', 'name company_name phone')
+    .sort({ trip_date: -1, createdAt: -1 });
+
+  return {
+    count: trips.length,
+    trips
+  };
+};
+
 module.exports = {
   createTrip,
   getAllTrips,
@@ -549,5 +605,7 @@ module.exports = {
   updateTripStatus,
   getTripStats,
   getTripsAnalytics,
-  getTripFormData
+  getTripFormData,
+  getTripsByCrusherId,
+  getTripsByCustomerId
 };

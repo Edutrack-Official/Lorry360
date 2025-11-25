@@ -227,103 +227,18 @@ const CrusherDetails = () => {
               <ArrowLeft className="h-5 w-5" />
             </button>
             
-            <div className="p-3 bg-orange-100 rounded-xl">
-              <Building className="h-8 w-8 text-orange-600" />
-            </div>
             
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 <h1 className="text-2xl font-bold text-gray-900">
                   {crusher.name}
                 </h1>
-                {getStatusBadge(crusher.isActive)}
               </div>
               
-              <div className="flex flex-wrap gap-4 text-sm text-gray-500">
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
-                  Added {formatDate(crusher.createdAt)}
-                </div>
-                <div className="flex items-center gap-1">
-                  <BadgeAlert className="h-4 w-4" />
-                  Last updated {formatDate(crusher.updatedAt)}
-                </div>
-              </div>
-
-              {/* Materials */}
-              {crusher.materials && crusher.materials.length > 0 && (
-                <div className="mt-4">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
-                    <Package className="h-4 w-4" />
-                    Materials ({crusher.materials.length})
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {crusher.materials.map((material, index) => (
-                      <span
-                        key={index}
-                        className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm"
-                      >
-                        {material.material_name} - {formatCurrency(material.price_per_unit)}/unit
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Link
-              to={`/crushers/edit/${crusherId}`}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm"
-            >
-              <Edit className="h-4 w-4" />
-              Edit Crusher
-            </Link>
-
-            <div className="relative">
-              <button
-                onClick={() => setShowActionMenu(!showActionMenu)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <MoreVertical className="h-5 w-5 text-gray-500" />
-              </button>
-
-              <AnimatePresence>
-                {showActionMenu && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="absolute right-0 top-12 z-10 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1"
-                  >
-                    <Link
-                      to={`/trips/create?crusher=${crusherId}`}
-                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add Trip
-                    </Link>
-                    <Link
-                      to={`/payments/create?crusher=${crusherId}`}
-                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add Payment
-                    </Link>
-                    <div className="border-t border-gray-200 my-1"></div>
-                    <button
-                      onClick={handleDeleteCrusher}
-                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Delete Crusher
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
+         
         </div>
 
         {/* Quick Stats */}

@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom'; // Changed to useParams
 import { ArrowLeft, Save, Truck, User, Package, Calendar, IndianRupee, MapPin } from 'lucide-react';
 import api from '../../api/client';
 import toast from 'react-hot-toast';
 
-interface Customer {
+interface Crusher {
   _id: string;
   name: string;
-  phone: string;
-  address: string;
+  location: string;
+  materials?: string[];
 }
 
 interface Lorry {
@@ -23,17 +23,19 @@ interface Driver {
   phone: string;
 }
 
-interface Crusher {
+interface Customer {
   _id: string;
   name: string;
-  location: string;
+  phone: string;
+  address: string;
+  site_addresses?: string[];
 }
 
 interface TripFormData {
-  customer_id: string;
+  crusher_id: string;
   lorry_id: string;
   driver_id: string;
-  crusher_id: string;
+  customer_id: string;
   material_name: string;
   rate_per_unit: number;
   no_of_unit_crusher: number;
@@ -45,23 +47,23 @@ interface TripFormData {
   notes?: string;
 }
 
-const CustomerTripForm = () => {
+const CrusherTripForm = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const customerId = searchParams.get('customer');
+  const { crusherId } = useParams<{ crusherId: string }>(); // Get crusherId from route params
 
   const [loading, setLoading] = useState(false);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [crushers, setCrushers] = useState<Crusher[]>([]);
   const [lorries, setLorries] = useState<Lorry[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [crushers, setCrushers] = useState<Crusher[]>([]);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [selectedCrusher, setSelectedCrusher] = useState<Crusher | null>(null);
+  const [isCrusherLoaded, setIsCrusherLoaded] = useState(false);
 
   const [formData, setFormData] = useState<TripFormData>({
-    customer_id: customerId || '',
+    crusher_id: crusherId || '',
     lorry_id: '',
     driver_id: '',
-    crusher_id: '',
+    customer_id: '',
     material_name: '',
     rate_per_unit: 0,
     no_of_unit_crusher: 0,
@@ -75,30 +77,34 @@ const CustomerTripForm = () => {
 
   // Fetch data on component mount
   useEffect(() => {
-    fetchCustomers();
+    fetchCrushers();
     fetchLorries();
     fetchDrivers();
-    fetchCrushers();
+    fetchCustomers();
   }, []);
 
-  // Set selected customer when customerId changes
+  // Set selected crusher when crusherId changes
   useEffect(() => {
-    if (customerId && customers.length > 0) {
-      const customer = customers.find(c => c._id === customerId);
-      if (customer) {
-        setSelectedCustomer(customer);
-        setFormData(prev => ({ ...prev, customer_id: customerId }));
+    if (crusherId && crushers.length > 0 && !isCrusherLoaded) {
+      const crusher = crushers.find(c => c._id === crusherId);
+      if (crusher) {
+        setSelectedCrusher(crusher);
+        setFormData(prev => ({
+          ...prev,
+          crusher_id: crusherId
+        }));
+        setIsCrusherLoaded(true);
       }
     }
-  }, [customerId, customers]);
+  }, [crusherId, crushers, isCrusherLoaded]);
 
-  const fetchCustomers = async () => {
+  const fetchCrushers = async () => {
     try {
-      const res = await api.get('/customers');
-      setCustomers(res.data.data?.customers || []);
+      const res = await api.get('/crushers');
+      setCrushers(res.data.data?.crushers || []);
     } catch (error: any) {
-      console.error('Failed to fetch customers:', error);
-      toast.error('Failed to fetch customers');
+      console.error('Failed to fetch crushers:', error);
+      toast.error('Failed to fetch crushers');
     }
   };
 
@@ -122,13 +128,13 @@ const CustomerTripForm = () => {
     }
   };
 
-  const fetchCrushers = async () => {
+  const fetchCustomers = async () => {
     try {
-      const res = await api.get('/crushers');
-      setCrushers(res.data.data?.crushers || []);
+      const res = await api.get('/customers');
+      setCustomers(res.data.data?.customers || []);
     } catch (error: any) {
-      console.error('Failed to fetch crushers:', error);
-      toast.error('Failed to fetch crushers');
+      console.error('Failed to fetch customers:', error);
+      toast.error('Failed to fetch customers');
     }
   };
 
@@ -144,7 +150,7 @@ const CustomerTripForm = () => {
       const rate = name === 'rate_per_unit' ? parseFloat(value) || 0 : formData.rate_per_unit;
       const units = name === 'no_of_unit_customer' ? parseFloat(value) || 0 : formData.no_of_unit_customer;
       const customerAmount = rate * units;
-      
+
       setFormData(prev => ({
         ...prev,
         customer_amount: customerAmount
@@ -155,7 +161,7 @@ const CustomerTripForm = () => {
     if (name === 'no_of_unit_crusher') {
       const crusherUnits = parseFloat(value) || 0;
       const crusherAmount = formData.rate_per_unit * crusherUnits;
-      
+
       setFormData(prev => ({
         ...prev,
         crusher_amount: crusherAmount
@@ -166,7 +172,6 @@ const CustomerTripForm = () => {
   const handleCustomerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const customerId = e.target.value;
     const customer = customers.find(c => c._id === customerId) || null;
-    setSelectedCustomer(customer);
     setFormData(prev => ({
       ...prev,
       customer_id: customerId,
@@ -180,7 +185,7 @@ const CustomerTripForm = () => {
 
     try {
       // Validate required fields
-      if (!formData.customer_id || !formData.lorry_id || !formData.driver_id || !formData.crusher_id) {
+      if (!formData.crusher_id || !formData.lorry_id || !formData.driver_id || !formData.customer_id) {
         toast.error('Please fill all required fields');
         setLoading(false);
         return;
@@ -197,13 +202,9 @@ const CustomerTripForm = () => {
 
       await api.post('/trips/create', tripData);
       toast.success('Trip created successfully!');
-      
-      // Navigate back to customer trips page
-      if (customerId) {
-        navigate(`/customers/${customerId}/trips`);
-      } else {
-        navigate('/trips');
-      }
+
+      // Navigate back to crusher trips page
+      navigate(`/crushers/${crusherId}/trips`);
     } catch (error: any) {
       console.error('Failed to create trip:', error);
       toast.error(error.response?.data?.error || 'Failed to create trip');
@@ -232,7 +233,7 @@ const CustomerTripForm = () => {
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Add New Trip</h1>
                 <p className="text-gray-600">
-                  {selectedCustomer ? `For customer: ${selectedCustomer.name}` : 'Create a new trip'}
+                  {selectedCrusher ? `For crusher: ${selectedCrusher.name}` : 'Create a new trip'}
                 </p>
               </div>
             </div>
@@ -250,6 +251,57 @@ const CustomerTripForm = () => {
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Crusher Selection - Fixed to show preselected crusher */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Crusher *
+                </label>
+                {crusherId ? (
+                  // Show read-only display when crusher is preselected AND we have the crusher data
+                  crushers.length > 0 && crushers.find(c => c._id === crusherId) ? (
+                    <div className="flex flex-col gap-2">
+                      <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50">
+                        <div className="flex items-center gap-2 text-gray-700">
+                          <Package className="h-4 w-4" />
+                          <span className="font-medium">
+                            {selectedCrusher ? `${selectedCrusher.name} - ${selectedCrusher.location}` : 'Loading...'}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-500">
+                        Crusher is preselected. To change crusher, go back and select from crushers list.
+                      </p>
+                      {/* Hidden input to maintain form data */}
+                      <input type="hidden" name="crusher_id" value={formData.crusher_id} />
+                    </div>
+                  ) : (
+                    // Show loading state while fetching crusher data
+                    <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50">
+                      <div className="flex items-center gap-2 text-gray-500">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                        <span>Loading crusher...</span>
+                      </div>
+                    </div>
+                  )
+                ) : (
+                  // Show dropdown when no crusher is preselected
+                  <select
+                    name="crusher_id"
+                    value={formData.crusher_id}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Select Crusher</option>
+                    {crushers.map((crusher) => (
+                      <option key={crusher._id} value={crusher._id}>
+                        {crusher.name} - {crusher.location}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
               {/* Customer Selection */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -260,8 +312,7 @@ const CustomerTripForm = () => {
                   value={formData.customer_id}
                   onChange={handleCustomerChange}
                   required
-                  disabled={!!customerId}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Select Customer</option>
                   {customers.map((customer) => (
@@ -313,40 +364,26 @@ const CustomerTripForm = () => {
                 </select>
               </div>
 
-              {/* Source Information */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Crusher *
-                </label>
-                <select
-                  name="crusher_id"
-                  value={formData.crusher_id}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Select Crusher</option>
-                  {crushers.map((crusher) => (
-                    <option key={crusher._id} value={crusher._id}>
-                      {crusher.name} - {crusher.location}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
+              {/* Material Information */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Material Name *
                 </label>
-                <input
-                  type="text"
+                <select
                   name="material_name"
                   value={formData.material_name}
                   onChange={handleInputChange}
                   required
-                  placeholder="e.g., M-Sand, Gravel, etc."
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+                >
+                  <option value="">Select Material</option>
+                  {selectedCrusher?.materials?.map((material, index) => (
+                    <option key={index} value={material}>
+                      {material}
+                    </option>
+                  ))}
+                  {(!selectedCrusher?.materials || selectedCrusher.materials.length === 0)}
+                </select>
               </div>
 
               {/* Pricing and Units */}
@@ -492,4 +529,4 @@ const CustomerTripForm = () => {
   );
 };
 
-export default CustomerTripForm;
+export default CrusherTripForm;

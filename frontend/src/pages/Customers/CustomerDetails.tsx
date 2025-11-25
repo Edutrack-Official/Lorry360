@@ -221,114 +221,17 @@ const CustomerDetails = () => {
               <ArrowLeft className="h-5 w-5" />
             </button>
             
-            <div className="p-3 bg-blue-100 rounded-xl">
-              <User className="h-8 w-8 text-blue-600" />
-            </div>
             
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 <h1 className="text-2xl font-bold text-gray-900">
                   {customer.name}
                 </h1>
-                {getStatusBadge(customer.isActive)}
-              </div>
-              
-              <div className="flex flex-col gap-2 mb-3">
-                <div className="flex items-center gap-2 text-gray-600">
-                  <Phone className="h-4 w-4" />
-                  <span>{customer.phone}</span>
-                </div>
-                <div className="flex items-start gap-2 text-gray-600">
-                  <Home className="h-4 w-4 mt-0.5" />
-                  <span>{customer.address}</span>
-                </div>
-              </div>
-              
-              <div className="flex flex-wrap gap-4 text-sm text-gray-500">
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
-                  Added {formatDate(customer.createdAt)}
-                </div>
-                <div className="flex items-center gap-1">
-                  <BadgeAlert className="h-4 w-4" />
-                  Last updated {formatDate(customer.updatedAt)}
-                </div>
               </div>
 
-              {/* Site Addresses */}
-              {customer.site_addresses && customer.site_addresses.length > 0 && (
-                <div className="mt-4">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
-                    <MapPin className="h-4 w-4" />
-                    Site Addresses:
-                  </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {customer.site_addresses.map((address, index) => (
-                      <span
-                        key={index}
-                        className="inline-block bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm"
-                      >
-                        {address}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Link
-              to={`/customers/edit/${customerId}`}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm"
-            >
-              <Edit className="h-4 w-4" />
-              Edit Customer
-            </Link>
-
-            <div className="relative">
-              <button
-                onClick={() => setShowActionMenu(!showActionMenu)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <MoreVertical className="h-5 w-5 text-gray-500" />
-              </button>
-
-              <AnimatePresence>
-                {showActionMenu && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="absolute right-0 top-12 z-10 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1"
-                  >
-                    <Link
-                      to={`/trips/create?customer=${customerId}`}
-                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add Trip
-                    </Link>
-                    <Link
-                      to={`/payments/create?customer=${customerId}`}
-                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add Payment
-                    </Link>
-                    <div className="border-t border-gray-200 my-1"></div>
-                    <button
-                      onClick={handleDeleteCustomer}
-                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Delete Customer
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
         </div>
 
         {/* Quick Stats */}
