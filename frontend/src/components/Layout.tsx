@@ -56,9 +56,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["owner", "admin"] },
     { name: "Lorries", href: "/lorries", icon: Truck, roles: ["owner", "admin"] },
     { name: "Customers", href: "/customers", icon: Users, roles: ["owner", "admin"] },
-   { name: "Drivers", href: "/drivers", icon: Users, roles: ["owner", "admin"] },
-        { name: "Collab", href: "/collaborations", icon: Users, roles: ["owner"] },
-
+    { name: "Drivers", href: "/drivers", icon: Users, roles: ["owner", "admin"] },
+    { name: "Collab", href: "/settlement", icon: Users, roles: ["owner"] },
     { name: "Crushers", href: "/crushers", icon: Package, roles: ["owner", "admin"] },
     { name: "Trips", href: "/trips", icon: MapPin, roles: ["owner", "admin"] },
     { name: "Maintenance", href: "/maintenance", icon: Wrench, roles: ["owner", "admin"] },
