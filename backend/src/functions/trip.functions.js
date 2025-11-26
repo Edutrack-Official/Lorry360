@@ -17,6 +17,7 @@
   } = require('../controllers/trip.controller');
   const { verifyToken } = require('../middleware/auth.middleware');
   const { log } = require('console');
+  const { getInvoiceData } = require('../controllers/trip.controller');
 
   /**
    * ✅ Create Trip (Customer or Collaborative)
@@ -546,6 +547,70 @@ app.http('getTripsByCrusherId', {
       return {
         status: err.status || 500,
         jsonBody: { success: false, error: err.message },
+      };
+    }
+  },
+});
+
+/**
+ * ✅ Get Invoice Data for Customer
+ */
+app.http('getInvoiceData', {
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  route: 'trips/invoice-data',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      // Only owners can access invoice data
+      if (user.role !== 'owner') {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
+        };
+      }
+
+  const url = new URL(request.url);
+  const customer_id = url.searchParams.get('customer_id');
+  const from_date = url.searchParams.get('from_date');
+  const to_date = url.searchParams.get('to_date');
+      
+      // Validate required parameters
+      if (!customer_id || !from_date || !to_date) {
+        return {
+          status: 400,
+          jsonBody: { 
+            success: false, 
+            error: 'Customer ID, from date and to date are required' 
+          },
+        };
+      }
+
+      const result = await getInvoiceData(user.userId, customer_id, from_date, to_date);
+
+      const response = { 
+        status: 200, 
+        jsonBody: { 
+          success: true, 
+          data: result 
+        } 
+      };
+      
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { 
+          success: false, 
+          error: err.message 
+        },
       };
     }
   },

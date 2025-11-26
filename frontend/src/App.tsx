@@ -85,6 +85,7 @@ import CrusherPayments from './pages/Crushers/CrusherPayments';
 import CrusherDetails from './pages/Crushers/CrusherDetails';
 import SettlementTab from './pages/Settlement/SettlementTab';
 import CrusherTripForm from './pages/Crushers/CrusherTripForm';
+import InvoiceGenerator from './pages/InvoiceGenerator';
 
 
 
@@ -186,6 +187,7 @@ function App() {
                       <Route path="/lorries" element={<Lorries />} />
                       <Route path="/lorries/create" element={<ManageLorryForm />} />
                       <Route path="/lorries/edit/:id" element={<ManageLorryForm />} />
+                      <Route path="/invoice" element={<InvoiceGenerator />} />
 
 
                       {/* Lorry Details with nested routes */}
