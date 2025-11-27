@@ -108,6 +108,282 @@ const User = require('../models/user.model');
 //   return result;
 // };
 
+/**
+ * Helper function for date formatting
+ */
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+};
+
+/**
+ * NEW: Get unsettled trip ranges for a partner
+ * This finds all date ranges that have trips but are not covered by settlements
+ */
+const getUnsettledTripRanges = async (owner_A_id, owner_B_id) => {
+  console.log('Finding unsettled trip ranges between:', owner_A_id, 'and', owner_B_id);
+
+  // Get all settlements between these partners
+  const existingSettlements = await Settlement.find({
+    $or: [
+      { owner_A_id: owner_A_id, owner_B_id: owner_B_id },
+      { owner_A_id: owner_B_id, owner_B_id: owner_A_id }
+    ]
+  }).sort({ from_date: 1 });
+
+  console.log(`Found ${existingSettlements.length} existing settlements`);
+
+  // Get all collaborative trips between these partners
+  const allTrips = await Trip.find({
+    $or: [
+      { owner_id: owner_A_id, collab_owner_id: owner_B_id },
+      { owner_id: owner_B_id, collab_owner_id: owner_A_id }
+    ],
+    status: { $in: ['delivered', 'completed'] }
+  }).sort({ trip_date: 1 });
+
+  console.log(`Found ${allTrips.length} total collaborative trips`);
+
+  if (allTrips.length === 0) {
+    return {
+      has_unsettled_trips: false,
+      unsettled_ranges: [],
+      message: 'No collaborative trips found'
+    };
+  }
+
+  // Find trips that are NOT in any settlement
+  const settledTripIds = new Set();
+  existingSettlements.forEach(settlement => {
+    if (settlement.trip_ids) {
+      settlement.trip_ids.forEach(id => settledTripIds.add(id.toString()));
+    }
+  });
+
+  const unsettledTrips = allTrips.filter(trip => !settledTripIds.has(trip._id.toString()));
+
+  console.log(`Found ${unsettledTrips.length} unsettled trips`);
+
+  if (unsettledTrips.length === 0) {
+    return {
+      has_unsettled_trips: false,
+      unsettled_ranges: [],
+      all_trips_settled: true,
+      message: 'All trips are already included in settlements'
+    };
+  }
+
+  // Group unsettled trips into suggested date ranges
+  const unsettledRanges = [];
+  
+  // Strategy 1: Find gaps between settlements
+  if (existingSettlements.length > 0) {
+    // Check before first settlement
+    const firstSettlement = existingSettlements[0];
+    const tripsBeforeFirst = unsettledTrips.filter(
+      trip => new Date(trip.trip_date) < new Date(firstSettlement.from_date)
+    );
+
+    if (tripsBeforeFirst.length > 0) {
+      const minDate = new Date(Math.min(...tripsBeforeFirst.map(t => new Date(t.trip_date))));
+      const maxDate = new Date(Math.max(...tripsBeforeFirst.map(t => new Date(t.trip_date))));
+      
+      unsettledRanges.push({
+        from_date: minDate.toISOString().split('T')[0],
+        to_date: new Date(firstSettlement.from_date.getTime() - 86400000).toISOString().split('T')[0], // Day before first settlement
+        trip_count: tripsBeforeFirst.length,
+        reason: 'Trips before first settlement',
+        priority: 'high'
+      });
+    }
+
+    // Check gaps between settlements
+    for (let i = 0; i < existingSettlements.length - 1; i++) {
+      const currentSettlement = existingSettlements[i];
+      const nextSettlement = existingSettlements[i + 1];
+
+      const gapStart = new Date(currentSettlement.to_date.getTime() + 86400000); // Day after current
+      const gapEnd = new Date(nextSettlement.from_date.getTime() - 86400000); // Day before next
+
+      if (gapStart <= gapEnd) {
+        const tripsInGap = unsettledTrips.filter(trip => {
+          const tripDate = new Date(trip.trip_date);
+          return tripDate >= gapStart && tripDate <= gapEnd;
+        });
+
+        if (tripsInGap.length > 0) {
+          unsettledRanges.push({
+            from_date: gapStart.toISOString().split('T')[0],
+            to_date: gapEnd.toISOString().split('T')[0],
+            trip_count: tripsInGap.length,
+            reason: `Gap between settlements (${formatDate(currentSettlement.to_date)} - ${formatDate(nextSettlement.from_date)})`,
+            priority: 'high'
+          });
+        }
+      }
+    }
+
+    // Check after last settlement
+    const lastSettlement = existingSettlements[existingSettlements.length - 1];
+    const tripsAfterLast = unsettledTrips.filter(
+      trip => new Date(trip.trip_date) > new Date(lastSettlement.to_date)
+    );
+
+    if (tripsAfterLast.length > 0) {
+      const minDate = new Date(lastSettlement.to_date.getTime() + 86400000); // Day after last settlement
+      const today = new Date();
+      
+      unsettledRanges.push({
+        from_date: minDate.toISOString().split('T')[0],
+        to_date: today.toISOString().split('T')[0],
+        trip_count: tripsAfterLast.length,
+        reason: 'Trips after last settlement',
+        priority: 'high'
+      });
+    }
+
+    // Strategy 2: Check for trips added within existing settlement date ranges but not included
+    existingSettlements.forEach((settlement, index) => {
+      const tripsInSettlementRange = unsettledTrips.filter(trip => {
+        const tripDate = new Date(trip.trip_date);
+        return tripDate >= new Date(settlement.from_date) && 
+               tripDate <= new Date(settlement.to_date);
+      });
+
+      if (tripsInSettlementRange.length > 0) {
+        // Find the exact date range of these trips
+        const tripDates = tripsInSettlementRange.map(t => new Date(t.trip_date));
+        const minTripDate = new Date(Math.min(...tripDates));
+        const maxTripDate = new Date(Math.max(...tripDates));
+
+        unsettledRanges.push({
+          from_date: minTripDate.toISOString().split('T')[0],
+          to_date: maxTripDate.toISOString().split('T')[0],
+          trip_count: tripsInSettlementRange.length,
+          reason: `New trips added within existing settlement period (${formatDate(settlement.from_date)} - ${formatDate(settlement.to_date)})`,
+          priority: 'critical', // This is the case you mentioned!
+          existing_settlement_id: settlement._id
+        });
+      }
+    });
+  } else {
+    // No settlements exist - suggest full range
+    const minDate = new Date(Math.min(...unsettledTrips.map(t => new Date(t.trip_date))));
+    const maxDate = new Date(Math.max(...unsettledTrips.map(t => new Date(t.trip_date))));
+    
+    unsettledRanges.push({
+      from_date: minDate.toISOString().split('T')[0],
+      to_date: maxDate.toISOString().split('T')[0],
+      trip_count: unsettledTrips.length,
+      reason: 'No previous settlements found',
+      priority: 'high'
+    });
+  }
+
+  // Sort by priority (critical first, then high) and date
+  const priorityOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+  unsettledRanges.sort((a, b) => {
+    if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
+      return priorityOrder[a.priority] - priorityOrder[b.priority];
+    }
+    return new Date(a.from_date) - new Date(b.from_date);
+  });
+
+  return {
+    has_unsettled_trips: true,
+    unsettled_trip_count: unsettledTrips.length,
+    unsettled_ranges: unsettledRanges,
+    total_ranges: unsettledRanges.length,
+    last_settlement: existingSettlements.length > 0 ? {
+      from_date: existingSettlements[existingSettlements.length - 1].from_date,
+      to_date: existingSettlements[existingSettlements.length - 1].to_date,
+      net_amount: existingSettlements[existingSettlements.length - 1].net_amount,
+      trip_count: existingSettlements[existingSettlements.length - 1].trip_ids?.length || 0
+    } : null
+  };
+};
+
+/**
+ * Get smart date suggestions for settlement creation
+ * This combines last settlement info with unsettled trip ranges
+ */
+const getSettlementDateSuggestions = async (owner_A_id, owner_B_id) => {
+  console.log('Getting smart date suggestions between:', owner_A_id, 'and', owner_B_id);
+
+  const unsettledInfo = await getUnsettledTripRanges(owner_A_id, owner_B_id);
+
+  if (!unsettledInfo.has_unsettled_trips) {
+    // No unsettled trips - suggest current month or continuation
+    const today = new Date();
+    
+    if (unsettledInfo.last_settlement) {
+      // Continue from last settlement
+      const nextDay = new Date(unsettledInfo.last_settlement.to_date);
+      nextDay.setDate(nextDay.getDate() + 1);
+
+      return {
+        suggestion_type: 'continuation',
+        suggested_range: {
+          from_date: nextDay.toISOString().split('T')[0],
+          to_date: today.toISOString().split('T')[0],
+          reason: `Continuing from last settlement (${formatDate(unsettledInfo.last_settlement.from_date)} - ${formatDate(unsettledInfo.last_settlement.to_date)})`,
+          expected_trip_count: 0,
+          note: 'No unsettled trips in this range yet'
+        },
+        last_settlement: unsettledInfo.last_settlement,
+        alternative_ranges: []
+      };
+    } else {
+      // No settlements at all - suggest current month
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+      
+      return {
+        suggestion_type: 'first_settlement',
+        suggested_range: {
+          from_date: firstDay.toISOString().split('T')[0],
+          to_date: today.toISOString().split('T')[0],
+          reason: 'Current month (No previous settlements found)',
+          expected_trip_count: 0,
+          note: 'No trips found in this range'
+        },
+        last_settlement: null,
+        alternative_ranges: []
+      };
+    }
+  }
+
+  // We have unsettled trips - prioritize them
+  const primarySuggestion = unsettledInfo.unsettled_ranges[0];
+  const alternativeSuggestions = unsettledInfo.unsettled_ranges.slice(1);
+
+  return {
+    suggestion_type: 'unsettled_trips',
+    suggested_range: {
+      from_date: primarySuggestion.from_date,
+      to_date: primarySuggestion.to_date,
+      reason: primarySuggestion.reason,
+      expected_trip_count: primarySuggestion.trip_count,
+      priority: primarySuggestion.priority,
+      note: primarySuggestion.priority === 'critical' 
+        ? '⚠️ Critical: These trips were added after settlement was created'
+        : 'These trips are not included in any settlement'
+    },
+    last_settlement: unsettledInfo.last_settlement,
+    alternative_ranges: alternativeSuggestions.map(range => ({
+      from_date: range.from_date,
+      to_date: range.to_date,
+      reason: range.reason,
+      trip_count: range.trip_count,
+      priority: range.priority
+    })),
+    total_unsettled_trips: unsettledInfo.unsettled_trip_count
+  };
+};
+
 const calculateNetSettlement = async (owner_A_id, owner_B_id, from_date, to_date) => {
   console.log('Calculating net settlement between:', owner_A_id, 'and', owner_B_id, 'from', from_date, 'to', to_date);
   
@@ -741,5 +1017,8 @@ module.exports = {
   approvePayment,
   rejectPayment,
   getSettlementStats,
-  getCollaborativePartners
+  getCollaborativePartners,
+  // NEW exports
+  getUnsettledTripRanges,
+  getSettlementDateSuggestions
 };

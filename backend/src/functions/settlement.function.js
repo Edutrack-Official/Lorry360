@@ -9,7 +9,9 @@ const {
   approvePayment,
   rejectPayment,
   getSettlementStats,
-  getCollaborativePartners
+  getCollaborativePartners,
+  getUnsettledTripRanges,
+  getSettlementDateSuggestions
 } = require('../controllers/settlement.controller');
 const { verifyToken } = require('../middleware/auth.middleware');
 
@@ -364,6 +366,102 @@ app.http('getCollaborativePartners', {
       }
 
       const result = await getCollaborativePartners(user.userId);
+
+      const response = { status: 200, jsonBody: { success: true, data: result } };
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { success: false, error: err.message },
+      };
+    }
+  },
+});
+
+/**
+ * 🆕 Get Unsettled Trip Ranges
+ * Returns all date ranges that have unsettled trips
+ */
+app.http('getUnsettledTripRanges', {
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  route: 'settlements/unsettled-ranges',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      if (user.role !== 'owner') {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
+        };
+      }
+
+      const body = await request.json();
+      const { owner_B_id } = body;
+
+      if (!owner_B_id) {
+        return {
+          status: 400,
+          jsonBody: { success: false, error: 'owner_B_id is required' },
+        };
+      }
+
+      const result = await getUnsettledTripRanges(user.userId, owner_B_id);
+
+      const response = { status: 200, jsonBody: { success: true, data: result } };
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { success: false, error: err.message },
+      };
+    }
+  },
+});
+
+/**
+ * 🆕 Get Smart Date Suggestions
+ * Returns intelligent date range suggestions based on unsettled trips
+ */
+app.http('getSettlementDateSuggestions', {
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  route: 'settlements/date-suggestions',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      if (user.role !== 'owner') {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
+        };
+      }
+
+      const body = await request.json();
+      const { owner_B_id } = body;
+
+      if (!owner_B_id) {
+        return {
+          status: 400,
+          jsonBody: { success: false, error: 'owner_B_id is required' },
+        };
+      }
+
+      const result = await getSettlementDateSuggestions(user.userId, owner_B_id);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
