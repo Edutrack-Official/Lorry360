@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Plus, Receipt, Calendar, IndianRupee } from 'lucide-react';
+import { Plus, CreditCard, Calendar, IndianRupee, Building } from 'lucide-react';
 import api from '../../api/client';
 import toast from 'react-hot-toast';
 
@@ -78,8 +78,8 @@ const CrusherPayments = () => {
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold text-gray-900">Payments</h2>
         <Link
-          to={`/payments/create?crusher=${crusherId}`}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          to={`/crushers/${crusherId}/payments/create`}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
         >
           <Plus className="h-4 w-4" />
           Add Payment
@@ -91,35 +91,38 @@ const CrusherPayments = () => {
           {payments.map((payment) => {
             const config = getPaymentModeConfig(payment.payment_mode);
             return (
-              <div key={payment._id} className="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow">
+              <div 
+                key={payment._id} 
+                className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200"
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className={`p-3 rounded-lg ${config.color}`}>
                       <span className="text-lg">{config.icon}</span>
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <h3 className="font-semibold text-gray-900">
                         {payment.payment_number}
                       </h3>
                       <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
-                        <Calendar className="h-4 w-4" />
+                        <Calendar className="h-4 w-4 flex-shrink-0" />
                         <span>{formatDate(payment.payment_date)}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                        <Receipt className="h-4 w-4" />
+                        <CreditCard className="h-4 w-4 flex-shrink-0" />
                         <span className="capitalize">{config.label}</span>
                       </div>
                       {payment.notes && (
-                        <p className="text-sm text-gray-600 mt-1">{payment.notes}</p>
+                        <p className="text-sm text-gray-600 mt-1 line-clamp-2">{payment.notes}</p>
                       )}
                     </div>
                   </div>
                   
-                  <div className="text-right">
+                  <div className="text-right min-w-[120px]">
                     <div className="text-lg font-semibold text-green-600">
                       {formatCurrency(payment.amount)}
                     </div>
-                    <div className="text-sm text-gray-500 capitalize">
+                    <div className="text-sm text-gray-500 capitalize mt-1">
                       {payment.payment_type.replace('_', ' ')}
                     </div>
                   </div>
@@ -129,13 +132,15 @@ const CrusherPayments = () => {
           })}
         </div>
       ) : (
-        <div className="text-center py-12">
-          <Receipt className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+        <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
+          <Building className="h-16 w-16 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No payments yet</h3>
-          <p className="text-gray-500 mb-4">Start by recording your first payment to this crusher</p>
+          <p className="text-gray-500 mb-4 max-w-md mx-auto">
+            Start by recording your first payment to this crusher
+          </p>
           <Link
-            to={`/payments/create?crusher=${crusherId}`}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            to={`/crushers/${crusherId}/payments/create`}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
           >
             <Plus className="h-4 w-4" />
             Record First Payment

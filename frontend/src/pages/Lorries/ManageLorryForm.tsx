@@ -4,7 +4,17 @@ import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 import BackButton from "../../components/BackButton";
 import FloatingInput from "../../components/FloatingInput";
-import { Truck } from "lucide-react";
+import { 
+  Truck, 
+  Save, 
+  X, 
+  ArrowLeft,
+  CheckCircle2,
+  Clock,
+  PauseCircle,
+  Info,
+  Loader2
+} from "lucide-react";
 
 interface FormData {
   registration_number: string;
@@ -15,7 +25,7 @@ interface FormData {
 interface FormErrors {
   registration_number?: string;
   nick_name?: string;
-  status?: string; // Error messages are always strings
+  status?: string;
 }
 
 const initialFormData: FormData = {
@@ -63,8 +73,6 @@ const ManageLorryForm: React.FC = () => {
       newErrors.registration_number = "Registration number must be at least 3 characters";
     }
 
-    // Nick name is optional, no validation needed
-    
     if (!formData.status) {
       newErrors.status = "Status is required";
     }
@@ -79,7 +87,6 @@ const ManageLorryForm: React.FC = () => {
     const { name, value } = e.target;
     
     if (name === "status") {
-      // Type guard for status field
       if (value === 'active' || value === 'maintenance' || value === 'inactive') {
         setFormData((prev) => ({
           ...prev,
@@ -120,187 +127,254 @@ const ManageLorryForm: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      active: { color: "bg-green-100 text-green-800", icon: "🚚" },
-      maintenance: { color: "bg-yellow-100 text-yellow-800", icon: "🔧" },
-      inactive: { color: "bg-gray-100 text-gray-800", icon: "⏸️" }
-    };
-    
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.inactive;
-    
-    return (
-      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${config.color}`}>
-        <span>{config.icon}</span>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </span>
-    );
-  };
+  const statusOptions = [
+    { 
+      value: 'active', 
+      label: 'Active', 
+      description: 'Lorry is operational and available',
+      icon: CheckCircle2,
+      color: 'border-green-200 bg-green-50',
+      selectedColor: 'border-green-500 bg-green-100 ring-2 ring-green-500',
+      iconColor: 'text-green-600',
+      dotColor: 'bg-green-500'
+    },
+    { 
+      value: 'maintenance', 
+      label: 'Maintenance', 
+      description: 'Lorry is under maintenance',
+      icon: Clock,
+      color: 'border-amber-200 bg-amber-50',
+      selectedColor: 'border-amber-500 bg-amber-100 ring-2 ring-amber-500',
+      iconColor: 'text-amber-600',
+      dotColor: 'bg-amber-500'
+    },
+    { 
+      value: 'inactive', 
+      label: 'Inactive', 
+      description: 'Lorry is not in service',
+      icon: PauseCircle,
+      color: 'border-gray-200 bg-gray-50',
+      selectedColor: 'border-gray-500 bg-gray-100 ring-2 ring-gray-500',
+      iconColor: 'text-gray-600',
+      dotColor: 'bg-gray-500'
+    }
+  ];
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+          <p className="text-sm text-gray-600">Loading lorry details...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 space-y-6">
-      {/* 🔹 Header section */}
-      <div className="bg-white p-5 rounded-t-xl border shadow-md flex items-center gap-3">
-        <BackButton />
-        <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-800">
-          <Truck className="w-6 h-6 text-blue-600" />
-          {isEditMode ? "Edit Lorry" : "Add Lorry"}
-        </h2>
-      </div>
-
-      {/* 🔹 Form section */}
-      <div className="bg-white rounded-b-xl shadow-md p-8">
-        <form onSubmit={handleSubmit} className="space-y-6 bg-white rounded">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Registration Number */}
-            <div className="md:col-span-2">
-              <FloatingInput
-                type="text"
-                name="registration_number"
-                value={formData.registration_number}
-                onChange={handleChange}
-                label="Registration Number *"
-              />
-              {errors.registration_number && (
-                <p className="mt-1 text-sm text-red-600">{errors.registration_number}</p>
-              )}
-              <p className="mt-1 text-xs text-gray-500">
-                This will be automatically converted to uppercase
-              </p>
-            </div>
-
-            {/* Nick Name */}
-            <div className="md:col-span-2">
-              <FloatingInput
-                type="text"
-                name="nick_name"
-                value={formData.nick_name}
-                onChange={handleChange}
-                label="Nick Name (Optional)"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Optional friendly name for easier identification
-              </p>
-            </div>
-
-            {/* Status */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Status *
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {[
-                  { value: 'active', label: 'Active', description: 'Lorry is operational and available' },
-                  { value: 'maintenance', label: 'Maintenance', description: 'Lorry is under maintenance' },
-                  { value: 'inactive', label: 'Inactive', description: 'Lorry is not in service' }
-                ].map((statusOption) => (
-                  <label
-                    key={statusOption.value}
-                    className={`relative flex cursor-pointer rounded-lg border p-4 focus:outline-none ${
-                      formData.status === statusOption.value
-                        ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500'
-                        : 'border-gray-300 bg-white hover:bg-gray-50'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="status"
-                      value={statusOption.value}
-                      checked={formData.status === statusOption.value}
-                      onChange={handleChange}
-                      className="sr-only"
-                    />
-                    <div className="flex w-full items-center justify-between">
-                      <div className="flex items-center">
-                        <div className="text-sm">
-                          <div className="flex items-center gap-2">
-                            {getStatusBadge(statusOption.value)}
-                          </div>
-                          <p className="font-medium text-gray-900 mt-1">
-                            {statusOption.label}
-                          </p>
-                          <p className="text-gray-500 text-xs mt-1">
-                            {statusOption.description}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </label>
-                ))}
+    <div className="min-h-screen bg-gray-50">
+      {/* Mobile-First Header - Sticky */}
+      <div className="bg-white border-b sticky top-0 z-10 shadow-sm">
+        <div className="px-4 py-4 sm:px-6">
+          <div className="flex items-center gap-3">
+            <BackButton />
+            <div className="flex items-center gap-2 flex-1">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Truck className="h-5 w-5 text-blue-600" />
               </div>
-              {errors.status && (
-                <p className="mt-1 text-sm text-red-600">{errors.status}</p>
-              )}
+              <div>
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+                  {isEditMode ? "Edit Lorry" : "Add New Lorry"}
+                </h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {isEditMode ? "Update lorry information" : "Create a new lorry entry"}
+                </p>
+              </div>
             </div>
-          </div>
-
-          {/* 🔹 Action Buttons */}
-          <div className="flex flex-col md:flex-row gap-4 pt-6 border-t border-gray-200">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
-            >
-              {submitting ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  {isEditMode ? "Updating..." : "Creating..."}
-                </>
-              ) : (
-                <>
-                  <Truck className="w-4 h-4 mr-2" />
-                  {isEditMode ? "Update Lorry" : "Create Lorry"}
-                </>
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => navigate("/lorries")}
-              className="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-            >
-              Cancel
-            </button>
-
-            {isEditMode && (
-              <button
-                type="button"
-                onClick={() => navigate(`/lorries`)}
-                className="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors md:ml-auto"
-              >
-                Back to Lorries
-              </button>
-            )}
-          </div>
-        </form>
-      </div>
-
-      {/* 🔹 Information Panel */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-start gap-3">
-          <div className="flex-shrink-0">
-            <Truck className="w-5 h-5 text-blue-600 mt-0.5" />
-          </div>
-          <div>
-            <h3 className="text-sm font-medium text-blue-800 mb-1">
-              Lorry Management Information
-            </h3>
-            <ul className="text-xs text-blue-700 space-y-1">
-              <li>• Registration number must be unique across all lorries</li>
-              <li>• Status determines the operational state of the lorry</li>
-              <li>• Nick names help with quick identification in lists</li>
-              <li>• Only owners can create and manage lorries</li>
-            </ul>
           </div>
         </div>
+      </div>
+
+      {/* Form Content */}
+      <div className="p-4 sm:p-6 max-w-4xl mx-auto">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Main Form Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="p-4 sm:p-6 space-y-6">
+              {/* Registration Number */}
+              <div>
+                <FloatingInput
+                  type="text"
+                  name="registration_number"
+                  value={formData.registration_number}
+                  onChange={handleChange}
+                  label="Registration Number *"
+                />
+                {errors.registration_number && (
+                  <p className="mt-2 text-sm text-red-600 flex items-start gap-1">
+                    <span className="text-red-500 font-bold">•</span>
+                    {errors.registration_number}
+                  </p>
+                )}
+                <p className="mt-2 text-xs text-gray-500 flex items-center gap-1">
+                  <Info className="h-3 w-3" />
+                  Auto-converted to uppercase (e.g., TN01AB1234)
+                </p>
+              </div>
+
+              {/* Nick Name */}
+              <div>
+                <FloatingInput
+                  type="text"
+                  name="nick_name"
+                  value={formData.nick_name}
+                  onChange={handleChange}
+                  label="Nick Name (Optional)"
+                />
+                <p className="mt-2 text-xs text-gray-500 flex items-center gap-1">
+                  <Info className="h-3 w-3" />
+                  Friendly name for easier identification
+                </p>
+              </div>
+
+              {/* Status Selection */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-3">
+                  Status *
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {statusOptions.map((statusOption) => {
+                    const StatusIcon = statusOption.icon;
+                    const isSelected = formData.status === statusOption.value;
+                    
+                    return (
+                      <label
+                        key={statusOption.value}
+                        className={`relative flex cursor-pointer rounded-lg border-2 p-4 transition-all ${
+                          isSelected
+                            ? statusOption.selectedColor
+                            : `${statusOption.color} hover:border-gray-300`
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="status"
+                          value={statusOption.value}
+                          checked={isSelected}
+                          onChange={handleChange}
+                          className="sr-only"
+                        />
+                        <div className="flex flex-col w-full gap-2">
+                          <div className="flex items-center justify-between">
+                            <StatusIcon className={`h-5 w-5 ${statusOption.iconColor}`} />
+                            {isSelected && (
+                              <span className={`h-2 w-2 rounded-full ${statusOption.dotColor} animate-pulse`}></span>
+                            )}
+                          </div>
+                          <div>
+                            <p className={`font-semibold text-sm ${statusOption.iconColor}`}>
+                              {statusOption.label}
+                            </p>
+                            <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                              {statusOption.description}
+                            </p>
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+                {errors.status && (
+                  <p className="mt-2 text-sm text-red-600 flex items-start gap-1">
+                    <span className="text-red-500 font-bold">•</span>
+                    {errors.status}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Information Panel */}
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 sm:p-5">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 mt-0.5">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Info className="h-4 w-4 text-blue-600" />
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-semibold text-blue-900 mb-2">
+                  Important Information
+                </h3>
+                <ul className="text-xs text-blue-700 space-y-1.5">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-400 font-bold flex-shrink-0">•</span>
+                    <span>Registration number must be unique across all lorries</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-400 font-bold flex-shrink-0">•</span>
+                    <span>Status determines the operational state of the lorry</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-400 font-bold flex-shrink-0">•</span>
+                    <span>Nick names help with quick identification in lists</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-400 font-bold flex-shrink-0">•</span>
+                    <span>Only owners can create and manage lorries</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons - Sticky on Mobile */}
+          <div className="sticky bottom-0 bg-white border-t border-gray-200 -mx-4 sm:-mx-6 px-4 sm:px-6 py-4 sm:relative sm:bg-transparent sm:border-0 sm:p-0 shadow-lg sm:shadow-none">
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* Primary Action */}
+              <button
+                type="submit"
+                disabled={submitting}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 disabled:cursor-not-allowed transition-all font-medium shadow-sm text-sm sm:text-base"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {isEditMode ? "Updating..." : "Creating..."}
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    {isEditMode ? "Update Lorry" : "Create Lorry"}
+                  </>
+                )}
+              </button>
+
+              {/* Cancel Button */}
+              <button
+                type="button"
+                onClick={() => navigate("/lorries")}
+                disabled={submitting}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 bg-white rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all font-medium text-sm sm:text-base disabled:opacity-50"
+              >
+                <X className="h-4 w-4" />
+                Cancel
+              </button>
+
+              {/* Back to Lorries - Desktop Only */}
+              {isEditMode && (
+                <button
+                  type="button"
+                  onClick={() => navigate("/lorries")}
+                  className="hidden sm:inline-flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 bg-white rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all font-medium sm:ml-auto"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to Lorries
+                </button>
+              )}
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   );

@@ -1,18 +1,23 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link, useNavigate, Outlet } from "react-router-dom";
+import { useParams, Link, useNavigate, Outlet, useLocation } from "react-router-dom";
 import api from "../../api/client";
-import { Trash2 } from "lucide-react";
-import { useLocation } from "react-router-dom";
 import {
   Truck,
   Package,
   Receipt,
-  Calendar,
-  Edit,
-  MoreVertical,
   ArrowLeft,
   Plus,
-  BadgeAlert
+  CheckCircle2,
+  Clock,
+  PauseCircle,
+  Loader2,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  Calendar,
+  MoreVertical,
+  Edit,
+  Trash2
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -53,7 +58,6 @@ const LorryDetails = () => {
   const [loading, setLoading] = useState(true);
   const [showActionMenu, setShowActionMenu] = useState(false);
 
-  // Determine active tab from current route
   const getActiveTab = () => {
     const path = location.pathname;
     if (path.includes('/expenses')) return 'expenses';
@@ -119,40 +123,45 @@ const LorryDetails = () => {
 
   const getStatusConfig = (status: string) => {
     const config = {
-      active: { color: "bg-green-100 text-green-800 border-green-200", icon: "✅", label: "Active" },
-      maintenance: { color: "bg-yellow-100 text-yellow-800 border-yellow-200", icon: "🔧", label: "Maintenance" },
-      inactive: { color: "bg-red-100 text-red-800 border-red-200", icon: "⏸️", label: "Inactive" }
+      active: { 
+        color: "bg-green-50 text-green-700 border-green-200",
+        icon: CheckCircle2,
+        label: "Active",
+        dotColor: "bg-green-500"
+      },
+      maintenance: { 
+        color: "bg-amber-50 text-amber-700 border-amber-200",
+        icon: Clock,
+        label: "Maintenance",
+        dotColor: "bg-amber-500"
+      },
+      inactive: { 
+        color: "bg-gray-50 text-gray-700 border-gray-200",
+        icon: PauseCircle,
+        label: "Inactive",
+        dotColor: "bg-gray-500"
+      }
     };
     return config[status as keyof typeof config] || config.active;
   };
 
-  const getStatusBadge = (status: string) => {
-    const config = getStatusConfig(status);
-    return (
-      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium border ${config.color}`}>
-        <span>{config.icon}</span>
-        {config.label}
-      </span>
-    );
-  };
-
   const getCategoryConfig = (category: string) => {
     const config = {
-      fuel: { color: "bg-orange-100 text-orange-800", icon: "⛽" },
-      maintenance: { color: "bg-blue-100 text-blue-800", icon: "🔧" },
-      repair: { color: "bg-red-100 text-red-800", icon: "🛠️" },
-      toll: { color: "bg-purple-100 text-purple-800", icon: "🛣️" },
-      fine: { color: "bg-yellow-100 text-yellow-800", icon: "🚨" },
-      other: { color: "bg-gray-100 text-gray-800", icon: "📝" }
+      fuel: { color: "bg-orange-50 text-orange-700 border-orange-200", label: "Fuel" },
+      maintenance: { color: "bg-blue-50 text-blue-700 border-blue-200", label: "Maintenance" },
+      repair: { color: "bg-red-50 text-red-700 border-red-200", label: "Repair" },
+      toll: { color: "bg-purple-50 text-purple-700 border-purple-200", label: "Toll" },
+      fine: { color: "bg-yellow-50 text-yellow-700 border-yellow-200", label: "Fine" },
+      other: { color: "bg-gray-50 text-gray-700 border-gray-200", label: "Other" }
     };
     return config[category as keyof typeof config] || config.other;
   };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
+      year: 'numeric'
     });
   };
 
@@ -180,250 +189,235 @@ const LorryDetails = () => {
     };
   };
 
+  // Close action menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setShowActionMenu(false);
+    if (showActionMenu) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showActionMenu]);
+
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+          <p className="text-sm text-gray-600">Loading lorry details...</p>
+        </div>
       </div>
     );
   }
 
   if (!lorry) {
     return (
-      <div className="text-center py-12">
-        <Truck className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Lorry not found</h3>
-        <button
-          onClick={() => navigate("/lorries")}
-          className="text-blue-600 hover:text-blue-700"
-        >
-          Back to Lorries
-        </button>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <Truck className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Lorry not found</h3>
+          <button
+            onClick={() => navigate("/lorries")}
+            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Lorries
+          </button>
+        </div>
       </div>
     );
   }
 
   const stats = calculateStats();
+  const statusConfig = getStatusConfig(lorry.status);
+  const StatusIcon = statusConfig.icon;
 
   return (
-    <div className="space-y-6 fade-in p-6">
-      {/* Header */}
-      <div className="bg-white p-6 rounded-xl border shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-          <div className="flex items-start gap-4">
+    <div className="min-h-screen bg-gray-50">
+      {/* Mobile-First Header - Sticky */}
+      <div className="bg-white border-b sticky top-0 z-20 shadow-sm">
+        <div className="px-4 py-4 sm:px-6">
+          {/* Top Row */}
+          <div className="flex items-center justify-between gap-3 mb-3">
             <button
               onClick={() => navigate("/lorries")}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors mt-1"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft className="h-5 w-5 text-gray-700" />
             </button>
             
-            <div className="p-3 bg-blue-100 rounded-xl">
-              <Truck className="h-8 w-8 text-blue-600" />
-            </div>
-            
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-2xl font-bold text-gray-900">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                <Truck className="h-5 w-5 text-blue-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">
                   {lorry.registration_number}
                 </h1>
-                {getStatusBadge(lorry.status)}
-              </div>
-              
-              {lorry.nick_name && (
-                <p className="text-lg text-gray-600 mb-2">{lorry.nick_name}</p>
-              )}
-              
-              <div className="flex flex-wrap gap-4 text-sm text-gray-500">
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
-                  Added {formatDate(lorry.createdAt)}
-                </div>
-                <div className="flex items-center gap-1">
-                  <BadgeAlert className="h-4 w-4" />
-                  Last updated {formatDate(lorry.updatedAt)}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Link
-              to={`/lorries/edit/${lorryId}`}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm"
-            >
-              <Edit className="h-4 w-4" />
-              Edit Lorry
-            </Link>
-
-            <div className="relative">
-              <button
-                onClick={() => setShowActionMenu(!showActionMenu)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <MoreVertical className="h-5 w-5 text-gray-500" />
-              </button>
-
-              <AnimatePresence>
-                {showActionMenu && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="absolute right-0 top-12 z-10 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1"
-                  >
-                    <Link
-                      to={`/trips/create?lorry=${lorryId}`}
-                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add Trip
-                    </Link>
-                    <Link
-                      to={`/expenses/create?lorry=${lorryId}`}
-                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add Expense
-                    </Link>
-                    <div className="border-t border-gray-200 my-1"></div>
-                    <button
-                      onClick={handleDeleteLorry}
-                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Delete Lorry
-                    </button>
-                  </motion.div>
+                {lorry.nick_name && (
+                  <p className="text-xs sm:text-sm text-gray-600 truncate">{lorry.nick_name}</p>
                 )}
-              </AnimatePresence>
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6 pt-6 border-t border-gray-200">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-gray-900">{stats.totalTrips}</div>
-            <div className="text-sm text-gray-600">Total Trips</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(stats.totalProfit)}
-            </div>
-            <div className="text-sm text-gray-600">Total Revenue</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-red-600">
-              {formatCurrency(stats.totalExpenseAmount)}
-            </div>
-            <div className="text-sm text-gray-600">Total Expenses</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">
-              {formatCurrency(stats.netProfit)}
-            </div>
-            <div className="text-sm text-gray-600">Net Profit</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">
-              {stats.totalExpenses}
-            </div>
-            <div className="text-sm text-gray-600">Total Expenses</div>
+
+          {/* Status Badge */}
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium border ${statusConfig.color}">
+            <span className={`h-2 w-2 rounded-full ${statusConfig.dotColor} animate-pulse`}></span>
+            {statusConfig.label}
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="bg-white rounded-xl border shadow-sm">
-        <div className="border-b border-gray-200">
-          <nav className="flex space-x-8 px-6">
-            <Link
-              to={`/lorries/${lorryId}`}
-              className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
-                activeTab === 'overview'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <Truck className="h-4 w-4" />
-              Overview
-            </Link>
-            <Link
-              to={`/lorries/${lorryId}/trips`}
-              className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
-                activeTab === 'trips'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <Package className="h-4 w-4" />
-              Trips
-              <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
-                {trips.length}
-              </span>
-            </Link>
-            <Link
-              to={`/lorries/${lorryId}/expenses`}
-              className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
-                activeTab === 'expenses'
-                  ? 'border-green-500 text-green-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <Receipt className="h-4 w-4" />
-              Expenses
-              <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
-                {expenses.length}
-              </span>
-            </Link>
-          </nav>
-        </div>
+      {/* Quick Stats Cards - Horizontal Scroll on Mobile */}
+      <div className="px-4 py-4 sm:px-6">
+        <div className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide sm:grid sm:grid-cols-3 lg:grid-cols-5 sm:gap-4">
+          <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4 min-w-[140px] sm:min-w-0 flex-shrink-0">
+            <div className="flex items-center gap-2 mb-2">
+              <Package className="h-4 w-4 text-blue-600" />
+              <p className="text-xs text-gray-600">Trips</p>
+            </div>
+            <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.totalTrips}</p>
+          </div>
 
-        <div className="p-6">
-          {activeTab === 'overview' ? (
-            <div className="space-y-6">
-              {/* Recent Trips */}
-              <div className="bg-gray-50 rounded-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <Package className="h-5 w-5 text-blue-600" />
-                    Recent Trips
-                  </h3>
-                  <Link
-                    to={`/lorries/${lorryId}/trips`}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                  >
-                    View All
-                  </Link>
-                </div>
-                
+          <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4 min-w-[140px] sm:min-w-0 flex-shrink-0">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="h-4 w-4 text-green-600" />
+              <p className="text-xs text-gray-600">Revenue</p>
+            </div>
+            <p className="text-sm sm:text-lg font-bold text-green-600">
+              {formatCurrency(stats.totalProfit)}
+            </p>
+          </div>
+
+          <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4 min-w-[140px] sm:min-w-0 flex-shrink-0">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingDown className="h-4 w-4 text-red-600" />
+              <p className="text-xs text-gray-600">Expenses</p>
+            </div>
+            <p className="text-sm sm:text-lg font-bold text-red-600">
+              {formatCurrency(stats.totalExpenseAmount)}
+            </p>
+          </div>
+
+          <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4 min-w-[140px] sm:min-w-0 flex-shrink-0">
+            <div className="flex items-center gap-2 mb-2">
+              <DollarSign className="h-4 w-4 text-blue-600" />
+              <p className="text-xs text-gray-600">Net Profit</p>
+            </div>
+            <p className={`text-sm sm:text-lg font-bold ${stats.netProfit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+              {formatCurrency(stats.netProfit)}
+            </p>
+          </div>
+
+          <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4 min-w-[140px] sm:min-w-0 flex-shrink-0">
+            <div className="flex items-center gap-2 mb-2">
+              <Receipt className="h-4 w-4 text-purple-600" />
+              <p className="text-xs text-gray-600">Records</p>
+            </div>
+            <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.totalExpenses}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs Navigation */}
+      <div className="bg-white border-b sticky top-[105px] sm:top-[113px] z-10">
+        <nav className="flex overflow-x-auto scrollbar-hide px-4 sm:px-6">
+          {/* <Link
+            to={`/lorries/${lorryId}`}
+            className={`py-3 px-4 border-b-2 font-medium text-sm whitespace-nowrap flex items-center gap-2 transition-colors ${
+              activeTab === 'overview'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Truck className="h-4 w-4" />
+            Overview
+          </Link> */}
+          <Link
+            to={`/lorries/${lorryId}/trips`}
+            className={`py-3 px-4 border-b-2 font-medium text-sm whitespace-nowrap flex items-center gap-2 transition-colors ${
+              activeTab === 'trips'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Package className="h-4 w-4" />
+            Trips
+            <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs font-semibold">
+              {trips.length}
+            </span>
+          </Link>
+          <Link
+            to={`/lorries/${lorryId}/expenses`}
+            className={`py-3 px-4 border-b-2 font-medium text-sm whitespace-nowrap flex items-center gap-2 transition-colors ${
+              activeTab === 'expenses'
+                ? 'border-green-500 text-green-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <Receipt className="h-4 w-4" />
+            Expenses
+            <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs font-semibold">
+              {expenses.length}
+            </span>
+          </Link>
+        </nav>
+      </div>
+
+      {/* Content */}
+      <div className="p-4 sm:p-6">
+        {activeTab === 'overview' ? (
+          <div className="space-y-4">
+            {/* Recent Trips */}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="px-4 py-3 sm:px-5 sm:py-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Package className="h-5 w-5 text-blue-600" />
+                  Recent Trips
+                </h3>
+                <Link
+                  to={`/lorries/${lorryId}/trips`}
+                  className="text-xs sm:text-sm text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  View All →
+                </Link>
+              </div>
+              
+              <div className="p-4 sm:p-5">
                 {trips.length > 0 ? (
                   <div className="space-y-3">
                     {trips.map((trip) => (
-                      <div key={trip._id} className="bg-white rounded-lg p-4 border">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="font-medium text-gray-900">{trip.trip_number}</div>
-                            <div className="text-sm text-gray-500">{formatDate(trip.trip_date)}</div>
+                      <div key={trip._id} className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm sm:text-base text-gray-900 truncate">
+                              {trip.trip_number}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Calendar className="h-3 w-3 text-gray-400" />
+                              <p className="text-xs text-gray-600">{formatDate(trip.trip_date)}</p>
+                            </div>
                           </div>
                           <div className="text-right">
-                            <div className={`font-semibold ${trip.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            <p className={`font-bold text-sm sm:text-base ${trip.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                               {formatCurrency(trip.profit)}
-                            </div>
-                            <div className="text-sm text-gray-500 capitalize">{trip.status}</div>
+                            </p>
+                            <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 mt-1 capitalize">
+                              {trip.status}
+                            </span>
                           </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <Package className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500 mb-4">No trips yet</p>
+                  <div className="text-center py-8 sm:py-12">
+                    <Package className="h-12 w-12 sm:h-16 sm:w-16 text-gray-300 mx-auto mb-3" />
+                    <p className="text-sm sm:text-base text-gray-600 mb-4">No trips recorded yet</p>
                     <Link
                       to={`/trips/create?lorry=${lorryId}`}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                      className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
                     >
                       <Plus className="h-4 w-4" />
                       Add First Trip
@@ -431,59 +425,59 @@ const LorryDetails = () => {
                   </div>
                 )}
               </div>
+            </div>
 
-              {/* Recent Expenses */}
-              <div className="bg-gray-50 rounded-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <Receipt className="h-5 w-5 text-green-600" />
-                    Recent Expenses
-                  </h3>
-                  <Link
-                    to={`/lorries/${lorryId}/expenses`}
-                    className="text-green-600 hover:text-green-700 text-sm font-medium"
-                  >
-                    View All
-                  </Link>
-                </div>
-                
+            {/* Recent Expenses */}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="px-4 py-3 sm:px-5 sm:py-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Receipt className="h-5 w-5 text-green-600" />
+                  Recent Expenses
+                </h3>
+                <Link
+                  to={`/lorries/${lorryId}/expenses`}
+                  className="text-xs sm:text-sm text-green-600 hover:text-green-700 font-medium"
+                >
+                  View All →
+                </Link>
+              </div>
+              
+              <div className="p-4 sm:p-5">
                 {expenses.length > 0 ? (
                   <div className="space-y-3">
                     {expenses.map((expense) => {
                       const config = getCategoryConfig(expense.category);
                       return (
-                        <div key={expense._id} className="bg-white rounded-lg p-4 border">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <span className={`p-2 rounded-lg ${config.color}`}>
-                                {config.icon}
+                        <div key={expense._id} className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <span className={`inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg text-xs font-semibold border ${config.color}`}>
+                                {config.label}
                               </span>
-                              <div>
-                                <div className="font-medium text-gray-900 capitalize">
-                                  {expense.category}
-                                </div>
-                                <div className="text-sm text-gray-500">
-                                  {formatDate(expense.date)}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                                  <p className="text-xs text-gray-600 truncate">
+                                    {formatDate(expense.date)}
+                                  </p>
                                 </div>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <div className="font-semibold text-red-600">
-                                {formatCurrency(expense.amount)}
-                              </div>
-                            </div>
+                            <p className="font-bold text-sm sm:text-base text-red-600">
+                              {formatCurrency(expense.amount)}
+                            </p>
                           </div>
                         </div>
                       );
                     })}
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <Receipt className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500 mb-4">No expenses yet</p>
+                  <div className="text-center py-8 sm:py-12">
+                    <Receipt className="h-12 w-12 sm:h-16 sm:w-16 text-gray-300 mx-auto mb-3" />
+                    <p className="text-sm sm:text-base text-gray-600 mb-4">No expenses recorded yet</p>
                     <Link
                       to={`/expenses/create?lorry=${lorryId}`}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                      className="inline-flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
                     >
                       <Plus className="h-4 w-4" />
                       Add First Expense
@@ -492,15 +486,13 @@ const LorryDetails = () => {
                 )}
               </div>
             </div>
-          ) : (
-            // This will render either LorryTrips or LorryExpenses component
-            <Outlet />
-          )}
-        </div>
+          </div>
+        ) : (
+          <Outlet />
+        )}
       </div>
     </div>
   );
 };
-
 
 export default LorryDetails;

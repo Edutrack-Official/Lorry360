@@ -87,6 +87,7 @@ import SettlementTab from './pages/Settlement/SettlementTab';
 import CrusherTripForm from './pages/Crushers/CrusherTripForm';
 import InvoiceGenerator from './pages/InvoiceGenerator';
 import ProformaInvoiceGenerator from './pages/ProformaInvoiceGenerator';
+import CrusherPaymentForm from './pages/Crushers/CrusherPaymentForm';
 
 
 
@@ -227,6 +228,7 @@ function App() {
                         <Route path="trips" element={<CrusherTrips />} />
                         <Route path="trips/create" element={<CrusherTripForm />} />
                         <Route path="payments" element={<CrusherPayments />} />
+                        <Route path="payments/create" element={<CrusherPaymentForm />} />
                       </Route>
 
                       {/* Collaboration Management */}
