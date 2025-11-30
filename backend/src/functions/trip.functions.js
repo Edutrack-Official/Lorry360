@@ -470,8 +470,8 @@
     },
   });
 
- /**
- * ✅ Get All Trips by Customer ID
+/**
+ * ✅ Get All Trips by Customer ID (with owner security)
  */
 app.http('getTripsByCustomerId', {
   methods: ['GET'],
@@ -494,7 +494,8 @@ app.http('getTripsByCustomerId', {
       const { customerId } = request.params;
       const filterParams = request.query;
       
-      const result = await getTripsByCustomerId(customerId, filterParams);
+      // Pass owner_id as first parameter for security
+      const result = await getTripsByCustomerId(user.userId, customerId, filterParams);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -512,7 +513,7 @@ app.http('getTripsByCustomerId', {
 });
 
 /**
- * ✅ Get All Trips by Crusher ID
+ * ✅ Get All Trips by Crusher ID (with owner security)
  */
 app.http('getTripsByCrusherId', {
   methods: ['GET'],
@@ -535,7 +536,8 @@ app.http('getTripsByCrusherId', {
       const { crusherId } = request.params;
       const filterParams = request.query;
       
-      const result = await getTripsByCrusherId(crusherId, filterParams);
+      // Pass owner_id as first parameter for security
+      const result = await getTripsByCrusherId(user.userId, crusherId, filterParams);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {

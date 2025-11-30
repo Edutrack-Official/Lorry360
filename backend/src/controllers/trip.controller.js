@@ -539,10 +539,13 @@ const getTripFormData = async (owner_id) => {
   return formData;
 };
 
-// Get all trips for a specific customer
-const getTripsByCustomerId = async (customer_id, filterParams = {}) => {
+// Get all trips for a specific customer (with owner security)
+const getTripsByCustomerId = async (owner_id, customer_id, filterParams = {}) => {
   const { status, start_date, end_date } = filterParams;
-  const query = { customer_id };
+  const query = { 
+    owner_id, // Security: Only show trips belonging to this owner
+    customer_id 
+  };
   
   if (status) query.status = status;
   
@@ -567,10 +570,13 @@ const getTripsByCustomerId = async (customer_id, filterParams = {}) => {
   };
 };
 
-// Get all trips for a specific crusher
-const getTripsByCrusherId = async (crusher_id, filterParams = {}) => {
+// Get all trips for a specific crusher (with owner security)
+const getTripsByCrusherId = async (owner_id, crusher_id, filterParams = {}) => {
   const { status, start_date, end_date } = filterParams;
-  const query = { crusher_id };
+  const query = { 
+    owner_id, // Security: Only show trips belonging to this owner
+    crusher_id 
+  };
   
   if (status) query.status = status;
   

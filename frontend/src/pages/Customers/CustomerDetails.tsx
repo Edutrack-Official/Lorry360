@@ -92,16 +92,15 @@ const CustomerDetails = () => {
   };
 
   const fetchTrips = async () => {
-    try {
-      const res = await api.get(`/trips`);
-      const allTrips = res.data.data?.trips || [];
-      const customerTrips = allTrips.filter((trip: Trip) => trip.customer_id === customerId);
-      setTrips(customerTrips);
-    } catch (error: any) {
-      console.error("Failed to fetch trips:", error);
-      toast.error("Failed to fetch trips");
-    }
-  };
+  try {
+    const res = await api.get(`/trips/customer/${customerId}`); // Use the same endpoint
+    const customerTrips = res.data.data?.trips || [];
+    setTrips(customerTrips);
+  } catch (error: any) {
+    console.error("Failed to fetch trips:", error);
+    toast.error("Failed to fetch trips");
+  }
+};
 
   const fetchPayments = async () => {
     try {
@@ -193,7 +192,7 @@ const CustomerDetails = () => {
 
   if (!customer) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-12 px-4">
         <User className="h-16 w-16 text-gray-300 mx-auto mb-4" />
         <h3 className="text-lg font-semibold text-gray-900 mb-2">Customer not found</h3>
         <button
@@ -209,98 +208,93 @@ const CustomerDetails = () => {
   const stats = calculateStats();
 
   return (
-    <div className="space-y-6 fade-in p-6">
+    <div className="space-y-4 md:space-y-6 fade-in p-3 sm:p-4 md:p-6">
       {/* Header */}
-      <div className="bg-white p-6 rounded-xl border shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-          <div className="flex items-start gap-4">
+      <div className="bg-white p-4 sm:p-5 md:p-6 rounded-xl border shadow-sm">
+        <div className="flex flex-col gap-4">
+          <div className="flex items-start gap-3">
             <button
               onClick={() => navigate("/customers")}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors mt-1"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
             
-            
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {customer.name}
-                </h1>
-              </div>
-
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">
+                {customer.name}
+              </h1>
             </div>
           </div>
-
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mt-6 pt-6 border-t border-gray-200">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-gray-900">{stats.totalTrips}</div>
-            <div className="text-sm text-gray-600">Total Trips</div>
+        {/* Quick Stats - Mobile Optimized */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200">
+          <div className="text-center p-2 sm:p-0">
+            <div className="text-lg sm:text-2xl font-bold text-gray-900">{stats.totalTrips}</div>
+            <div className="text-xs sm:text-sm text-gray-600 mt-0.5">Total Trips</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">
+          <div className="text-center p-2 sm:p-0">
+            <div className="text-lg sm:text-2xl font-bold text-blue-600 break-words">
               {formatCurrency(stats.totalRevenue)}
             </div>
-            <div className="text-sm text-gray-600">Total Revenue</div>
+            <div className="text-xs sm:text-sm text-gray-600 mt-0.5">Total Revenue</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">
+          <div className="text-center p-2 sm:p-0">
+            <div className="text-lg sm:text-2xl font-bold text-green-600 break-words">
               {formatCurrency(stats.totalProfit)}
             </div>
-            <div className="text-sm text-gray-600">Total Profit</div>
+            <div className="text-xs sm:text-sm text-gray-600 mt-0.5">Total Profit</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">
+          <div className="text-center p-2 sm:p-0">
+            <div className="text-lg sm:text-2xl font-bold text-purple-600 break-words">
               {formatCurrency(stats.totalPaymentAmount)}
             </div>
-            <div className="text-sm text-gray-600">Payments Received</div>
+            <div className="text-xs sm:text-sm text-gray-600 mt-0.5 whitespace-nowrap">Payments Received</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-orange-600">
+          <div className="text-center p-2 sm:p-0">
+            <div className="text-lg sm:text-2xl font-bold text-orange-600 break-words">
               {formatCurrency(stats.pendingAmount)}
             </div>
-            <div className="text-sm text-gray-600">Pending Amount</div>
+            <div className="text-xs sm:text-sm text-gray-600 mt-0.5 whitespace-nowrap">Pending Amount</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-indigo-600">
+          <div className="text-center p-2 sm:p-0">
+            <div className="text-lg sm:text-2xl font-bold text-indigo-600">
               {stats.totalPayments}
             </div>
-            <div className="text-sm text-gray-600">Payment Count</div>
+            <div className="text-xs sm:text-sm text-gray-600 mt-0.5 whitespace-nowrap">Payment Count</div>
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs - Mobile Optimized */}
       <div className="bg-white rounded-xl border shadow-sm">
-        <div className="border-b border-gray-200">
-          <nav className="flex space-x-8 px-6">
+        <div className="border-b border-gray-200 overflow-x-auto">
+          <nav className="flex space-x-4 sm:space-x-8 px-4 sm:px-6 min-w-max">
             <Link
               to={`/customers/${customerId}/trips`}
-              className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+              className={`py-3 sm:py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'trips'
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              <Package className="h-4 w-4" />
-              Trips
+              <Package className="h-4 w-4 flex-shrink-0" />
+              <span>Trips</span>
               <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
                 {trips.length}
               </span>
             </Link>
             <Link
               to={`/customers/${customerId}/payments`}
-              className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+              className={`py-3 sm:py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'payments'
                   ? 'border-green-500 text-green-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              <CreditCard className="h-4 w-4" />
-              Payments
+              <CreditCard className="h-4 w-4 flex-shrink-0" />
+              <span>Payments</span>
               <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
                 {payments.length}
               </span>
@@ -308,7 +302,7 @@ const CustomerDetails = () => {
           </nav>
         </div>
 
-        <div className="p-6">
+        <div className="p-3 sm:p-4 md:p-6">
           {/* This will render either CustomerTrips or CustomerPayments component */}
           <Outlet />
         </div>

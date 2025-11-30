@@ -97,19 +97,16 @@ const CrusherDetails = () => {
     }
   };
 
-  const fetchTrips = async () => {
-    try {
-      const res = await api.get(`/trips`);
-      const allTrips = res.data.data?.trips || [];
-      const crusherTrips = allTrips.filter((trip: Trip) => 
-        trip.crusher_id && trip.crusher_id._id === crusherId
-      );
-      setTrips(crusherTrips);
-    } catch (error: any) {
-      console.error("Failed to fetch trips:", error);
-      toast.error("Failed to fetch trips");
-    }
-  };
+const fetchTrips = async () => {
+  try {
+    const res = await api.get(`/trips/crusher/${crusherId}`); // Use the same endpoint
+    const crusherTrips = res.data.data?.trips || [];
+    setTrips(crusherTrips);
+  } catch (error: any) {
+    console.error("Failed to fetch trips:", error);
+    toast.error("Failed to fetch trips");
+  }
+};
 
   const fetchPayments = async () => {
     try {
