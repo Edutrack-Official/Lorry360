@@ -75,22 +75,30 @@ const LorryExpenses = () => {
     }
   };
 
-  const fetchExpenses = async () => {
-    try {
-      const filterParams: any = { lorry_id: lorryId };
-      if (dateRange.start) filterParams.start_date = dateRange.start;
-      if (dateRange.end) filterParams.end_date = dateRange.end;
-      if (filterCategory !== 'all') filterParams.category = filterCategory;
-      if (filterPaymentMode !== 'all') filterParams.payment_mode = filterPaymentMode;
+const fetchExpenses = async () => {
+  try {
+    const filterParams: any = {};
+    if (dateRange.start) filterParams.start_date = dateRange.start;
+    if (dateRange.end) filterParams.end_date = dateRange.end;
+    if (filterCategory !== 'all') filterParams.category = filterCategory;
+    if (filterPaymentMode !== 'all') filterParams.payment_mode = filterPaymentMode;
 
-      const res = await api.get(`/expenses`, { params: filterParams });
-      setExpenses(res.data.data?.expenses || []);
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Failed to fetch expenses");
-    } finally {
-      setExpensesLoading(false);
-    }
-  };
+    console.log('Fetching expenses for lorry:', lorryId, 'with params:', filterParams);
+
+    // ✅ Use the dedicated lorry endpoint
+    const res = await api.get(`/expenses/lorry/${lorryId}`, { params: filterParams });
+    
+    // The response structure might be different, so adjust accordingly
+    const expensesData = res.data.data?.expenses || [];
+    setExpenses(expensesData);
+    
+    console.log('Received expenses:', expensesData.length);
+  } catch (error: any) {
+    toast.error(error.response?.data?.error || "Failed to fetch expenses");
+  } finally {
+    setExpensesLoading(false);
+  }
+};
 
   useEffect(() => {
     if (lorryId) {

@@ -89,9 +89,10 @@ const LorryDetails = () => {
     }
   };
 
-  const fetchExpenses = async () => {
+   const fetchExpenses = async () => {
     try {
-      const res = await api.get(`/expenses`, { params: { lorry_id: lorryId } });
+      // ✅ Using the dedicated lorry endpoint
+      const res = await api.get(`/expenses/lorry/${lorryId}`);
       const expensesData = res.data.data?.expenses || [];
       setExpenses(expensesData.slice(0, 5));
     } catch (error: any) {
