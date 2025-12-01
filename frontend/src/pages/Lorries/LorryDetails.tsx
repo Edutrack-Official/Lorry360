@@ -235,7 +235,7 @@ const LorryDetails = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile-First Header - Sticky */}
-      <div className="bg-white border-b sticky top-0 z-20 shadow-sm">
+      <div className="bg-white border-b top-0 z-20 shadow-sm">
         <div className="px-4 py-4 sm:px-6">
           {/* Top Row */}
           <div className="flex items-center justify-between gap-3 mb-3">
@@ -322,7 +322,7 @@ const LorryDetails = () => {
       </div>
 
       {/* Tabs Navigation */}
-      <div className="bg-white border-b sticky top-[105px] sm:top-[113px] z-10">
+      <div className="bg-white border-b sticky top-16  sm:top-[113px] z-30">
         <nav className="flex overflow-x-auto scrollbar-hide px-4 sm:px-6">
           {/* <Link
             to={`/lorries/${lorryId}`}

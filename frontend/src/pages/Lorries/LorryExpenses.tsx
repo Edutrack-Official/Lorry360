@@ -264,7 +264,7 @@ const fetchExpenses = async () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Mobile-First Header - Sticky */}
-      <div className="bg-white border-b sticky top-0 z-20 shadow-sm">
+      <div className="bg-white border-b z-20 shadow-sm">
         <div className="px-4 py-4 sm:px-6">
           <div className="flex items-center justify-between gap-3 mb-3">
             <button
