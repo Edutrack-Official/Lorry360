@@ -1,11 +1,24 @@
 import React, { useEffect, useState } from "react";
-import { Users, Search, MapPin, Phone, IndianRupee, X, Mail, Clock, Car } from "lucide-react";
+import {
+  Users,
+  Search,
+  MapPin,
+  Phone,
+  IndianRupee,
+  MoreVertical,
+  Edit,
+  Trash2,
+  Power,
+  X,
+  CheckCircle2,
+  Clock,
+  PauseCircle,
+  ChevronDown,
+  Plus
+} from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { FaPlus } from "react-icons/fa6";
-import { FiEdit } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
-import { BsThreeDotsVertical } from "react-icons/bs";
 import api from "../../api/client";
 
 interface Driver {
@@ -25,22 +38,10 @@ interface Driver {
 const Drivers = () => {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
-
-  // Filters
   const [searchText, setSearchText] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
-  const [rowsPerPage, setRowsPerPage] = useState(12);
-  const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
-
-  // Selection
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [selectAll, setSelectAll] = useState(false);
-
-  // Delete confirmation
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [showActionMenu, setShowActionMenu] = useState<string | null>(null);
 
   const navigate = useNavigate();
 
@@ -61,37 +62,33 @@ const Drivers = () => {
     fetchDrivers();
   }, []);
 
-  const handleDeactivate = async (id: string) => {
+  const handleToggleStatus = async (id: string, isActive: boolean) => {
     try {
-      await api.patch(`/drivers/status/${id}`, { status: "inactive" });
-      toast.success("Driver deactivated successfully");
+      const newStatus = isActive ? "inactive" : "active";
+      await api.patch(`/drivers/status/${id}`, { status: newStatus });
+      toast.success(`Driver ${newStatus === "active" ? "activated" : "deactivated"} successfully`);
+      setShowActionMenu(null);
       fetchDrivers();
     } catch (error: any) {
-      toast.error(error.response?.data?.error || "Failed to deactivate driver");
+      toast.error(error.response?.data?.error || "Failed to update status");
     }
   };
 
-  const handleActivate = async (id: string) => {
-    try {
-      await api.patch(`/drivers/status/${id}`, { status: "active" });
-      toast.success("Driver activated successfully");
-      fetchDrivers();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Failed to activate driver");
+  const handleDeleteDriver = async (id: string, name: string) => {
+    if (!window.confirm(`Are you sure you want to delete driver ${name}?`)) {
+      return;
     }
-  };
 
-  const handleDelete = async (id: string) => {
     try {
       await api.delete(`/drivers/delete/${id}`);
       toast.success("Driver deleted successfully");
+      setShowActionMenu(null);
       fetchDrivers();
     } catch (error: any) {
       toast.error(error.response?.data?.error || "Failed to delete driver");
     }
   };
 
-  // Apply Search + Filters
   const filtered = drivers.filter((driver) => {
     const matchesSearch =
       driver.name.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -106,103 +103,22 @@ const Drivers = () => {
     return matchesSearch && matchesStatus;
   });
 
-  // Pagination
-  const totalPages = Math.ceil(filtered.length / rowsPerPage);
-  const paginated = filtered.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
-
-  // Handle Select All
-  const toggleSelectAll = () => {
-    if (selectAll) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(paginated.map((d) => d._id));
-    }
-    setSelectAll(!selectAll);
-  };
-
-  const toggleSelectOne = (id: string) => {
-    if (selectedIds.includes(id)) {
-      setSelectedIds(selectedIds.filter((sid) => sid !== id));
-    } else {
-      setSelectedIds([...selectedIds, id]);
-    }
-  };
-
-  // Bulk Actions
-  const handleBulkActivate = async () => {
-    try {
-      await Promise.all(
-        selectedIds.map((id) => api.patch(`/drivers/status/${id}`, { status: "active" }))
-      );
-      toast.success("Selected drivers activated successfully");
-      setSelectedIds([]);
-      setSelectAll(false);
-      fetchDrivers();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Failed to bulk activate");
-    }
-  };
-
-  const handleBulkDeactivate = async () => {
-    try {
-      await Promise.all(
-        selectedIds.map((id) => api.patch(`/drivers/status/${id}`, { status: "inactive" }))
-      );
-      toast.success("Selected drivers deactivated successfully");
-      setSelectedIds([]);
-      setSelectAll(false);
-      fetchDrivers();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Failed to bulk deactivate");
-    }
-  };
-
-  const handleBulkDelete = async () => {
-    try {
-      await Promise.all(
-        selectedIds.map((id) => api.delete(`/drivers/delete/${id}`))
-      );
-      toast.success("Selected drivers deleted successfully");
-      setSelectedIds([]);
-      setSelectAll(false);
-      fetchDrivers();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Failed to bulk delete");
-    }
-  };
-
-  const resetFilters = () => {
-    setSearchText("");
-    setFilterStatus("all");
-    setRowsPerPage(12);
-    setCurrentPage(1);
-    setSelectedIds([]);
-    setSelectAll(false);
-  };
-
-  const getStatusBadge = (status: string, isActive: boolean) => {
-    if (!isActive) {
-      return (
-        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800 border border-red-200">
-          🔴 Inactive
-        </span>
-      );
+  const getStatusConfig = (status: string, isActive: boolean) => {
+    if (!isActive || status === "inactive") {
+      return {
+        color: "bg-red-50 text-red-700 border-red-200",
+        icon: PauseCircle,
+        label: "Inactive",
+        dotColor: "bg-red-500"
+      };
     }
 
-    return status === "active" ? (
-      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 border border-green-200">
-        🟢 Active
-      </span>
-    ) : (
-      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
-        🟡 Inactive
-      </span>
-    );
-  };
-
-  const getStatusColor = (status: string, isActive: boolean) => {
-    if (!isActive) return "border-l-red-500";
-    return status === "active" ? "border-l-green-500" : "border-l-yellow-500";
+    return {
+      color: "bg-green-50 text-green-700 border-green-200",
+      icon: CheckCircle2,
+      label: "Active",
+      dotColor: "bg-green-500"
+    };
   };
 
   const formatSalary = (salary: number) => {
@@ -227,487 +143,332 @@ const Drivers = () => {
 
   const getSalaryTypeColor = (driver: Driver) => {
     if (driver.salary_per_duty > 0 && driver.salary_per_trip > 0) {
-      return "bg-purple-100 text-purple-800 border-purple-200";
+      return "bg-purple-50 text-purple-700 border-purple-200";
     } else if (driver.salary_per_duty > 0) {
-      return "bg-blue-100 text-blue-800 border-blue-200";
+      return "bg-blue-50 text-blue-700 border-blue-200";
     } else if (driver.salary_per_trip > 0) {
-      return "bg-green-100 text-green-800 border-green-200";
+      return "bg-green-50 text-green-700 border-green-200";
     }
-    return "bg-gray-100 text-gray-800 border-gray-200";
+    return "bg-gray-50 text-gray-700 border-gray-200";
   };
+
+  const resetFilters = () => {
+    setSearchText("");
+    setFilterStatus("all");
+  };
+
+  // Close action menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setShowActionMenu(null);
+    if (showActionMenu) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showActionMenu]);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-10 w-10 border-3 border-blue-600 border-t-transparent"></div>
+          <p className="text-sm text-gray-600">Loading drivers...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 fade-in p-6">
-      {/* Header */}
-      <div className="bg-white p-6 rounded-xl border shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Users className="h-6 w-6 text-blue-600" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Drivers</h1>
-              <p className="text-gray-600">Manage your drivers</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* Bulk Actions */}
-            {selectedIds.length > 0 && (
-              <div className="flex gap-2">
-                <div className="relative">
-                  <button className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition text-sm">
-                    Bulk Actions ({selectedIds.length}) ▼
-                  </button>
-                  <div className="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-10">
-                    <button
-                      onClick={handleBulkActivate}
-                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      🟢 Activate All
-                    </button>
-                    <button
-                      onClick={handleBulkDeactivate}
-                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      🔴 Deactivate All
-                    </button>
-                    <button
-                      onClick={() => setConfirmBulkDelete(true)}
-                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                    >
-                      🗑️ Delete All
-                    </button>
-                  </div>
-                </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Mobile-First Header */}
+      <div className="bg-white border-b sticky top-0 z-20 shadow-sm">
+        <div className="px-4 py-4 sm:px-6">
+          {/* Top Row */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Users className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
               </div>
-            )}
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Drivers</h1>
+                <p className="text-xs sm:text-sm text-gray-500 mt-0.5">{filtered.length} {filtered.length === 1 ? 'driver' : 'drivers'}</p>
+              </div>
+            </div>
 
-            {/* Filters Toggle */}
-            <button
-              className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition flex items-center gap-2"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <motion.span
-                animate={{ rotate: showFilters ? 180 : 0 }}
-                transition={{ duration: 0.3 }}
-                className="inline-block"
-              >
-                ▼
-              </motion.span>
-              Filters
-            </button>
-
-            {/* Add Driver */}
             <Link
               to="/drivers/create"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm"
+              className="inline-flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm text-sm sm:text-base font-medium"
             >
-              <FaPlus size={16} />
-              Add Driver
+              <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="hidden sm:inline">Add Driver</span>
+              <span className="sm:hidden">Add</span>
             </Link>
           </div>
-        </div>
 
-        {/* Filters (Animated Collapse) */}
-        <AnimatePresence>
-          {showFilters && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
+          {/* Search Bar & Status Filters - Desktop Layout */}
+          <div className="mb-3 flex flex-col lg:flex-row lg:items-center gap-3">
+            {/* Search Bar */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Search drivers by name, phone, or address..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              />
+            </div>
+
+            {/* Quick Status Filters - Hidden on Mobile, Shown on Desktop */}
+            <div className="hidden lg:flex items-center gap-2">
+              <button
+                onClick={() => setFilterStatus("all")}
+                className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                  filterStatus === "all" ? 'bg-blue-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setFilterStatus("active")}
+                className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                  filterStatus === "active" ? 'bg-green-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
+                }`}
+              >
+                Active
+              </button>
+              <button
+                onClick={() => setFilterStatus("inactive")}
+                className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                  filterStatus === "inactive" ? 'bg-red-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
+                }`}
+              >
+                Inactive
+              </button>
+            </div>
+          </div>
+
+          {/* Filter Button & Status Pills - Mobile Only */}
+          <div className="flex lg:hidden items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {/* Quick Status Filters */}
+            <button
+              onClick={() => setFilterStatus("all")}
+              className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                filterStatus === "all" ? 'bg-blue-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
+              }`}
             >
-              <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-gray-200">
-                {/* Search */}
-                <div className="relative w-full md:w-80">
-                  <Search className="absolute left-3 top-2.5 text-gray-400 h-4 w-4" />
-                  <input
-                    type="text"
-                    placeholder="Search drivers by name, phone, or address..."
-                    value={searchText}
-                    onChange={(e) => {
-                      setSearchText(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="input input-bordered pl-9 w-full"
-                  />
-                </div>
-
-                <select
-                  className="input input-bordered w-full md:w-40"
-                  value={filterStatus}
-                  onChange={(e) => {
-                    setFilterStatus(e.target.value as any);
-                    setCurrentPage(1);
-                  }}
-                >
-                  <option value="all">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-
-                {/* Rows per page */}
-                <select
-                  className="input input-bordered w-full md:w-40"
-                  value={rowsPerPage}
-                  onChange={(e) => {
-                    setRowsPerPage(Number(e.target.value));
-                    setCurrentPage(1);
-                  }}
-                >
-                  {[12, 24, 36, 48].map((count) => (
-                    <option key={count} value={count}>
-                      {count} per page
-                    </option>
-                  ))}
-                </select>
-
-                <button
-                  className="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 border text-sm"
-                  onClick={resetFilters}
-                >
-                  Clear Filters
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              All
+            </button>
+            <button
+              onClick={() => setFilterStatus("active")}
+              className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                filterStatus === "active" ? 'bg-green-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
+              }`}
+            >
+              Active
+            </button>
+            <button
+              onClick={() => setFilterStatus("inactive")}
+              className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                filterStatus === "inactive" ? 'bg-red-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
+              }`}
+            >
+              Inactive
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {paginated.map((driver) => (
-          <div
-            key={driver._id}
-            className={`bg-white rounded-xl border shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer border-l-4 ${getStatusColor(driver.status, driver.isActive)} relative`}
-          >
-            <div
-              className="p-5 cursor-pointer group"
-              onClick={() => navigate(`/drivers/${driver._id}`)}
-            >
-              {/* Header with Selection Checkbox */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-2">
-                    {/* Selection Checkbox */}
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.includes(driver._id)}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        toggleSelectOne(driver._id);
-                      }}
-                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 flex-shrink-0"
-                    />
+      {/* Content */}
+      <div className="p-4 sm:p-6">
+        {filtered.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filtered.map((driver) => {
+              const statusConfig = getStatusConfig(driver.status, driver.isActive);
+              const StatusIcon = statusConfig.icon;
+              const salaryType = getSalaryType(driver);
+              const salaryTypeColor = getSalaryTypeColor(driver);
+              const isActiveDriver = driver.isActive && driver.status === "active";
 
-                    {/* Driver Name and Role */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-lg text-gray-900 truncate group-hover:text-blue-600 transition-colors">
-                        {driver.name}
-                      </h3>
-                      <p className="text-gray-500 text-sm">Professional Driver</p>
+              return (
+                <motion.div
+                  key={driver._id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer active:scale-98"
+                  onClick={() => navigate(`/drivers/${driver._id}`)}
+                >
+                  <div className="p-4 sm:p-5">
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-1 truncate">
+                          {driver.name}
+                        </h3>
+                      </div>
+                      
+                      {/* Action Menu */}
+                      <div className="relative ml-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowActionMenu(showActionMenu === driver._id ? null : driver._id);
+                          }}
+                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        >
+                          <MoreVertical className="h-4 w-4 text-gray-500" />
+                        </button>
+
+                        <AnimatePresence>
+                          {showActionMenu === driver._id && (
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                              transition={{ duration: 0.15 }}
+                              className="absolute right-0 top-10 z-30 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/drivers/edit/${driver._id}`);
+                                }}
+                                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                              >
+                                <Edit className="h-4 w-4 text-gray-500" />
+                                Edit Driver
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleStatus(driver._id, isActiveDriver);
+                                }}
+                                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                              >
+                                <Power className="h-4 w-4 text-gray-500" />
+                                {isActiveDriver ? "Deactivate" : "Activate"}
+                              </button>
+                              <div className="border-t border-gray-100 my-1"></div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteDriver(driver._id, driver.name);
+                                }}
+                                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                Delete Driver
+                              </button>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+
+                    {/* Status Badge */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium border ${statusConfig.color}`}>
+                        {/* <span className={`h-2 w-2 rounded-full ${statusConfig.dotColor} animate-pulse`}></span> */}
+                        <StatusIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        {statusConfig.label}
+                      </div>
+                      
+                      {/* Salary Type Badge */}
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${salaryTypeColor}`}>
+                        {salaryType}
+                      </span>
+                    </div>
+
+                    {/* Salary Information */}
+                    {(driver.salary_per_duty > 0 || driver.salary_per_trip > 0) && (
+                      <div className="grid grid-cols-2 gap-2 mb-4">
+                        {driver.salary_per_duty > 0 && (
+                          <div className="text-center p-2 bg-blue-50 rounded-lg border border-blue-100">
+                            <p className="text-sm font-semibold text-blue-900">
+                              {formatSalary(driver.salary_per_duty)}
+                            </p>
+                            <p className="text-xs text-blue-600">per duty</p>
+                          </div>
+                        )}
+                        {driver.salary_per_trip > 0 && (
+                          <div className="text-center p-2 bg-green-50 rounded-lg border border-green-100">
+                            <p className="text-sm font-semibold text-green-900">
+                              {formatSalary(driver.salary_per_trip)}
+                            </p>
+                            <p className="text-xs text-green-600">per trip</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Driver Details */}
+                    <div className="space-y-3">
+                      {/* Phone */}
+                      <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors">
+                        <div className="p-1.5 bg-white rounded-md shadow-sm">
+                          <Phone className="h-3.5 w-3.5 text-blue-600" />
+                        </div>
+                        <span className="text-sm font-medium text-gray-700">{driver.phone}</span>
+                      </div>
+
+                      {/* Address */}
+                      <div className="flex items-start gap-3 p-2 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors">
+                        <div className="p-1.5 bg-white rounded-md shadow-sm mt-0.5">
+                          <MapPin className="h-3.5 w-3.5 text-green-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-700 line-clamp-2">{driver.address}</p>
+                        </div>
+                      </div>
+
+                      {/* Join Date */}
+                      <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors">
+                        <div className="p-1.5 bg-white rounded-md shadow-sm">
+                          <Clock className="h-3.5 w-3.5 text-purple-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">
+                            Joined {new Date(driver.createdAt).toLocaleDateString('en-IN')}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {Math.floor((new Date().getTime() - new Date(driver.createdAt).getTime()) / (1000 * 60 * 60 * 24))} days ago
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                {/* Action Menu */}
-                <div className="relative flex-shrink-0">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedDriver(driver);
-                    }}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors group/btn"
-                    title="More actions"
-                  >
-                    <BsThreeDotsVertical className="h-4 w-4 text-gray-400 group-hover/btn:text-gray-600" />
-                  </button>
-                </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8 sm:p-12 text-center">
+            <div className="max-w-md mx-auto">
+              <div className="inline-flex p-4 bg-gray-100 rounded-full mb-4">
+                <Users className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400" />
               </div>
-
-              {/* Status and Salary Type */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  {getStatusBadge(driver.status, driver.isActive)}
-                </div>
-
-                {/* Salary Type Badge */}
-                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getSalaryTypeColor(driver)}`}>
-                  {getSalaryType(driver)}
-                </span>
-              </div>
-
-              {/* Salary Information */}
-              <div className="grid grid-cols-2 gap-2 mb-4">
-                {driver.salary_per_duty > 0 && (
-                  <div className="text-center p-2 bg-blue-50 rounded-lg">
-                    <p className="text-sm font-semibold text-blue-900">
-                      {formatSalary(driver.salary_per_duty)}
-                    </p>
-                    <p className="text-xs text-blue-600">per duty</p>
-                  </div>
-                )}
-                {driver.salary_per_trip > 0 && (
-                  <div className="text-center p-2 bg-green-50 rounded-lg">
-                    <p className="text-sm font-semibold text-green-900">
-                      {formatSalary(driver.salary_per_trip)}
-                    </p>
-                    <p className="text-xs text-green-600">per trip</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Driver Details Grid */}
-              <div className="space-y-3">
-                {/* Phone */}
-                <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg group-hover:bg-blue-50 transition-colors">
-                  <div className="p-1.5 bg-white rounded-md shadow-sm">
-                    <Phone className="h-3.5 w-3.5 text-blue-600" />
-                  </div>
-                  <span className="text-sm font-medium text-gray-700">{driver.phone}</span>
-                </div>
-
-                {/* Address */}
-                <div className="flex items-start gap-3 p-2 bg-gray-50 rounded-lg group-hover:bg-blue-50 transition-colors">
-                  <div className="p-1.5 bg-white rounded-md shadow-sm mt-0.5">
-                    <MapPin className="h-3.5 w-3.5 text-green-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-700 line-clamp-2">{driver.address}</p>
-                  </div>
-                </div>
-
-                {/* Join Date */}
-                {/* <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg group-hover:bg-blue-50 transition-colors">
-                  <div className="p-1.5 bg-white rounded-md shadow-sm">
-                    <Clock className="h-3.5 w-3.5 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">
-                      Joined {new Date(driver.createdAt).toLocaleDateString('en-IN')}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {Math.floor((new Date().getTime() - new Date(driver.createdAt).getTime()) / (1000 * 60 * 60 * 24))} days ago
-                    </p>
-                  </div>
-                </div> */}
-              </div>
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+                No drivers found
+              </h3>
+              <p className="text-sm sm:text-base text-gray-600 mb-6">
+                {searchText || filterStatus !== "all" 
+                  ? "Try adjusting your search or filters to find what you're looking for"
+                  : "Get started by adding your first driver to the team"
+                }
+              </p>
+              <Link
+                to="/drivers/create"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm font-medium"
+              >
+                <Plus className="h-5 w-5" />
+                Add First Driver
+              </Link>
             </div>
           </div>
-        ))}
+        )}
       </div>
-
-      {/* Empty State */}
-      {filtered.length === 0 && (
-        <div className="bg-white rounded-xl border shadow-sm p-12 text-center">
-          <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No drivers found</h3>
-          <p className="text-gray-600 mb-6">
-            {searchText || filterStatus !== "all"
-              ? "Try adjusting your search or filters"
-              : "Get started by adding your first driver"
-            }
-          </p>
-          <Link
-            to="/drivers/create"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm"
-          >
-            <FaPlus size={16} />
-            Add First Driver
-          </Link>
-        </div>
-      )}
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-between items-center px-4 py-3 
-                        bg-white border border-gray-200 shadow-md rounded-b-xl mt-4">
-          <button
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            className={`px-3 py-1 rounded-md text-sm font-medium border shadow-sm
-              ${currentPage === 1
-                ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-                : "text-blue-600 bg-gray-50 hover:bg-blue-100"
-              }`}
-          >
-            Prev
-          </button>
-          <div className="flex gap-2">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`px-3 py-1 rounded-md text-sm font-medium border shadow-sm transition
-                  ${currentPage === page
-                    ? "bg-blue-600 text-white shadow"
-                    : "bg-gray-50 text-gray-700 hover:bg-blue-100"
-                  }`}
-              >
-                {page}
-              </button>
-            ))}
-          </div>
-          <button
-            disabled={currentPage === totalPages}
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-            className={`px-3 py-1 rounded-md text-sm font-medium border shadow-sm
-              ${currentPage === totalPages
-                ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-                : "text-blue-600 bg-gray-50 hover:bg-blue-100"
-              }`}
-          >
-            Next
-          </button>
-        </div>
-      )}
-
-      {/* Driver Details Modal */}
-      {selectedDriver && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-gray-900">
-                  {selectedDriver.name}
-                </h3>
-                <button
-                  onClick={() => setSelectedDriver(null)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Phone</label>
-                  <p className="text-gray-900">{selectedDriver.phone}</p>
-                </div>
-
-                {/* Salary Information */}
-                {selectedDriver.salary_per_duty > 0 && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Salary per Duty</label>
-                    <p className="text-gray-900">{formatSalary(selectedDriver.salary_per_duty)}</p>
-                  </div>
-                )}
-
-                {selectedDriver.salary_per_trip > 0 && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">Salary per Trip</label>
-                    <p className="text-gray-900">{formatSalary(selectedDriver.salary_per_trip)}</p>
-                  </div>
-                )}
-
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Salary Type</label>
-                  <p className="text-gray-900">{getSalaryType(selectedDriver)}</p>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Work Status</label>
-                  <div className="mt-1">{getStatusBadge(selectedDriver.status, selectedDriver.isActive)}</div>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Account Status</label>
-                  <p className="text-gray-900">{selectedDriver.isActive ? "Active" : "Inactive"}</p>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Address</label>
-                  <p className="text-gray-900">{selectedDriver.address}</p>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Created At</label>
-                  <p className="text-gray-900">{new Date(selectedDriver.createdAt).toLocaleString()}</p>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Last Updated</label>
-                  <p className="text-gray-900">{new Date(selectedDriver.updatedAt).toLocaleString()}</p>
-                </div>
-              </div>
-
-              <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
-                <button
-                  onClick={() => {
-                    navigate(`/drivers/edit/${selectedDriver._id}`);
-                    setSelectedDriver(null);
-                  }}
-                  className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Edit Driver
-                </button>
-                <button
-                  onClick={() => {
-                    if (selectedDriver.isActive && selectedDriver.status === "active") {
-                      handleDeactivate(selectedDriver._id);
-                    } else {
-                      handleActivate(selectedDriver._id);
-                    }
-                    setSelectedDriver(null);
-                  }}
-                  className="flex-1 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
-                >
-                  {selectedDriver.isActive && selectedDriver.status === "active" ? "Deactivate" : "Activate"}
-                </button>
-                <button
-                  onClick={() => {
-                    handleDelete(selectedDriver._id);
-                    setSelectedDriver(null);
-                  }}
-                  className="flex-1 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Confirm Bulk Delete */}
-      {confirmBulkDelete && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 shadow-lg w-96 text-center">
-            <h3 className="text-lg font-semibold mb-4">
-              Delete {selectedIds.length} Drivers?
-            </h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Are you sure you want to delete all selected drivers? This action cannot be undone.
-            </p>
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={() => setConfirmBulkDelete(false)}
-                className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={async () => {
-                  await handleBulkDelete();
-                  setConfirmBulkDelete(false);
-                }}
-                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
-              >
-                Delete All
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -1,10 +1,13 @@
-// pages/ManageAttendanceForm.tsx
+// pages/ManageAttendanceForm.tsx (fixed version)
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Calendar, Users, Truck, Save, X, Clock, IndianRupee, Calculator, Edit } from "lucide-react";
 import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 import api from "../../api/client";
+
+// Define a type for attendance status
+type AttendanceStatus = 'fullduty' | 'halfduty' | 'doubleduty' | 'absent' | 'tripduty' | 'custom';
 
 interface Driver {
   _id: string;
@@ -41,9 +44,9 @@ interface Attendance {
     _id: string;
     registration_number: string;
     nick_name?: string;
-  };
+  } | null; // Made nullable
   date: string;
-  status: 'fullduty' | 'halfduty' | 'doubleduty' | 'absent' | 'tripduty' | 'custom';
+  status: AttendanceStatus;
   salary_amount: number;
   no_of_trips: number;
 }
@@ -74,7 +77,7 @@ const ManageAttendanceForm = () => {
     driver_id: searchParams.get('driver') || '',
     lorry_id: '',
     date: searchParams.get('date') || getTodayDate(),
-    status: 'fullduty' as 'fullduty' | 'halfduty' | 'doubleduty' | 'absent' | 'tripduty' | 'custom',
+    status: 'fullduty' as AttendanceStatus,
     salary_amount: 0,
     no_of_trips: 0
   });
@@ -121,7 +124,9 @@ const ManageAttendanceForm = () => {
 
       setFormData({
         driver_id: typeof attendanceData.driver_id === 'object' ? attendanceData.driver_id._id : attendanceData.driver_id,
-        lorry_id: typeof attendanceData.lorry_id === 'object' ? attendanceData.lorry_id._id : attendanceData.lorry_id,
+        lorry_id: attendanceData.lorry_id && typeof attendanceData.lorry_id === 'object' 
+          ? attendanceData.lorry_id._id 
+          : attendanceData.lorry_id || '',
         date: formattedDate,
         status: attendanceData.status,
         salary_amount: attendanceData.salary_amount || 0,
@@ -243,8 +248,13 @@ const ManageAttendanceForm = () => {
     }
   };
 
-  const handleStatusChange = (status: string) => {
+  const handleStatusChange = (status: AttendanceStatus) => {
     handleChange('status', status);
+
+    // If status is 'absent', clear lorry_id
+    if (status === 'absent') {
+      handleChange('lorry_id', '');
+    }
 
     // Auto-switch mode based on status
     if (status === 'custom') {
@@ -261,8 +271,11 @@ const ManageAttendanceForm = () => {
       newErrors.driver_id = "Please select a driver";
     }
 
-    if (!formData.lorry_id) {
-      newErrors.lorry_id = "Please select a lorry";
+    // Lorry is only required when status is NOT 'absent'
+    // Use a type guard to check if status is 'absent'
+    const isAbsent = formData.status === 'absent';
+    if (!isAbsent && !formData.lorry_id) {
+      newErrors.lorry_id = "Please select a lorry for this attendance type";
     }
 
     if (!formData.date) {
@@ -301,14 +314,21 @@ const ManageAttendanceForm = () => {
 
     setSubmitting(true);
     try {
+      // Prepare data - don't send lorry_id if status is 'absent'
       const submitData = {
         driver_id: formData.driver_id,
-        lorry_id: formData.lorry_id,
         date: formData.date,
         status: formData.status,
         salary_amount: formData.salary_amount,
         no_of_trips: formData.no_of_trips
       };
+
+      // Only include lorry_id if status is not 'absent'
+      // Use a type guard to check if status is 'absent'
+      const isAbsent = formData.status === 'absent';
+      if (!isAbsent && formData.lorry_id) {
+        (submitData as any).lorry_id = formData.lorry_id;
+      }
 
       if (isEditMode) {
         await api.put(`/attendance/update/${id}`, submitData);
@@ -319,7 +339,8 @@ const ManageAttendanceForm = () => {
       }
 
       // Navigate back to appropriate page
-      const fromDriver = searchParams.get('driver') || formData.driver_id; if (fromDriver) {
+      const fromDriver = searchParams.get('driver') || formData.driver_id;
+      if (fromDriver) {
         navigate(`/drivers/${fromDriver}?tab=attendance`);
       } else {
         navigate('/attendance');
@@ -385,8 +406,8 @@ const ManageAttendanceForm = () => {
     const selectedDriver = getSelectedDriver();
     if (!selectedDriver) {
       return [
-        { value: 'custom', label: 'Custom', description: 'Enter custom salary amount' },
-        { value: 'absent', label: 'Absent', description: 'Driver was absent' }
+        { value: 'custom' as AttendanceStatus, label: 'Custom', description: 'Enter custom salary amount' },
+        { value: 'absent' as AttendanceStatus, label: 'Absent', description: 'Driver was absent' }
       ];
     }
 
@@ -394,31 +415,31 @@ const ManageAttendanceForm = () => {
     const hasTripSalary = selectedDriver.salary_per_trip > 0;
 
     const baseOptions = [
-      { value: 'custom', label: 'Custom', description: 'Enter custom salary amount' },
-      { value: 'absent', label: 'Absent', description: 'Driver was absent' }
+      { value: 'custom' as AttendanceStatus, label: 'Custom', description: 'Enter custom salary amount' },
+      { value: 'absent' as AttendanceStatus, label: 'Absent', description: 'Driver was absent' }
     ];
 
     if (hasDutySalary && hasTripSalary) {
       // Driver has both duty and trip salaries
       return [
-        { value: 'fullduty', label: 'Full Duty', description: 'Driver worked full day' },
-        { value: 'halfduty', label: 'Half Duty', description: 'Driver worked half day' },
-        { value: 'doubleduty', label: 'Double Duty', description: 'Driver worked double shift' },
-        { value: 'tripduty', label: 'Trip Duty', description: 'Salary based on number of trips' },
+        { value: 'fullduty' as AttendanceStatus, label: 'Full Duty', description: 'Driver worked full day' },
+        { value: 'halfduty' as AttendanceStatus, label: 'Half Duty', description: 'Driver worked half day' },
+        { value: 'doubleduty' as AttendanceStatus, label: 'Double Duty', description: 'Driver worked double shift' },
+        { value: 'tripduty' as AttendanceStatus, label: 'Trip Duty', description: 'Salary based on number of trips' },
         ...baseOptions
       ];
     } else if (hasDutySalary) {
       // Driver has only duty salary
       return [
-        { value: 'fullduty', label: 'Full Duty', description: 'Driver worked full day' },
-        { value: 'halfduty', label: 'Half Duty', description: 'Driver worked half day' },
-        { value: 'doubleduty', label: 'Double Duty', description: 'Driver worked double shift' },
+        { value: 'fullduty' as AttendanceStatus, label: 'Full Duty', description: 'Driver worked full day' },
+        { value: 'halfduty' as AttendanceStatus, label: 'Half Duty', description: 'Driver worked half day' },
+        { value: 'doubleduty' as AttendanceStatus, label: 'Double Duty', description: 'Driver worked double shift' },
         ...baseOptions
       ];
     } else if (hasTripSalary) {
       // Driver has only trip salary
       return [
-        { value: 'tripduty', label: 'Trip Duty', description: 'Salary based on number of trips' },
+        { value: 'tripduty' as AttendanceStatus, label: 'Trip Duty', description: 'Salary based on number of trips' },
         ...baseOptions
       ];
     } else {
@@ -464,7 +485,9 @@ const ManageAttendanceForm = () => {
 
   const availableStatusOptions = getAvailableStatusOptions();
   const selectedDriver = getSelectedDriver();
-  const selectedLorry = getSelectedLorry();
+
+  // Use a type guard to check if status is 'absent'
+  const isAbsent = formData.status === 'absent';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -557,46 +580,48 @@ const ManageAttendanceForm = () => {
                   )}
                 </div>
 
-                {/* Lorry Selection */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    <div className="flex items-center gap-2">
-                      <Truck className="h-4 w-4" />
-                      <span>Select Lorry <span className="text-red-500">*</span></span>
-                    </div>
-                  </label>
-                  <select
-                    value={formData.lorry_id}
-                    onChange={(e) => handleChange('lorry_id', e.target.value)}
-                    className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base ${errors.lorry_id ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                  >
-                    <option value="">Choose a lorry</option>
-                    {getActiveLorries().map((lorry) => (
-                      <option key={lorry._id} value={lorry._id}>
-                        {lorry.registration_number}
-                        {lorry.nick_name && ` (${lorry.nick_name})`}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.lorry_id && (
-                    <p className="mt-1 text-sm text-red-600">{errors.lorry_id}</p>
-                  )}
+                {/* Lorry Selection - Hidden when status is 'absent' */}
+                {!isAbsent && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <div className="flex items-center gap-2">
+                        <Truck className="h-4 w-4" />
+                        <span>Select Lorry <span className="text-red-500">*</span></span>
+                      </div>
+                    </label>
+                    <select
+                      value={formData.lorry_id}
+                      onChange={(e) => handleChange('lorry_id', e.target.value)}
+                      className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base ${errors.lorry_id ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                    >
+                      <option value="">Choose a lorry</option>
+                      {getActiveLorries().map((lorry) => (
+                        <option key={lorry._id} value={lorry._id}>
+                          {lorry.registration_number}
+                          {lorry.nick_name && ` (${lorry.nick_name})`}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.lorry_id && (
+                      <p className="mt-1 text-sm text-red-600">{errors.lorry_id}</p>
+                    )}
 
-                  {/* Selected Lorry Info */}
-                  {selectedLorry && (
-                    <div className="mt-3 p-3 bg-purple-50 rounded-lg border border-purple-200">
-                      <p className="text-sm font-medium text-purple-900 truncate">
-                        {selectedLorry.registration_number}
-                      </p>
-                      {selectedLorry.nick_name && (
-                        <p className="text-sm text-purple-700">
-                          Nick Name: {selectedLorry.nick_name}
+                    {/* Selected Lorry Info */}
+                    {formData.lorry_id && (
+                      <div className="mt-3 p-3 bg-purple-50 rounded-lg border border-purple-200">
+                        <p className="text-sm font-medium text-purple-900 truncate">
+                          {getSelectedLorry()?.registration_number}
                         </p>
-                      )}
-                    </div>
-                  )}
-                </div>
+                        {getSelectedLorry()?.nick_name && (
+                          <p className="text-sm text-purple-700">
+                            Nick Name: {getSelectedLorry()?.nick_name}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Date Selection */}
                 <div>
@@ -770,7 +795,13 @@ const ManageAttendanceForm = () => {
                       </div>
                     </div>
 
-                    {salaryCalculation.mode === 'auto' && formData.status !== 'custom' && (
+                    {isAbsent && (
+                      <p className="text-xs text-red-500 mt-2">
+                        * No salary for absent status
+                      </p>
+                    )}
+
+                    {salaryCalculation.mode === 'auto' && formData.status !== 'custom' && !isAbsent && (
                       <p className="text-xs text-gray-500 mt-2">
                         * Amount calculated automatically based on status
                       </p>

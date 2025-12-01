@@ -11,8 +11,16 @@ const createAttendance = async (attendanceData) => {
     no_of_trips
   } = attendanceData;
 
-  if (!owner_id || !driver_id || !lorry_id || !date || !status) {
-    const err = new Error('Owner ID, driver ID, lorry ID, date, and status are required');
+  // Remove lorry_id from required fields when status is 'absent'
+  if (!owner_id || !driver_id || !date || !status) {
+    const err = new Error('Owner ID, driver ID, date, and status are required');
+    err.status = 400;
+    throw err;
+  }
+
+  // Only require lorry_id if status is not 'absent'
+  if (status !== 'absent' && !lorry_id) {
+    const err = new Error('Lorry ID is required for non-absent attendance');
     err.status = 400;
     throw err;
   }
@@ -20,7 +28,7 @@ const createAttendance = async (attendanceData) => {
   const newAttendance = new Attendance({
     owner_id,
     driver_id,
-    lorry_id,
+    lorry_id: status === 'absent' ? null : lorry_id,
     date,
     status,
     salary_amount: salary_amount || 0,
@@ -30,7 +38,6 @@ const createAttendance = async (attendanceData) => {
   await newAttendance.save();
   return newAttendance;
 };
-
 const getAllAttendance = async (owner_id, filterParams = {}) => {
   const { driver_id, lorry_id, start_date, end_date, status } = filterParams;
   const query = { owner_id };
@@ -71,6 +78,22 @@ const getAttendanceById = async (id, owner_id) => {
 };
 
 const updateAttendance = async (id, owner_id, updateData) => {
+  // Check if status is being updated to 'absent'
+  if (updateData.status === 'absent') {
+    updateData.lorry_id = null;
+  }
+  
+  // If status is being updated to non-absent and lorry_id is not provided
+  if (updateData.status && updateData.status !== 'absent' && !updateData.lorry_id) {
+    // Check the existing record's lorry_id
+    const existing = await Attendance.findOne({ _id: id, owner_id });
+    if (!existing.lorry_id) {
+      const err = new Error('Lorry ID is required for non-absent attendance');
+      err.status = 400;
+      throw err;
+    }
+  }
+
   const updatedAttendance = await Attendance.findOneAndUpdate(
     { _id: id, owner_id },
     updateData,
