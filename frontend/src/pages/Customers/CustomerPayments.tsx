@@ -95,9 +95,6 @@ const CustomerPayments = () => {
               <div key={payment._id} className="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className={`p-3 rounded-lg ${config.color}`}>
-                      <span className="text-lg">{config.icon}</span>
-                    </div>
                     <div>
                       <h3 className="font-semibold text-gray-900">
                         {payment.payment_number}

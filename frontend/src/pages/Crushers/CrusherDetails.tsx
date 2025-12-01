@@ -232,41 +232,56 @@ const fetchTrips = async () => {
           </div>
         </div>
 
-        {/* Quick Stats - Mobile Optimized */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200">
-          <div className="text-center p-2 sm:p-0">
-            <div className="text-lg sm:text-2xl font-bold text-gray-900">{stats.totalTrips}</div>
-            <div className="text-xs sm:text-sm text-gray-600 mt-0.5">Total Trips</div>
-          </div>
-          <div className="text-center p-2 sm:p-0">
-            <div className="text-lg sm:text-2xl font-bold text-blue-600 break-words">
-              {formatCurrency(stats.totalCrusherAmount)}
+        {/* Quick Stats - Scrollable Horizontal */}
+        <div className="relative mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200">
+          <div className="flex overflow-x-auto pb-4 -mx-2 px-2 scrollbar-hide">
+            <div className="flex gap-4 min-w-max">
+              {/* Total Trips */}
+              <div className="min-w-[140px] sm:min-w-[160px] text-center p-4 bg-white border border-gray-200 rounded-xl shadow-sm">
+                <div className="text-lg sm:text-2xl font-bold text-gray-900">{stats.totalTrips}</div>
+                <div className="text-xs sm:text-sm text-gray-600 mt-1">Total Trips</div>
+              </div>
+
+              {/* Total Amount */}
+              <div className="min-w-[140px] sm:min-w-[160px] text-center p-4 bg-white border border-blue-100 rounded-xl shadow-sm">
+                <div className="text-lg sm:text-2xl font-bold text-blue-600 break-words">
+                  {formatCurrency(stats.totalCrusherAmount)}
+                </div>
+                <div className="text-xs sm:text-sm text-blue-600 mt-1">Total Amount</div>
+              </div>
+
+              {/* Payments Made */}
+              <div className="min-w-[140px] sm:min-w-[160px] text-center p-4 bg-white border border-green-100 rounded-xl shadow-sm">
+                <div className="text-lg sm:text-2xl font-bold text-green-600 break-words">
+                  {formatCurrency(stats.totalPaymentAmount)}
+                </div>
+                <div className="text-xs sm:text-sm text-green-600 mt-1">Payments Made</div>
+              </div>
+
+              {/* Pending Amount */}
+              <div className="min-w-[140px] sm:min-w-[160px] text-center p-4 bg-white border border-purple-100 rounded-xl shadow-sm">
+                <div className="text-lg sm:text-2xl font-bold text-purple-600 break-words">
+                  {formatCurrency(stats.pendingAmount)}
+                </div>
+                <div className="text-xs sm:text-sm text-purple-600 mt-1">Pending Amount</div>
+              </div>
+
+              {/* Payment Count */}
+              <div className="min-w-[140px] sm:min-w-[160px] text-center p-4 bg-white border border-orange-100 rounded-xl shadow-sm">
+                <div className="text-lg sm:text-2xl font-bold text-orange-600">
+                  {stats.totalPayments}
+                </div>
+                <div className="text-xs sm:text-sm text-orange-600 mt-1">Payment Count</div>
+              </div>
+
+              {/* Materials Count */}
+              <div className="min-w-[140px] sm:min-w-[160px] text-center p-4 bg-white border border-indigo-100 rounded-xl shadow-sm">
+                <div className="text-lg sm:text-2xl font-bold text-indigo-600">
+                  {crusher.materials?.length || 0}
+                </div>
+                <div className="text-xs sm:text-sm text-indigo-600 mt-1">Materials</div>
+              </div>
             </div>
-            <div className="text-xs sm:text-sm text-gray-600 mt-0.5">Total Amount</div>
-          </div>
-          <div className="text-center p-2 sm:p-0">
-            <div className="text-lg sm:text-2xl font-bold text-green-600 break-words">
-              {formatCurrency(stats.totalPaymentAmount)}
-            </div>
-            <div className="text-xs sm:text-sm text-gray-600 mt-0.5">Payments Made</div>
-          </div>
-          <div className="text-center p-2 sm:p-0">
-            <div className="text-lg sm:text-2xl font-bold text-purple-600 break-words">
-              {formatCurrency(stats.pendingAmount)}
-            </div>
-            <div className="text-xs sm:text-sm text-gray-600 mt-0.5">Pending Amount</div>
-          </div>
-          <div className="text-center p-2 sm:p-0">
-            <div className="text-lg sm:text-2xl font-bold text-orange-600">
-              {stats.totalPayments}
-            </div>
-            <div className="text-xs sm:text-sm text-gray-600 mt-0.5">Payment Count</div>
-          </div>
-          <div className="text-center p-2 sm:p-0">
-            <div className="text-lg sm:text-2xl font-bold text-indigo-600">
-              {crusher.materials?.length || 0}
-            </div>
-            <div className="text-xs sm:text-sm text-gray-600 mt-0.5">Materials</div>
           </div>
         </div>
       </div>

@@ -226,10 +226,11 @@ function App() {
                       <Route path="/crushers/:crusherId" element={<CrusherDetails />}>
                         <Route index element={<Navigate to="trips" replace />} />
                         <Route path="trips" element={<CrusherTrips />} />
-                        <Route path="trips/create" element={<CrusherTripForm />} />
                         <Route path="payments" element={<CrusherPayments />} />
-                        <Route path="payments/create" element={<CrusherPaymentForm />} />
                       </Route>
+                      <Route path="trips/create" element={<CrusherTripForm />} />
+                      <Route path="/crushers/:crusherId/payments/create" element={<CrusherPaymentForm />} />
+
 
                       {/* Collaboration Management */}
                       <Route path="/collaborations" element={<CollaborationDashboard />} />
