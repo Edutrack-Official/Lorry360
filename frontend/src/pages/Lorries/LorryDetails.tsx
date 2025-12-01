@@ -322,7 +322,7 @@ const LorryDetails = () => {
       </div>
 
       {/* Tabs Navigation */}
-      <div className="bg-white border-b sticky top-16  sm:top-[113px] z-30">
+      <div className="bg-white border-b sm:top-[113px] z-30">
         <nav className="flex overflow-x-auto scrollbar-hide px-4 sm:px-6">
           {/* <Link
             to={`/lorries/${lorryId}`}
