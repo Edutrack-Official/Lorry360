@@ -592,20 +592,6 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
         </div>
       </div>
 
-      {/* Attendance Breakdown */}
-      <div className="bg-white rounded-xl border shadow-sm p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">Attendance Breakdown</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {Object.entries(salaryInfo.statusBreakdown).map(([status, data]) => (
-            <div key={status} className="bg-gray-50 rounded-lg p-4 text-center">
-              <p className="text-sm font-medium text-gray-900 capitalize">{status}</p>
-              <p className="text-2xl font-bold text-blue-600">{data.count}</p>
-              <p className="text-xs text-gray-600">{formatCurrency(data.amount)}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Salary Transactions */}
       <div className="bg-white rounded-xl border shadow-sm p-6">
         <div className="flex items-center justify-between mb-6">
