@@ -64,6 +64,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: "Reports", href: "/reports", icon: BarChart3, roles: ["owner", "admin"] },
     { name: "Settings", href: "/settings", icon: Settings, roles: ["owner", "admin"] },
     { name: "Owners", href: "/owners", icon: Users, roles: ["admin"] },
+    { name: "Reminder", href: "/reminders", icon: Users, roles: ["owner"] },
 
   ];
 

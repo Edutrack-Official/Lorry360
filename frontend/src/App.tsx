@@ -88,6 +88,9 @@ import CrusherTripForm from './pages/Crushers/CrusherTripForm';
 import InvoiceGenerator from './pages/InvoiceGenerator';
 import ProformaInvoiceGenerator from './pages/ProformaInvoiceGenerator';
 import CrusherPaymentForm from './pages/Crushers/CrusherPaymentForm';
+import Reminders from './pages/Reminders/Reminders';
+import ManageReminderForm from './pages/Reminders/ManageReminderForm';
+import ReminderDetails from './pages/Reminders/ReminderDetails';
 
 
 
@@ -191,6 +194,11 @@ function App() {
                       <Route path="/lorries/edit/:id" element={<ManageLorryForm />} />
                       <Route path="/invoice" element={<InvoiceGenerator />} />
                       <Route path="/proinvoice" element={<ProformaInvoiceGenerator />} />
+
+                      <Route path="/reminders" element={<Reminders />} />
+                      <Route path="/reminders/edit/:id" element={<ManageReminderForm />} />
+                      <Route path="/reminders/create" element={<ManageReminderForm />} />
+                      <Route path="/reminders/:id" element={<ReminderDetails />} />
 
 
                       {/* Lorry Details with nested routes */}
