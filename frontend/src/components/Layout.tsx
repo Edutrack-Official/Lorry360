@@ -78,18 +78,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   const navigation = [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["owner", "admin"] },
-    { name: "Lorries", href: "/lorries", icon: Truck, roles: ["owner", "admin"] },
-    { name: "Customers", href: "/customers", icon: Users, roles: ["owner", "admin"] },
-    { name: "Drivers", href: "/drivers", icon: Users, roles: ["owner", "admin"] },
-    { name: "Collab", href: "/settlement", icon: Users, roles: ["owner"] },
-    { name: "Crushers", href: "/crushers", icon: Package, roles: ["owner", "admin"] },
-    // { name: "Trips", href: "/trips", icon: MapPin, roles: ["owner", "admin"] },
-    // { name: "Maintenance", href: "/maintenance", icon: Wrench, roles: ["owner", "admin"] },
-    // { name: "Reports", href: "/reports", icon: BarChart3, roles: ["owner", "admin"] },
-    { name: "Settings", href: "/settings", icon: Settings, roles: ["owner", "admin"] },
-    { name: "Owners", href: "/owners", icon: Users, roles: ["admin"] },
-    { name: "Reminder", href: "/reminders", icon: Users, roles: ["owner"] },
+   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["owner", "admin"], color: "blue" },
+    { name: "Lorries", href: "/lorries", icon: Truck, roles: ["owner", "admin"], color: "green" },
+    { name: "Customers", href: "/customers", icon: Building2, roles: ["owner", "admin"], color: "purple" },
+    { name: "Drivers", href: "/drivers", icon: UserCircle2, roles: ["owner", "admin"], color: "orange" },
+    { name: "Collab", href: "/settlement", icon: UserCheck, roles: ["owner"], color: "teal" },
+    { name: "Crushers", href: "/crushers", icon: Package, roles: ["owner", "admin"], color: "red" },
+    // { name: "Trips", href: "/trips", icon: MapPin, roles: ["owner", "admin"], color: "indigo" },
+    // { name: "Maintenance", href: "/maintenance", icon: Wrench, roles: ["owner", "admin"], color: "yellow" },
+    // { name: "Reports", href: "/reports", icon: TrendingUp, roles: ["owner", "admin"], color: "pink" },
+    { name: "Settings", href: "/settings", icon: Settings, roles: ["owner", "admin"], color: "gray" },
+    { name: "Owners", href: "/owners", icon: Users, roles: ["admin"], color: "cyan" },
+      { name: "Reminder", href: "/reminders", icon: Users, roles: ["owner"] },
 
   ];
 
