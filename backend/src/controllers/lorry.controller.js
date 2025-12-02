@@ -1,4 +1,5 @@
 const Lorry = require('../models/lorry.model');
+const Trip = require('../models/trip.model');   // Trip model
 
 const createLorry = async (lorryData) => {
   const {
@@ -91,15 +92,28 @@ const updateLorry = async (id, owner_id, updateData) => {
 };
 
 const deleteLorry = async (id, owner_id) => {
-  const deletedLorry = await Lorry.findOneAndDelete({ _id: id, owner_id });
-
-  if (!deletedLorry) {
+  // Step 1: Check if lorry exists
+  const lorry = await Lorry.findOne({ _id: id, owner_id });
+  if (!lorry) {
     const err = new Error('Lorry not found or delete failed');
     err.status = 404;
     throw err;
   }
+
+  // Step 2: Check if lorry is referenced in Trip
+  const isReferenced = await Trip.exists({ lorry_id: id });
+  if (isReferenced) {
+    const err = new Error('Cannot delete lorry');
+    err.status = 400;
+    throw err;
+  }
+
+  // Step 3: Safe to delete
+  await Lorry.deleteOne({ _id: id });
+
   return { message: 'Lorry deleted successfully' };
 };
+
 
 const updateLorryStatus = async (id, owner_id, status) => {
   const updatedLorry = await Lorry.findOneAndUpdate(

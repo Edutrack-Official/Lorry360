@@ -1,4 +1,5 @@
 const Customer = require('../models/customer.model');
+const Trip = require('../models/trip.model');
 
 const createCustomer = async (customerData) => {
   const {
@@ -63,13 +64,25 @@ const updateCustomer = async (id, owner_id, updateData) => {
 };
 
 const deleteCustomer = async (id, owner_id) => {
-  const deletedCustomer = await Customer.findOneAndDelete({ _id: id, owner_id });
-
-  if (!deletedCustomer) {
+  // Step 1: Check if customer exists
+  const customer = await Customer.findOne({ _id: id, owner_id });
+  if (!customer) {
     const err = new Error('Customer not found or delete failed');
     err.status = 404;
     throw err;
   }
+
+  // Step 2: Check if customer is referenced in any Trip
+  const isReferenced = await Trip.exists({ customer_id: id });
+  if (isReferenced) {
+    const err = new Error('Cannot delete customer: It is referenced in a Trip');
+    err.status = 400;
+    throw err;
+  }
+
+  // Step 3: Safe to delete
+  await Customer.deleteOne({ _id: id });
+
   return { message: 'Customer deleted successfully' };
 };
 

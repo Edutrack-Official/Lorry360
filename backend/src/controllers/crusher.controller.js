@@ -1,4 +1,5 @@
 const Crusher = require('../models/crusher.model');
+const Trip = require('../models/trip.model');
 
 const createCrusher = async (crusherData) => {
   const {
@@ -59,13 +60,25 @@ const updateCrusher = async (id, owner_id, updateData) => {
 };
 
 const deleteCrusher = async (id, owner_id) => {
-  const deletedCrusher = await Crusher.findOneAndDelete({ _id: id, owner_id });
-
-  if (!deletedCrusher) {
+  // Step 1: Check if crusher exists
+  const crusher = await Crusher.findOne({ _id: id, owner_id });
+  if (!crusher) {
     const err = new Error('Crusher not found or delete failed');
     err.status = 404;
     throw err;
   }
+
+  // Step 2: Check if crusher is referenced in any Trip
+  const isReferenced = await Trip.exists({ crusher_id: id });
+  if (isReferenced) {
+    const err = new Error('Cannot delete crusher: It is referenced in a Trip');
+    err.status = 400;
+    throw err;
+  }
+
+  // Step 3: Safe to delete
+  await Crusher.deleteOne({ _id: id });
+
   return { message: 'Crusher deleted successfully' };
 };
 

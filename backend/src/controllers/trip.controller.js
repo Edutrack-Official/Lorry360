@@ -5,6 +5,7 @@ const Crusher = require('../models/crusher.model');
 const Lorry = require('../models/lorry.model');
 const User = require('../models/user.model');
 const Payment = require('../models/payment.model');
+const Settlement = require('../models/settlement.model');
 
 const createTrip = async (tripData) => {
   const {
@@ -267,13 +268,25 @@ const updateTrip = async (id, owner_id, updateData) => {
 };
 
 const deleteTrip = async (id, owner_id) => {
-  const deletedTrip = await Trip.findOneAndDelete({ _id: id, owner_id });
-
-  if (!deletedTrip) {
+  // Step 1: Check if trip exists
+  const trip = await Trip.findOne({ _id: id, owner_id });
+  if (!trip) {
     const err = new Error('Trip not found or delete failed');
     err.status = 404;
     throw err;
   }
+
+  // Step 2: Check if trip is used in any Settlement
+  const isReferenced = await Settlement.exists({ trip_ids: id });
+  if (isReferenced) {
+    const err = new Error('Cannot delete trip: It is referenced in a Settlement');
+    err.status = 400;
+    throw err;
+  }
+
+  // Step 3: Safe to delete
+  await Trip.deleteOne({ _id: id });
+
   return { message: 'Trip deleted successfully' };
 };
 

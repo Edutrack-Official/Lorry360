@@ -1,4 +1,5 @@
 const Driver = require('../models/driver.model');
+const Trip = require('../models/trip.model');
 
 const createDriver = async (driverData) => {
   const {
@@ -92,13 +93,25 @@ const updateDriver = async (id, owner_id, updateData) => {
 };
 
 const deleteDriver = async (id, owner_id) => {
-  const deletedDriver = await Driver.findOneAndDelete({ _id: id, owner_id });
-
-  if (!deletedDriver) {
+  // Step 1: Check if driver exists
+  const driver = await Driver.findOne({ _id: id, owner_id });
+  if (!driver) {
     const err = new Error('Driver not found or delete failed');
     err.status = 404;
     throw err;
   }
+
+  // Step 2: Check if driver is referenced in any Trip
+  const isReferenced = await Trip.exists({ driver_id: id });
+  if (isReferenced) {
+    const err = new Error('Cannot delete driver: It is referenced in a Trip');
+    err.status = 400;
+    throw err;
+  }
+
+  // Step 3: Safe to delete
+  await Driver.deleteOne({ _id: id });
+
   return { message: 'Driver deleted successfully' };
 };
 
