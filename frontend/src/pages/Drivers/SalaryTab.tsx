@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { 
-  IndianRupee, 
-  Plus, 
-  TrendingUp, 
-  Clock, 
-  ArrowUp, 
-  ArrowDown, 
-  RefreshCw, 
-  AlertCircle, 
-  Calculator, 
-  Calendar, 
+import {
+  IndianRupee,
+  Plus,
+  TrendingUp,
+  Clock,
+  ArrowUp,
+  ArrowDown,
+  RefreshCw,
+  AlertCircle,
+  Calculator,
+  Calendar,
   CreditCard,
   Trash2,
   X
@@ -86,7 +86,7 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
     start_date: '',
     end_date: ''
   });
-  
+
   const [advanceForm, setAdvanceForm] = useState({ amount: '', notes: '' });
   const [bonusForm, setBonusForm] = useState({ amount: '', reason: '' });
   const [paymentForm, setPaymentForm] = useState({
@@ -105,7 +105,7 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
     try {
       setLoading(true);
       let params = new URLSearchParams();
-      
+
       if (period === 'current_month') {
         const now = new Date();
         const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -137,7 +137,7 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
   // Calculate salary information from attendance data
   const calculateSalaryInfo = () => {
     const totalEarned = attendanceData.reduce((sum, record) => sum + (record.salary_amount || 0), 0);
-    
+
     // Calculate by status
     const statusBreakdown = attendanceData.reduce((acc, record) => {
       const status = record.status;
@@ -395,7 +395,7 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
             <h3 className="text-lg font-semibold text-gray-900">Salary Period</h3>
             <p className="text-sm text-gray-600">Select period for salary calculation</p>
           </div>
-          
+
           <div className="flex flex-wrap gap-2">
             <select
               value={period}
@@ -452,132 +452,143 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          {/* Salary to be Paid */}
-          <div className={`bg-gradient-to-br rounded-xl p-6 border ${
-            paymentInfo.hasPendingSalary 
-              ? 'from-green-50 to-green-100 border-green-200' 
-              : 'from-gray-50 to-gray-100 border-gray-200'
-          }`}>
-            <div className="flex items-center gap-3">
-              <div className={`p-3 rounded-lg ${
-                paymentInfo.hasPendingSalary ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'
-              }`}>
-                <CreditCard className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Salary to be Paid</p>
-                <p className={`text-2xl font-bold ${
-                  paymentInfo.hasPendingSalary ? 'text-green-600' : 'text-gray-600'
+        {/* Horizontal scroll container */}
+        <div className="relative">
+          <div className="flex overflow-x-auto pb-4 -mx-2 px-2 scrollbar-hide">
+            <div className="flex gap-6 min-w-max">
+              {/* Salary to be Paid */}
+              <div className={`min-w-[280px] bg-gradient-to-br rounded-xl p-6 border ${paymentInfo.hasPendingSalary
+                ? 'from-green-50 to-green-100 border-green-200'
+                : 'from-gray-50 to-gray-100 border-gray-200'
                 }`}>
-                  {formatCurrency(paymentInfo.salaryToBePaid)}
-                </p>
-                {paymentInfo.hasPendingSalary && (
-                  <p className="text-xs text-green-600 mt-1">Pending Payment</p>
-                )}
+                <div className="flex items-center gap-3">
+                  <div className={`p-3 rounded-lg ${paymentInfo.hasPendingSalary ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                    <CreditCard className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Salary to be Paid</p>
+                    <p className={`text-2xl font-bold ${paymentInfo.hasPendingSalary ? 'text-green-600' : 'text-gray-600'
+                      }`}>
+                      {formatCurrency(paymentInfo.salaryToBePaid)}
+                    </p>
+                    {paymentInfo.hasPendingSalary && (
+                      <p className="text-xs text-green-600 mt-1">Pending Payment</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Total Earned from Attendance */}
+              <div className="min-w-[280px] bg-blue-50 rounded-xl p-6 border border-blue-200">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-blue-100 text-blue-600 rounded-lg">
+                    <Calculator className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-blue-600">Earned from Attendance</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {formatCurrency(salaryInfo.totalEarned)}
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1">
+                      {salaryInfo.daysWorked} days worked
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Total Bonus */}
+              <div className="min-w-[280px] bg-green-50 rounded-xl p-6 border border-green-200">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-green-100 text-green-600 rounded-lg">
+                    <TrendingUp className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-green-600">Total Bonus</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {formatCurrency(salaryStats.totalBonus)}
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1">
+                      {salary?.bonus.length || 0} bonus entries
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Advance Balance */}
+              <div className="min-w-[280px] bg-yellow-50 rounded-xl p-6 border border-yellow-200">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-yellow-100 text-yellow-600 rounded-lg">
+                    <Clock className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-yellow-600">Advance Balance</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {formatCurrency(salary?.advance_balance || 0)}
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1">
+                      {salary?.advance_transactions.length || 0} transactions
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Total Earned from Attendance */}
-          <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-100 text-blue-600 rounded-lg">
-                <Calculator className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-sm text-blue-600">Earned from Attendance</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {formatCurrency(salaryInfo.totalEarned)}
-                </p>
-                <p className="text-xs text-gray-600 mt-1">
-                  {salaryInfo.daysWorked} days worked
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Total Bonus */}
-          <div className="bg-green-50 rounded-xl p-6 border border-green-200">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-green-100 text-green-600 rounded-lg">
-                <TrendingUp className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-sm text-green-600">Total Bonus</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {formatCurrency(salaryStats.totalBonus)}
-                </p>
-                <p className="text-xs text-gray-600 mt-1">
-                  {salary?.bonus.length || 0} bonus entries
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Advance Balance */}
-          <div className="bg-yellow-50 rounded-xl p-6 border border-yellow-200">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-yellow-100 text-yellow-600 rounded-lg">
-                <Clock className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-sm text-yellow-600">Advance Balance</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {formatCurrency(salary?.advance_balance || 0)}
-                </p>
-                <p className="text-xs text-gray-600 mt-1">
-                  {salary?.advance_transactions.length || 0} transactions
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* Salary Actions */}
+      {/* Salary Actions - Scrollable */}
       <div className="bg-white rounded-xl border shadow-sm p-6">
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => setShowAdvanceModal(true)}
-            disabled={loading}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Plus className="h-4 w-4" />
-            Add Advance
-          </button>
-          
-          <button
-            onClick={() => setShowBonusModal(true)}
-            disabled={loading}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Plus className="h-4 w-4" />
-            Add Bonus
-          </button>
-          
-          <button
-            onClick={() => setShowPaymentModal(true)}
-            disabled={loading || paymentInfo.salaryToBePaid <= 0}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <IndianRupee className="h-4 w-4" />
-            Make Payment
-          </button>
+        <div className="relative">
+          <div className="flex overflow-x-auto pb-4 -mx-2 px-2 scrollbar-hide">
+            <div className="flex gap-3 min-w-max">
+              <button
+                onClick={() => setShowAdvanceModal(true)}
+                disabled={loading}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              >
+                <Plus className="h-4 w-4" />
+                Add Advance
+              </button>
+
+              <button
+                onClick={() => setShowBonusModal(true)}
+                disabled={loading}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              >
+                <Plus className="h-4 w-4" />
+                Add Bonus
+              </button>
+
+              <button
+                onClick={() => setShowPaymentModal(true)}
+                disabled={loading || paymentInfo.salaryToBePaid <= 0}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              >
+                <IndianRupee className="h-4 w-4" />
+                Make Payment
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Attendance Breakdown */}
+      {/* Attendance Breakdown - Scrollable */}
       <div className="bg-white rounded-xl border shadow-sm p-6">
         <h3 className="text-lg font-bold text-gray-900 mb-4">Attendance Breakdown</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {Object.entries(salaryInfo.statusBreakdown).map(([status, data]) => (
-            <div key={status} className="bg-gray-50 rounded-lg p-4 text-center">
-              <p className="text-sm font-medium text-gray-900 capitalize">{status}</p>
-              <p className="text-2xl font-bold text-blue-600">{data.count}</p>
-              <p className="text-xs text-gray-600">{formatCurrency(data.amount)}</p>
+        <div className="relative">
+          <div className="flex overflow-x-auto pb-4 -mx-2 px-2 scrollbar-hide">
+            <div className="flex gap-4 min-w-max">
+              {Object.entries(salaryInfo.statusBreakdown).map(([status, data]) => (
+                <div key={status} className="min-w-[180px] bg-gray-50 rounded-lg p-4 text-center">
+                  <p className="text-sm font-medium text-gray-900 capitalize truncate">{status}</p>
+                  <p className="text-2xl font-bold text-blue-600">{data.count}</p>
+                  <p className="text-xs text-gray-600 truncate">{formatCurrency(data.amount)}</p>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       </div>
 
@@ -589,7 +600,7 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
             {salary.advance_transactions.length + salary.bonus.length + salary.amountpaid.length} total transactions
           </div>
         </div>
-        
+
         <div className="space-y-6">
           {/* Advance Transactions */}
           <div>
@@ -599,9 +610,8 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
                 {salary.advance_transactions.map((transaction) => (
                   <div key={transaction._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group">
                     <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-full ${
-                        transaction.type === 'given' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
-                      }`}>
+                      <div className={`p-2 rounded-full ${transaction.type === 'given' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+                        }`}>
                         {transaction.type === 'given' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
                       </div>
                       <div>
@@ -614,9 +624,8 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <p className={`font-semibold text-lg ${
-                        transaction.type === 'given' ? 'text-red-600' : 'text-green-600'
-                      }`}>
+                      <p className={`font-semibold text-lg ${transaction.type === 'given' ? 'text-red-600' : 'text-green-600'
+                        }`}>
                         {transaction.type === 'given' ? '+' : '-'}{formatCurrency(transaction.amount)}
                       </p>
                       <button
@@ -994,7 +1003,7 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
                     <p className="text-sm text-gray-600">This action cannot be undone</p>
                   </div>
                 </div>
-                
+
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
                   <p className="text-red-800 font-medium">Are you sure you want to delete this transaction?</p>
                   <p className="text-red-700 text-sm mt-1">{deleteItem.description}</p>
