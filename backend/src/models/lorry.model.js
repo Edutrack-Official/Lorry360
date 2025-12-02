@@ -34,4 +34,32 @@ const lorrySchema = new mongoose.Schema({
   timestamps: true
 });
 
+// -----------------------------
+// 🔥 PRE DELETE HOOK (Universal Reference Check)
+// -----------------------------
+lorrySchema.pre('findOneAndDelete', async function (next) {
+  try {
+    const lorryId = this.getQuery()._id;
+
+    // Get all collections in the database
+    const collections = await mongoose.connection.db.listCollections().toArray();
+
+    for (const col of collections) {
+      const collection = mongoose.connection.db.collection(col.name);
+
+      // Check if any document references this lorry using "lorry_id"
+      const doc = await collection.findOne({ lorry_id: lorryId });
+      if (doc) {
+        return next(
+          new Error(`Cannot delete lorry: Referenced in collection '${col.name}'`)
+        );
+      }
+    }
+
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = mongoose.model('Lorry', lorrySchema);
