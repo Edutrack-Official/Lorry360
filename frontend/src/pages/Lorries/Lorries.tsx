@@ -18,6 +18,7 @@ import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "../../api/client";
+import DeleteConfirmationModal from "../../components/DeleteConfirmationModal";
 
 interface Lorry {
   _id: string;
@@ -36,6 +37,13 @@ const Lorries = () => {
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "maintenance" | "inactive">("all");
   const [showFilters, setShowFilters] = useState(false);
   const [showActionMenu, setShowActionMenu] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedLorry, setSelectedLorry] = useState<{
+    id: string;
+    registrationNumber: string;
+    nickName?: string;
+  } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const navigate = useNavigate();
 
@@ -57,7 +65,7 @@ const Lorries = () => {
   const handleToggleStatus = async (id: string, currentStatus: string) => {
     try {
       let newStatus: string;
-      
+
       switch (currentStatus) {
         case 'active':
           newStatus = 'maintenance';
@@ -81,18 +89,28 @@ const Lorries = () => {
     }
   };
 
-  const handleDeleteLorry = async (id: string, registrationNumber: string) => {
-    if (!window.confirm(`Are you sure you want to delete lorry ${registrationNumber}?`)) {
-      return;
-    }
+  // Function to open delete modal
+  const handleDeleteClick = (id: string, registrationNumber: string, nickName?: string) => {
+    setSelectedLorry({ id, registrationNumber, nickName });
+    setDeleteModalOpen(true);
+    setShowActionMenu(null);
+  };
 
+  // Function to handle actual deletion
+  const handleConfirmDelete = async () => {
+    if (!selectedLorry) return;
+
+    setIsDeleting(true);
     try {
-      await api.delete(`/lorries/delete/${id}`);
+      await api.delete(`/lorries/delete/${selectedLorry.id}`);
       toast.success("Lorry deleted successfully");
-      setShowActionMenu(null);
+      setDeleteModalOpen(false);
+      setSelectedLorry(null);
       fetchLorries();
     } catch (error: any) {
       toast.error(error.response?.data?.error || "Failed to delete lorry");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -106,41 +124,36 @@ const Lorries = () => {
       lorry.registration_number.toLowerCase().includes(searchText.toLowerCase()) ||
       lorry.nick_name?.toLowerCase().includes(searchText.toLowerCase()) ||
       lorry.owner_id?.name?.toLowerCase().includes(searchText.toLowerCase());
-    
+
     const matchesStatus =
       filterStatus === "all" || lorry.status === filterStatus;
-    
+
     return matchesSearch && matchesStatus;
   });
 
   const getStatusConfig = (status: string) => {
     const statusConfig = {
-      active: { 
-        color: "bg-green-50 text-green-700 border-green-200", 
+      active: {
+        color: "bg-green-50 text-green-700 border-green-200",
         icon: CheckCircle2,
         label: "Active",
         dotColor: "bg-green-500"
       },
-      maintenance: { 
-        color: "bg-amber-50 text-amber-700 border-amber-200", 
+      maintenance: {
+        color: "bg-amber-50 text-amber-700 border-amber-200",
         icon: Clock,
         label: "Maintenance",
         dotColor: "bg-amber-500"
       },
-      inactive: { 
-        color: "bg-gray-50 text-gray-700 border-gray-200", 
+      inactive: {
+        color: "bg-gray-50 text-gray-700 border-gray-200",
         icon: PauseCircle,
         label: "Inactive",
         dotColor: "bg-gray-500"
       }
     };
-    
-    return statusConfig[status as keyof typeof statusConfig] || statusConfig.inactive;
-  };
 
-  const resetFilters = () => {
-    setSearchText("");
-    setFilterStatus("all");
+    return statusConfig[status as keyof typeof statusConfig] || statusConfig.inactive;
   };
 
   // Close action menu when clicking outside
@@ -208,33 +221,29 @@ const Lorries = () => {
             <div className="hidden lg:flex items-center gap-2">
               <button
                 onClick={() => setFilterStatus("all")}
-                className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                  filterStatus === "all" ? 'bg-blue-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
-                }`}
+                className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filterStatus === "all" ? 'bg-blue-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
+                  }`}
               >
                 All
               </button>
               <button
                 onClick={() => setFilterStatus("active")}
-                className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                  filterStatus === "active" ? 'bg-green-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
-                }`}
+                className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filterStatus === "active" ? 'bg-green-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
+                  }`}
               >
                 Active
               </button>
               <button
                 onClick={() => setFilterStatus("maintenance")}
-                className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                  filterStatus === "maintenance" ? 'bg-amber-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
-                }`}
+                className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filterStatus === "maintenance" ? 'bg-amber-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
+                  }`}
               >
                 Maintenance
               </button>
               <button
                 onClick={() => setFilterStatus("inactive")}
-                className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                  filterStatus === "inactive" ? 'bg-gray-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
-                }`}
+                className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filterStatus === "inactive" ? 'bg-gray-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
+                  }`}
               >
                 Inactive
               </button>
@@ -247,33 +256,29 @@ const Lorries = () => {
             {/* Quick Status Filters */}
             <button
               onClick={() => setFilterStatus("all")}
-              className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                filterStatus === "all" ? 'bg-blue-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
-              }`}
+              className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filterStatus === "all" ? 'bg-blue-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
+                }`}
             >
               All
             </button>
             <button
               onClick={() => setFilterStatus("active")}
-              className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                filterStatus === "active" ? 'bg-green-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
-              }`}
+              className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filterStatus === "active" ? 'bg-green-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
+                }`}
             >
               Active
             </button>
             <button
               onClick={() => setFilterStatus("maintenance")}
-              className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                filterStatus === "maintenance" ? 'bg-amber-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
-              }`}
+              className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filterStatus === "maintenance" ? 'bg-amber-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
+                }`}
             >
               Maintenance
             </button>
             <button
               onClick={() => setFilterStatus("inactive")}
-              className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                filterStatus === "inactive" ? 'bg-gray-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
-              }`}
+              className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filterStatus === "inactive" ? 'bg-gray-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
+                }`}
             >
               Inactive
             </button>
@@ -341,7 +346,7 @@ const Lorries = () => {
                           <p className="text-gray-600 text-sm truncate">{lorry.nick_name}</p>
                         )}
                       </div>
-                      
+
                       {/* Action Menu */}
                       <div className="relative ml-2">
                         <button
@@ -353,6 +358,20 @@ const Lorries = () => {
                         >
                           <MoreVertical className="h-4 w-4 text-gray-500" />
                         </button>
+
+                        {/* Delete Confirmation Modal */}
+                        <DeleteConfirmationModal
+                          isOpen={deleteModalOpen}
+                          onClose={() => {
+                            setDeleteModalOpen(false);
+                            setSelectedLorry(null);
+                          }}
+                          onConfirm={handleConfirmDelete}
+                          title="Delete Lorry"
+                          message={`Are you sure you want to delete this lorry?`}
+                          isLoading={isDeleting}
+                          itemName={selectedLorry ? selectedLorry.registrationNumber : ""}
+                        />
 
                         <AnimatePresence>
                           {showActionMenu === lorry._id && (
@@ -388,7 +407,7 @@ const Lorries = () => {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleDeleteLorry(lorry._id, lorry.registration_number);
+                                  handleDeleteClick(lorry._id, lorry.registration_number, lorry.nick_name);
                                 }}
                                 className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
                               >
@@ -432,7 +451,7 @@ const Lorries = () => {
                 No lorries found
               </h3>
               <p className="text-sm sm:text-base text-gray-600 mb-6">
-                {searchText || filterStatus !== "all" 
+                {searchText || filterStatus !== "all"
                   ? "Try adjusting your search or filters to find what you're looking for"
                   : "Get started by adding your first lorry to the fleet"
                 }

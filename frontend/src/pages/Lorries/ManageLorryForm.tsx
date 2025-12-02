@@ -294,40 +294,6 @@ const ManageLorryForm: React.FC = () => {
             </div>
           </div>
 
-          {/* Information Panel */}
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 sm:p-5">
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 mt-0.5">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Info className="h-4 w-4 text-blue-600" />
-                </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-semibold text-blue-900 mb-2">
-                  Important Information
-                </h3>
-                <ul className="text-xs text-blue-700 space-y-1.5">
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-400 font-bold flex-shrink-0">•</span>
-                    <span>Registration number must be unique across all lorries</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-400 font-bold flex-shrink-0">•</span>
-                    <span>Status determines the operational state of the lorry</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-400 font-bold flex-shrink-0">•</span>
-                    <span>Nick names help with quick identification in lists</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-400 font-bold flex-shrink-0">•</span>
-                    <span>Only owners can create and manage lorries</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
           {/* Action Buttons - Sticky on Mobile */}
           <div className="sticky bottom-0 bg-white border-t border-gray-200 -mx-4 sm:-mx-6 px-4 sm:px-6 py-4 sm:relative sm:bg-transparent sm:border-0 sm:p-0 shadow-lg sm:shadow-none">
             <div className="flex flex-col sm:flex-row gap-3">
@@ -360,18 +326,6 @@ const ManageLorryForm: React.FC = () => {
                 <X className="h-4 w-4" />
                 Cancel
               </button>
-
-              {/* Back to Lorries - Desktop Only */}
-              {isEditMode && (
-                <button
-                  type="button"
-                  onClick={() => navigate("/lorries")}
-                  className="hidden sm:inline-flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 bg-white rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all font-medium sm:ml-auto"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Back to Lorries
-                </button>
-              )}
             </div>
           </div>
         </form>

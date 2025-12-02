@@ -236,7 +236,7 @@ const LorryDetails = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Mobile-First Header - Sticky */}
       <div className="bg-white border-b top-0 z-20 shadow-sm">
-        <div className="px-4 py-4 sm:px-6">
+        <div className="px-4 py-2 sm:px-6">
           {/* Top Row */}
           <div className="flex items-center justify-between gap-3 mb-3">
             <button
@@ -247,9 +247,6 @@ const LorryDetails = () => {
             </button>
             
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
-                <Truck className="h-5 w-5 text-blue-600" />
-              </div>
               <div className="flex-1 min-w-0">
                 <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">
                   {lorry.registration_number}
@@ -260,12 +257,6 @@ const LorryDetails = () => {
               </div>
             </div>
 
-          </div>
-
-          {/* Status Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium border ${statusConfig.color}">
-            <span className={`h-2 w-2 rounded-full ${statusConfig.dotColor} animate-pulse`}></span>
-            {statusConfig.label}
           </div>
         </div>
       </div>

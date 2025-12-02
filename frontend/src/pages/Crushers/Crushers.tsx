@@ -9,13 +9,12 @@ import {
   DollarSign, 
   Plus, 
   MoreVertical,
-  ChevronDown,
-  Filter
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "../../api/client";
+import DeleteConfirmationModal from "../../components/DeleteConfirmationModal";
 
 interface Material {
   material_name: string;
@@ -45,16 +44,16 @@ const Crushers = () => {
   const [searchText, setSearchText] = useState("");
   const [rowsPerPage, setRowsPerPage] = useState(12);
   const [currentPage, setCurrentPage] = useState(1);
-  const [showFilters, setShowFilters] = useState(false);
-
-  // Selection
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [selectAll, setSelectAll] = useState(false);
 
   // Delete confirmation
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
-
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedCrusherDelete, setSelectedCrusherDelete] = useState<{
+    id: string;
+    name: string;
+    materialsCount: number;
+  } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
   // Action menu
   const [showActionMenu, setShowActionMenu] = useState<string | null>(null);
 
@@ -77,13 +76,26 @@ const Crushers = () => {
     fetchCrushers();
   }, []);
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteClick = (id: string, name: string, materialsCount: number) => {
+    setSelectedCrusherDelete({ id, name, materialsCount });
+    setDeleteModalOpen(true);
+    setShowActionMenu(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedCrusherDelete) return;
+    
+    setIsDeleting(true);
     try {
-      await api.delete(`/crushers/delete/${id}`);
+      await api.delete(`/crushers/delete/${selectedCrusherDelete.id}`);
       toast.success("Crusher deleted successfully");
+      setDeleteModalOpen(false);
+      setSelectedCrusherDelete(null);
       fetchCrushers();
     } catch (error: any) {
       toast.error(error.response?.data?.error || "Failed to delete crusher");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -100,47 +112,6 @@ const Crushers = () => {
   // Pagination
   const totalPages = Math.ceil(filtered.length / rowsPerPage);
   const paginated = filtered.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
-
-  // Handle Select All
-  const toggleSelectAll = () => {
-    if (selectAll) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(paginated.map((c) => c._id));
-    }
-    setSelectAll(!selectAll);
-  };
-
-  const toggleSelectOne = (id: string) => {
-    if (selectedIds.includes(id)) {
-      setSelectedIds(selectedIds.filter((sid) => sid !== id));
-    } else {
-      setSelectedIds([...selectedIds, id]);
-    }
-  };
-
-  // Bulk Delete
-  const handleBulkDelete = async () => {
-    try {
-      await Promise.all(
-        selectedIds.map((id) => api.delete(`/crushers/delete/${id}`))
-      );
-      toast.success("Selected crushers deleted successfully");
-      setSelectedIds([]);
-      setSelectAll(false);
-      fetchCrushers();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || "Failed to bulk delete");
-    }
-  };
-
-  const resetFilters = () => {
-    setSearchText("");
-    setRowsPerPage(12);
-    setCurrentPage(1);
-    setSelectedIds([]);
-    setSelectAll(false);
-  };
 
   // Close action menu when clicking outside
   useEffect(() => {
@@ -182,17 +153,6 @@ const Crushers = () => {
             </div>
 
             <div className="flex items-center gap-3">
-              {/* Bulk Actions */}
-              {selectedIds.length > 0 && (
-                <button
-                  onClick={() => setConfirmBulkDelete(true)}
-                  className="inline-flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all shadow-sm text-sm sm:text-base font-medium"
-                >
-                  <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Delete ({selectedIds.length})
-                </button>
-              )}
-
               {/* Add Crusher */}
               <Link
                 to="/crushers/create"
@@ -221,59 +181,7 @@ const Crushers = () => {
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               />
             </div>
-
-            {/* Filters Button */}
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="inline-flex items-center gap-2 px-3 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all text-sm font-medium"
-            >
-              <Filter className="h-4 w-4" />
-              <span>Filters</span>
-              <ChevronDown className={`h-3 w-3 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-            </button>
           </div>
-
-          {/* Expanded Filters - Animated Collapse */}
-          <AnimatePresence>
-            {showFilters && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
-              >
-                <div className="pt-4 border-t border-gray-200 grid grid-cols-1 lg:grid-cols-4 gap-4">
-                  {/* Rows per page */}
-                  <div>
-                    <select
-                      value={rowsPerPage}
-                      onChange={(e) => {
-                        setRowsPerPage(Number(e.target.value));
-                        setCurrentPage(1);
-                      }}
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    >
-                      <option value={12}>12 per page</option>
-                      <option value={24}>24 per page</option>
-                      <option value={36}>36 per page</option>
-                      <option value={48}>48 per page</option>
-                    </select>
-                  </div>
-
-                  {/* Clear Filters */}
-                  <div>
-                    <button
-                      onClick={resetFilters}
-                      className="w-full px-3 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all text-sm font-medium border border-gray-300"
-                    >
-                      Clear Filters
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
       </div>
 
@@ -281,178 +189,145 @@ const Crushers = () => {
       <div className="p-4 sm:p-6">
         {paginated.length > 0 ? (
           <>
-            {/* Select All Checkbox */}
-            <div className="mb-4 flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={selectAll}
-                onChange={toggleSelectAll}
-                className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-              />
-              <label className="text-sm text-gray-700">
-                Select all {paginated.length} crushers on this page
-              </label>
-              {selectedIds.length > 0 && (
-                <span className="text-sm text-gray-500 ml-auto">
-                  {selectedIds.length} selected
-                </span>
-              )}
-            </div>
-
             {/* Cards Grid - Updated UI */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {paginated.map((crusher) => {
-                const isSelected = selectedIds.includes(crusher._id);
-                
-                return (
-                  <motion.div
-                    key={crusher._id}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    className={`bg-white rounded-xl border shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer active:scale-98 ${
-                      isSelected ? 'ring-2 ring-blue-500 border-blue-500' : 'border-gray-200'
-                    }`}
-                    onClick={(e) => {
-                      if ((e.target as HTMLElement).closest('button, a, input')) return;
-                      navigate(`/crushers/${crusher._id}/trips`);
-                    }}
-                  >
-                    <div className="p-4 sm:p-5">
-                      {/* Header with Checkbox and Action Menu */}
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => toggleSelectOne(crusher._id)}
-                            className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-1 truncate">
-                              {crusher.name}
-                            </h3>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
-                                {crusher.materials.length} materials
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* Action Menu - Updated to match Lorries */}
-                        <div className="relative ml-2">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setShowActionMenu(showActionMenu === crusher._id ? null : crusher._id);
-                            }}
-                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                          >
-                            <MoreVertical className="h-4 w-4 text-gray-500" />
-                          </button>
-
-                          <AnimatePresence>
-                            {showActionMenu === crusher._id && (
-                              <motion.div
-                                initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                transition={{ duration: 0.15 }}
-                                className="absolute right-0 top-10 z-30 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate(`/crushers/edit/${crusher._id}`);
-                                  }}
-                                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                                >
-                                  <Pencil className="h-4 w-4 text-gray-500" />
-                                  Edit Crusher
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate(`/crushers/${crusher._id}/trips`);
-                                  }}
-                                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                                >
-                                  <Eye className="h-4 w-4 text-gray-500" />
-                                  View Trips
-                                </button>
-                                <div className="border-t border-gray-100 my-1"></div>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setConfirmDeleteId(crusher._id);
-                                  }}
-                                  className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                  Delete Crusher
-                                </button>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
+              {paginated.map((crusher) => (
+                <motion.div
+                  key={crusher._id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer active:scale-98"
+                  onClick={(e) => {
+                    if ((e.target as HTMLElement).closest('button, a, input')) return;
+                    navigate(`/crushers/${crusher._id}/trips`);
+                  }}
+                >
+                  <div className="p-4 sm:p-5">
+                    {/* Header with Action Menu */}
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-1 truncate">
+                          {crusher.name}
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                            {crusher.materials.length} materials
+                          </span>
                         </div>
                       </div>
+                      
+                      {/* Action Menu - Updated to match Lorries */}
+                      <div className="relative ml-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowActionMenu(showActionMenu === crusher._id ? null : crusher._id);
+                          }}
+                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        >
+                          <MoreVertical className="h-4 w-4 text-gray-500" />
+                        </button>
 
-                      {/* Card Body - Materials */}
-                      <div className="mb-4">
-                        <div className="space-y-2 max-h-32 overflow-y-auto">
-                          {crusher.materials.length > 0 ? (
-                            crusher.materials.slice(0, 3).map((material, index) => (
-                              <div
-                                key={index}
-                                className="flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-100"
+                        <AnimatePresence>
+                          {showActionMenu === crusher._id && (
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                              transition={{ duration: 0.15 }}
+                              className="absolute right-0 top-10 z-30 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/crushers/edit/${crusher._id}`);
+                                }}
+                                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                               >
-                                <span className="text-sm font-medium text-gray-800 truncate">
-                                  {material.material_name}
-                                </span>
-                                <div className="flex items-center gap-1 text-green-600 font-semibold text-sm whitespace-nowrap">
-                                  <DollarSign size={12} />
-                                  {material.price_per_unit}
-                                </div>
-                              </div>
-                            ))
-                          ) : (
-                            <div className="text-center py-4 text-gray-400 text-sm bg-gray-50 rounded-lg">
-                              No materials added
-                            </div>
+                                <Pencil className="h-4 w-4 text-gray-500" />
+                                Edit Crusher
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/crushers/${crusher._id}/trips`);
+                                }}
+                                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                              >
+                                <Eye className="h-4 w-4 text-gray-500" />
+                                View Trips
+                              </button>
+                              <div className="border-t border-gray-100 my-1"></div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteClick(crusher._id, crusher.name, crusher.materials.length);
+                                }}
+                                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                Delete Crusher
+                              </button>
+                            </motion.div>
                           )}
-                          {crusher.materials.length > 3 && (
-                            <div className="text-center text-xs text-gray-500 pt-1">
-                              +{crusher.materials.length - 3} more materials
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Card Footer */}
-                      <div className="pt-3 border-t border-gray-100">
-                        <div className="flex items-center justify-between text-xs text-gray-600">
-                          <div>
-                            Created: {new Date(crusher.createdAt).toLocaleDateString()}
-                          </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedCrusher(crusher);
-                            }}
-                            className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
-                          >
-                            <Eye size={12} />
-                            View
-                          </button>
-                        </div>
+                        </AnimatePresence>
                       </div>
                     </div>
-                  </motion.div>
-                );
-              })}
+
+                    {/* Card Body - Materials */}
+                    <div className="mb-4">
+                      <div className="space-y-2 max-h-32 overflow-y-auto">
+                        {crusher.materials.length > 0 ? (
+                          crusher.materials.slice(0, 3).map((material, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-100"
+                            >
+                              <span className="text-sm font-medium text-gray-800 truncate">
+                                {material.material_name}
+                              </span>
+                              <div className="flex items-center gap-1 text-green-600 font-semibold text-sm whitespace-nowrap">
+                                <DollarSign size={12} />
+                                {material.price_per_unit}
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-4 text-gray-400 text-sm bg-gray-50 rounded-lg">
+                            No materials added
+                          </div>
+                        )}
+                        {crusher.materials.length > 3 && (
+                          <div className="text-center text-xs text-gray-500 pt-1">
+                            +{crusher.materials.length - 3} more materials
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Card Footer */}
+                    <div className="pt-3 border-t border-gray-100">
+                      <div className="flex items-center justify-between text-xs text-gray-600">
+                        <div>
+                          Created: {new Date(crusher.createdAt).toLocaleDateString()}
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCrusher(crusher);
+                          }}
+                          className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+                        >
+                          <Eye size={12} />
+                          View
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
             </div>
 
             {/* Pagination - Updated UI */}
@@ -516,8 +391,8 @@ const Crushers = () => {
                 No crushers found
               </h3>
               <p className="text-sm sm:text-base text-gray-600 mb-6">
-                {searchText || showFilters
-                  ? "Try adjusting your search or filters to find what you're looking for"
+                {searchText
+                  ? "Try adjusting your search to find what you're looking for"
                   : "Get started by creating your first crusher"
                 }
               </p>
@@ -618,73 +493,22 @@ const Crushers = () => {
         </div>
       )}
 
-      {/* Confirm Delete One */}
-      {confirmDeleteId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-xl p-6 shadow-lg w-96 text-center">
-            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Trash2 size={24} className="text-red-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Delete Crusher?
-            </h3>
-            <p className="text-gray-600 mb-6">
-              This action cannot be undone. All associated materials will be removed.
-            </p>
-            <div className="flex justify-center gap-3">
-              <button
-                onClick={() => setConfirmDeleteId(null)}
-                className="px-6 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  handleDelete(confirmDeleteId);
-                  setConfirmDeleteId(null);
-                }}
-                className="px-6 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition font-medium"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Confirm Bulk Delete */}
-      {confirmBulkDelete && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-xl p-6 shadow-lg w-96 text-center">
-            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Trash2 size={24} className="text-red-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Delete {selectedIds.length} Crushers?
-            </h3>
-            <p className="text-gray-600 mb-6">
-              This will permanently remove all selected crushers and their materials.
-            </p>
-            <div className="flex justify-center gap-3">
-              <button
-                onClick={() => setConfirmBulkDelete(false)}
-                className="px-6 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={async () => {
-                  await handleBulkDelete();
-                  setConfirmBulkDelete(false);
-                }}
-                className="px-6 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition font-medium"
-              >
-                Delete All
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setSelectedCrusherDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Delete Crusher"
+        message={`Are you sure you want to delete this crusher?`}
+        isLoading={isDeleting}
+        itemName={selectedCrusherDelete ? 
+          `Crusher: ${selectedCrusherDelete.name} (${selectedCrusherDelete.materialsCount} materials)`
+          : ""
+        }
+      />
     </div>
   );
 };

@@ -20,6 +20,7 @@ import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "../../api/client";
+import DeleteConfirmationModal from "../../components/DeleteConfirmationModal";
 
 interface Driver {
   _id: string;
@@ -42,6 +43,14 @@ const Drivers = () => {
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
   const [showFilters, setShowFilters] = useState(false);
   const [showActionMenu, setShowActionMenu] = useState<string | null>(null);
+  // Add these state variables
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedDriver, setSelectedDriver] = useState<{
+    id: string;
+    name: string;
+    phone?: string;
+  } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const navigate = useNavigate();
 
@@ -74,18 +83,28 @@ const Drivers = () => {
     }
   };
 
-  const handleDeleteDriver = async (id: string, name: string) => {
-    if (!window.confirm(`Are you sure you want to delete driver ${name}?`)) {
-      return;
-    }
+  // Function to open delete modal
+  const handleDeleteClick = (id: string, name: string, phone?: string) => {
+    setSelectedDriver({ id, name, phone });
+    setDeleteModalOpen(true);
+    setShowActionMenu(null);
+  };
 
+  // Function to handle confirmed deletion
+  const handleConfirmDelete = async () => {
+    if (!selectedDriver) return;
+
+    setIsDeleting(true);
     try {
-      await api.delete(`/drivers/delete/${id}`);
+      await api.delete(`/drivers/delete/${selectedDriver.id}`);
       toast.success("Driver deleted successfully");
-      setShowActionMenu(null);
+      setDeleteModalOpen(false);
+      setSelectedDriver(null);
       fetchDrivers();
     } catch (error: any) {
       toast.error(error.response?.data?.error || "Failed to delete driver");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -222,25 +241,22 @@ const Drivers = () => {
             <div className="hidden lg:flex items-center gap-2">
               <button
                 onClick={() => setFilterStatus("all")}
-                className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                  filterStatus === "all" ? 'bg-blue-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
-                }`}
+                className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filterStatus === "all" ? 'bg-blue-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
+                  }`}
               >
                 All
               </button>
               <button
                 onClick={() => setFilterStatus("active")}
-                className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                  filterStatus === "active" ? 'bg-green-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
-                }`}
+                className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filterStatus === "active" ? 'bg-green-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
+                  }`}
               >
                 Active
               </button>
               <button
                 onClick={() => setFilterStatus("inactive")}
-                className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                  filterStatus === "inactive" ? 'bg-red-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
-                }`}
+                className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filterStatus === "inactive" ? 'bg-red-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
+                  }`}
               >
                 Inactive
               </button>
@@ -252,25 +268,22 @@ const Drivers = () => {
             {/* Quick Status Filters */}
             <button
               onClick={() => setFilterStatus("all")}
-              className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                filterStatus === "all" ? 'bg-blue-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
-              }`}
+              className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filterStatus === "all" ? 'bg-blue-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
+                }`}
             >
               All
             </button>
             <button
               onClick={() => setFilterStatus("active")}
-              className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                filterStatus === "active" ? 'bg-green-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
-              }`}
+              className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filterStatus === "active" ? 'bg-green-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
+                }`}
             >
               Active
             </button>
             <button
               onClick={() => setFilterStatus("inactive")}
-              className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                filterStatus === "inactive" ? 'bg-red-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
-              }`}
+              className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filterStatus === "inactive" ? 'bg-red-600 text-white' : 'bg-white border border-gray-300 text-gray-700'
+                }`}
             >
               Inactive
             </button>
@@ -307,7 +320,7 @@ const Drivers = () => {
                           {driver.name}
                         </h3>
                       </div>
-                      
+
                       {/* Action Menu */}
                       <div className="relative ml-2">
                         <button
@@ -354,7 +367,7 @@ const Drivers = () => {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleDeleteDriver(driver._id, driver.name);
+                                  handleDeleteClick(driver._id, driver.name, driver.phone);
                                 }}
                                 className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
                               >
@@ -374,7 +387,7 @@ const Drivers = () => {
                         <StatusIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         {statusConfig.label}
                       </div>
-                      
+
                       {/* Salary Type Badge */}
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${salaryTypeColor}`}>
                         {salaryType}
@@ -453,7 +466,7 @@ const Drivers = () => {
                 No drivers found
               </h3>
               <p className="text-sm sm:text-base text-gray-600 mb-6">
-                {searchText || filterStatus !== "all" 
+                {searchText || filterStatus !== "all"
                   ? "Try adjusting your search or filters to find what you're looking for"
                   : "Get started by adding your first driver to the team"
                 }
@@ -469,6 +482,22 @@ const Drivers = () => {
           </div>
         )}
       </div>
+        {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setSelectedDriver(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Delete Driver"
+        message={`Are you sure you want to delete this driver?`}
+        isLoading={isDeleting}
+        itemName={selectedDriver ? 
+          `Driver: ${selectedDriver.name}${selectedDriver.phone ? ` (${selectedDriver.phone})` : ''}`
+          : ""
+        }
+      />
     </div>
   );
 };

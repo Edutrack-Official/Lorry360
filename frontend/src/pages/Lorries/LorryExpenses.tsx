@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import api from "../../api/client";
 import {
@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import DeleteConfirmationModal from "../../components/DeleteConfirmationModal";
 
 interface Expense {
   _id: string;
@@ -52,7 +53,7 @@ interface Lorry {
 const LorryExpenses = () => {
   const { lorryId } = useParams<{ lorryId: string }>();
   const navigate = useNavigate();
-  
+
   const [lorry, setLorry] = useState<Lorry | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,6 +64,16 @@ const LorryExpenses = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [showActionMenu, setShowActionMenu] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState<{
+    id: string;
+    description: string;
+    amount: number;
+    category: string;
+  } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
+  const buttonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
 
   const fetchLorry = async () => {
     try {
@@ -75,30 +86,27 @@ const LorryExpenses = () => {
     }
   };
 
-const fetchExpenses = async () => {
-  try {
-    const filterParams: any = {};
-    if (dateRange.start) filterParams.start_date = dateRange.start;
-    if (dateRange.end) filterParams.end_date = dateRange.end;
-    if (filterCategory !== 'all') filterParams.category = filterCategory;
-    if (filterPaymentMode !== 'all') filterParams.payment_mode = filterPaymentMode;
+  const fetchExpenses = async () => {
+    try {
+      const filterParams: any = {};
+      if (dateRange.start) filterParams.start_date = dateRange.start;
+      if (dateRange.end) filterParams.end_date = dateRange.end;
+      if (filterCategory !== 'all') filterParams.category = filterCategory;
+      if (filterPaymentMode !== 'all') filterParams.payment_mode = filterPaymentMode;
 
-    console.log('Fetching expenses for lorry:', lorryId, 'with params:', filterParams);
+      console.log('Fetching expenses for lorry:', lorryId, 'with params:', filterParams);
 
-    // ✅ Use the dedicated lorry endpoint
-    const res = await api.get(`/expenses/lorry/${lorryId}`, { params: filterParams });
-    
-    // The response structure might be different, so adjust accordingly
-    const expensesData = res.data.data?.expenses || [];
-    setExpenses(expensesData);
-    
-    console.log('Received expenses:', expensesData.length);
-  } catch (error: any) {
-    toast.error(error.response?.data?.error || "Failed to fetch expenses");
-  } finally {
-    setExpensesLoading(false);
-  }
-};
+      const res = await api.get(`/expenses/lorry/${lorryId}`, { params: filterParams });
+      const expensesData = res.data.data?.expenses || [];
+      setExpenses(expensesData);
+
+      console.log('Received expenses:', expensesData.length);
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || "Failed to fetch expenses");
+    } finally {
+      setExpensesLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (lorryId) {
@@ -113,18 +121,26 @@ const fetchExpenses = async () => {
     }
   }, [dateRange, filterCategory, filterPaymentMode]);
 
-  const handleDeleteExpense = async (expenseId: string, description: string) => {
-    if (!window.confirm(`Are you sure you want to delete ${description || 'this expense'}?`)) {
-      return;
-    }
+  const handleDeleteClick = (expenseId: string, description: string, amount: number, category: string) => {
+    setSelectedExpense({ id: expenseId, description, amount, category });
+    setDeleteModalOpen(true);
+    setShowActionMenu(null);
+  };
 
+  const handleConfirmDelete = async () => {
+    if (!selectedExpense) return;
+
+    setIsDeleting(true);
     try {
-      await api.delete(`/expenses/delete/${expenseId}`);
+      await api.delete(`/expenses/delete/${selectedExpense.id}`);
       toast.success("Expense deleted successfully");
-      setShowActionMenu(null);
+      setDeleteModalOpen(false);
+      setSelectedExpense(null);
       fetchExpenses();
     } catch (error: any) {
       toast.error(error.response?.data?.error || "Failed to delete expense");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -133,41 +149,41 @@ const fetchExpenses = async () => {
       expense.description?.toLowerCase().includes(searchText.toLowerCase()) ||
       expense.category.toLowerCase().includes(searchText.toLowerCase()) ||
       expense.amount.toString().includes(searchText);
-    
+
     return matchesSearch;
   });
 
   const getCategoryConfig = (category: string) => {
     const config = {
-      fuel: { 
-        color: "bg-orange-50 text-orange-700 border-orange-200", 
-        icon: Fuel, 
-        label: "Fuel" 
+      fuel: {
+        color: "bg-orange-50 text-orange-700 border-orange-200",
+        icon: Fuel,
+        label: "Fuel"
       },
-      maintenance: { 
-        color: "bg-blue-50 text-blue-700 border-blue-200", 
-        icon: Wrench, 
-        label: "Maintenance" 
+      maintenance: {
+        color: "bg-blue-50 text-blue-700 border-blue-200",
+        icon: Wrench,
+        label: "Maintenance"
       },
-      repair: { 
-        color: "bg-red-50 text-red-700 border-red-200", 
-        icon: Hammer, 
-        label: "Repair" 
+      repair: {
+        color: "bg-red-50 text-red-700 border-red-200",
+        icon: Hammer,
+        label: "Repair"
       },
-      toll: { 
-        color: "bg-purple-50 text-purple-700 border-purple-200", 
-        icon: MapPin, 
-        label: "Toll" 
+      toll: {
+        color: "bg-purple-50 text-purple-700 border-purple-200",
+        icon: MapPin,
+        label: "Toll"
       },
-      fine: { 
-        color: "bg-yellow-50 text-yellow-700 border-yellow-200", 
-        icon: AlertTriangle, 
-        label: "Fine" 
+      fine: {
+        color: "bg-yellow-50 text-yellow-700 border-yellow-200",
+        icon: AlertTriangle,
+        label: "Fine"
       },
-      other: { 
-        color: "bg-gray-50 text-gray-700 border-gray-200", 
-        icon: FileText, 
-        label: "Other" 
+      other: {
+        color: "bg-gray-50 text-gray-700 border-gray-200",
+        icon: FileText,
+        label: "Other"
       }
     };
     return config[category as keyof typeof config] || config.other;
@@ -175,20 +191,20 @@ const fetchExpenses = async () => {
 
   const getPaymentModeConfig = (mode: string) => {
     const config = {
-      cash: { 
-        color: "bg-green-50 text-green-700 border-green-200", 
-        icon: Wallet, 
-        label: "Cash" 
+      cash: {
+        color: "bg-green-50 text-green-700 border-green-200",
+        icon: Wallet,
+        label: "Cash"
       },
-      bank: { 
-        color: "bg-blue-50 text-blue-700 border-blue-200", 
-        icon: CreditCard, 
-        label: "Bank" 
+      bank: {
+        color: "bg-blue-50 text-blue-700 border-blue-200",
+        icon: CreditCard,
+        label: "Bank"
       },
-      upi: { 
-        color: "bg-purple-50 text-purple-700 border-purple-200", 
-        icon: Smartphone, 
-        label: "UPI" 
+      upi: {
+        color: "bg-purple-50 text-purple-700 border-purple-200",
+        icon: Smartphone,
+        label: "UPI"
       }
     };
     return config[mode as keyof typeof config] || config.cash;
@@ -215,6 +231,26 @@ const fetchExpenses = async () => {
     setFilterCategory("all");
     setFilterPaymentMode("all");
     setDateRange({ start: "", end: "" });
+  };
+
+  const handleActionMenuToggle = (expenseId: string, e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    
+    if (showActionMenu === expenseId) {
+      setShowActionMenu(null);
+      return;
+    }
+
+    const button = buttonRefs.current[expenseId];
+    if (button) {
+      const rect = button.getBoundingClientRect();
+      setMenuPosition({
+        top: rect.bottom + 8,
+        right: window.innerWidth - rect.right
+      });
+    }
+    
+    setShowActionMenu(expenseId);
   };
 
   useEffect(() => {
@@ -267,22 +303,15 @@ const fetchExpenses = async () => {
       <div className="bg-white border-b z-20 shadow-sm">
         <div className="px-4 py-4 sm:px-6">
           <div className="flex items-center justify-between gap-3 mb-3">
-            <button
-              onClick={() => navigate(`/lorries/${lorryId}`)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
-            >
-              <ArrowLeft className="h-5 w-5 text-gray-700" />
-            </button>
-            
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <div className="flex-1 min-w-0">
-                <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">
-                  {lorry.registration_number}
-                </h1>
-                {lorry.nick_name && (
-                  <p className="text-sm text-gray-600 truncate">({lorry.nick_name})</p>
-                )}
-              </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Search expenses..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+              />
             </div>
 
             <Link
@@ -293,59 +322,6 @@ const fetchExpenses = async () => {
               <span className="hidden sm:inline">Add Expense</span>
             </Link>
           </div>
-
-          {/* Search Bar */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <input
-              type="text"
-              placeholder="Search expenses..."
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Stats - Horizontal Scroll on Mobile */}
-      <div className="px-4 py-4 sm:px-6 bg-white border-b">
-        <div className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide sm:grid sm:grid-cols-4 sm:gap-4">
-          <div className="bg-gray-50 rounded-lg border border-gray-200 p-3 min-w-[130px] sm:min-w-0 flex-shrink-0">
-            <div className="flex items-center gap-2 mb-1">
-              <Receipt className="h-4 w-4 text-gray-600" />
-              <p className="text-xs text-gray-600">Total</p>
-            </div>
-            <p className="text-xl font-bold text-gray-900">{stats.total}</p>
-          </div>
-
-          <div className="bg-gray-50 rounded-lg border border-gray-200 p-3 min-w-[140px] sm:min-w-0 flex-shrink-0">
-            <div className="flex items-center gap-2 mb-1">
-              <TrendingUp className="h-4 w-4 text-red-600" />
-              <p className="text-xs text-gray-600">Total Amount</p>
-            </div>
-            <p className="text-sm sm:text-base font-bold text-red-600">
-              {formatCurrency(stats.totalAmount)}
-            </p>
-          </div>
-
-          <div className="bg-gray-50 rounded-lg border border-gray-200 p-3 min-w-[130px] sm:min-w-0 flex-shrink-0">
-            <div className="flex items-center gap-2 mb-1">
-              <Fuel className="h-4 w-4 text-orange-600" />
-              <p className="text-xs text-gray-600">Fuel Expenses</p>
-            </div>
-            <p className="text-xl font-bold text-orange-600">{stats.fuel}</p>
-          </div>
-
-          <div className="bg-gray-50 rounded-lg border border-gray-200 p-3 min-w-[130px] sm:min-w-0 flex-shrink-0">
-            <div className="flex items-center gap-2 mb-1">
-              <DollarSign className="h-4 w-4 text-purple-600" />
-              <p className="text-xs text-gray-600">Fuel Cost</p>
-            </div>
-            <p className="text-sm sm:text-base font-bold text-purple-600">
-              {formatCurrency(stats.fuelAmount)}
-            </p>
-          </div>
         </div>
       </div>
 
@@ -354,9 +330,8 @@ const fetchExpenses = async () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
-              showFilters ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white border-gray-300 text-gray-700'
-            }`}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${showFilters ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white border-gray-300 text-gray-700'
+              }`}
           >
             <Filter className="h-4 w-4" />
             Filters
@@ -382,16 +357,15 @@ const fetchExpenses = async () => {
                 {['all', 'fuel', 'maintenance', 'repair', 'toll', 'fine', 'other'].map((category) => {
                   const config = category === 'all' ? null : getCategoryConfig(category);
                   const IconComponent = config?.icon;
-                  
+
                   return (
                     <button
                       key={category}
                       onClick={() => setFilterCategory(category)}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
-                        filterCategory === category
-                          ? 'bg-green-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${filterCategory === category
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
                     >
                       {IconComponent && <IconComponent className="h-3 w-3" />}
                       {category === 'all' ? 'All' : config?.label}
@@ -408,16 +382,15 @@ const fetchExpenses = async () => {
                 {['all', 'cash', 'bank', 'upi'].map((mode) => {
                   const config = mode === 'all' ? null : getPaymentModeConfig(mode);
                   const IconComponent = config?.icon;
-                  
+
                   return (
                     <button
                       key={mode}
                       onClick={() => setFilterPaymentMode(mode)}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
-                        filterPaymentMode === mode
-                          ? 'bg-green-600 text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${filterPaymentMode === mode
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
                     >
                       {IconComponent && <IconComponent className="h-3 w-3" />}
                       {mode === 'all' ? 'All' : config?.label}
@@ -513,45 +486,15 @@ const fetchExpenses = async () => {
                         </p>
                       </div>
 
-                      {/* Action Menu */}
+                      {/* Action Menu Button */}
                       <div className="relative flex-shrink-0">
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowActionMenu(showActionMenu === expense._id ? null : expense._id);
-                          }}
+                          ref={(el) => (buttonRefs.current[expense._id] = el)}
+                          onClick={(e) => handleActionMenuToggle(expense._id, e)}
                           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                         >
                           <MoreVertical className="h-4 w-4 text-gray-500" />
                         </button>
-
-                        <AnimatePresence>
-                          {showActionMenu === expense._id && (
-                            <motion.div
-                              initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                              animate={{ opacity: 1, scale: 1, y: 0 }}
-                              exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                              className="absolute right-0 top-10 z-30 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <button
-                                onClick={() => navigate(`/expenses/edit/${expense._id}`)}
-                                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
-                              >
-                                <Edit className="h-4 w-4" />
-                                Edit Expense
-                              </button>
-                              <div className="border-t border-gray-100 my-1"></div>
-                              <button
-                                onClick={() => handleDeleteExpense(expense._id, expense.description || 'Expense')}
-                                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                                Delete Expense
-                              </button>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
                       </div>
                     </div>
                   </div>
@@ -579,6 +522,82 @@ const fetchExpenses = async () => {
           </div>
         )}
       </div>
+
+      {/* Action Menu Dropdown - Portal Style */}
+      <AnimatePresence>
+        {showActionMenu && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40"
+              onClick={() => setShowActionMenu(null)}
+            />
+
+            {/* Dropdown Menu */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className="fixed z-50 bg-white rounded-lg shadow-xl border border-gray-200 py-1 min-w-[180px]"
+              style={{
+                top: `${menuPosition.top}px`,
+                right: `${menuPosition.right}px`
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => {
+                  navigate(`/expenses/edit/${showActionMenu}`);
+                  setShowActionMenu(null);
+                }}
+                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors text-left"
+              >
+                <Edit className="h-4 w-4" />
+                Edit Expense
+              </button>
+              <div className="border-t border-gray-100 my-1"></div>
+              <button
+                onClick={() => {
+                  const expense = expenses.find(e => e._id === showActionMenu);
+                  if (expense) {
+                    handleDeleteClick(
+                      expense._id,
+                      expense.description || 'Expense',
+                      expense.amount,
+                      expense.category
+                    );
+                  }
+                }}
+                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Expense
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setSelectedExpense(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Delete Expense"
+        message={`Are you sure you want to delete this expense?`}
+        isLoading={isDeleting}
+        itemName={selectedExpense ?
+          `${selectedExpense.description || 'Expense'} - ${formatCurrency(selectedExpense.amount)} (${selectedExpense.category})`
+          : ""
+        }
+      />
     </div>
   );
 };

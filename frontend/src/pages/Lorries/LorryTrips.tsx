@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import DeleteConfirmationModal from "../../components/DeleteConfirmationModal";
+
 
 interface Trip {
   _id: string;
@@ -65,7 +67,7 @@ interface Lorry {
 const LorryTrips = () => {
   const { lorryId } = useParams<{ lorryId: string }>();
   const navigate = useNavigate();
-  
+
   const [lorry, setLorry] = useState<Lorry | null>(null);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,6 +76,14 @@ const LorryTrips = () => {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
   const [showActionMenu, setShowActionMenu] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedTrip, setSelectedTrip] = useState<{
+    id: string;
+    tripNumber: string;
+    driverName?: string;
+    material?: string;
+  } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchLorry = async () => {
     try {
@@ -106,25 +116,33 @@ const LorryTrips = () => {
     }
   }, [lorryId]);
 
-  const handleDeleteTrip = async (tripId: string, tripNumber: string) => {
-    if (!window.confirm(`Are you sure you want to delete trip ${tripNumber}?`)) {
-      return;
-    }
+  const handleDeleteClick = (tripId: string, tripNumber: string, driverName?: string, material?: string) => {
+    setSelectedTrip({ id: tripId, tripNumber, driverName, material });
+    setDeleteModalOpen(true);
+    setShowActionMenu(null);
+  };
 
+  const handleConfirmDelete = async () => {
+    if (!selectedTrip) return;
+
+    setIsDeleting(true);
     try {
-      await api.delete(`/trips/delete/${tripId}`);
+      await api.delete(`/trips/delete/${selectedTrip.id}`);
       toast.success("Trip deleted successfully");
-      setShowActionMenu(null);
+      setDeleteModalOpen(false);
+      setSelectedTrip(null);
       fetchTrips();
     } catch (error: any) {
       toast.error(error.response?.data?.error || "Failed to delete trip");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   const handleStatusUpdate = async (tripId: string, newStatus: string) => {
     try {
       await api.patch(`/trips/status/${tripId}`, { status: newStatus });
-      toast.success(`Trip status updated to ${newStatus}`);
+      toast.success(`Trip status updated`);
       setShowActionMenu(null);
       fetchTrips();
     } catch (error: any) {
@@ -136,14 +154,14 @@ const LorryTrips = () => {
     const matchesSearch =
       trip.trip_number.toLowerCase().includes(searchText.toLowerCase()) ||
       trip.driver_id.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      (trip.customer_id?.name?.toLowerCase().includes(searchText.toLowerCase()) || 
-       trip.collab_owner_id?.name?.toLowerCase().includes(searchText.toLowerCase()) ||
-       trip.collab_owner_id?.company_name?.toLowerCase().includes(searchText.toLowerCase())) ||
+      (trip.customer_id?.name?.toLowerCase().includes(searchText.toLowerCase()) ||
+        trip.collab_owner_id?.name?.toLowerCase().includes(searchText.toLowerCase()) ||
+        trip.collab_owner_id?.company_name?.toLowerCase().includes(searchText.toLowerCase())) ||
       trip.location.toLowerCase().includes(searchText.toLowerCase()) ||
       trip.material_name.toLowerCase().includes(searchText.toLowerCase());
-    
+
     const matchesStatus = filterStatus === "all" || trip.status === filterStatus;
-    
+
     return matchesSearch && matchesStatus;
   });
 
@@ -154,7 +172,7 @@ const LorryTrips = () => {
       loaded: { color: "bg-orange-50 text-orange-700 border-orange-200", icon: Package, label: "Loaded" },
       in_transit: { color: "bg-yellow-50 text-yellow-700 border-yellow-200", icon: Truck, label: "In Transit" },
       delivered: { color: "bg-green-50 text-green-700 border-green-200", icon: CheckCircle, label: "Delivered" },
-      completed: { color: "bg-green-50 text-green-700 border-green-200", icon: CheckCircle, label: "Completed" },
+      completed: { color: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: CheckCircle, label: "Completed" },
       cancelled: { color: "bg-red-50 text-red-700 border-red-200", icon: X, label: "Cancelled" }
     };
     return config[status as keyof typeof config] || config.scheduled;
@@ -255,21 +273,17 @@ const LorryTrips = () => {
       <div className="bg-white border-b z-20 shadow-sm">
         <div className="px-4 py-4 sm:px-6">
           <div className="flex items-center justify-between gap-3 mb-3">
-            <button
-              onClick={() => navigate(`/lorries/${lorryId}`)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
-            >
-              <ArrowLeft className="h-5 w-5 text-gray-700" />
-            </button>
-            
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <div className="flex-1 min-w-0">
-                <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">
-                  {lorry.registration_number}
-                </h1>
-              </div>
+            {/* Search Bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <input
+                type="text"
+                placeholder="Search trips..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              />
             </div>
-
             <Link
               to={`/trips/create?lorry=${lorryId}`}
               className="flex-shrink-0 inline-flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm text-sm font-medium"
@@ -277,57 +291,6 @@ const LorryTrips = () => {
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Add Trip</span>
             </Link>
-          </div>
-
-          {/* Search Bar */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <input
-              type="text"
-              placeholder="Search trips..."
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Stats - Horizontal Scroll on Mobile */}
-      <div className="px-4 py-4 sm:px-6 bg-white border-b">
-        <div className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide sm:grid sm:grid-cols-4 sm:gap-4">
-          <div className="bg-gray-50 rounded-lg border border-gray-200 p-3 min-w-[130px] sm:min-w-0 flex-shrink-0">
-            <div className="flex items-center gap-2 mb-1">
-              <Package className="h-4 w-4 text-gray-600" />
-              <p className="text-xs text-gray-600">Total</p>
-            </div>
-            <p className="text-xl font-bold text-gray-900">{stats.total}</p>
-          </div>
-
-          <div className="bg-gray-50 rounded-lg border border-gray-200 p-3 min-w-[140px] sm:min-w-0 flex-shrink-0">
-            <div className="flex items-center gap-2 mb-1">
-              <TrendingUp className="h-4 w-4 text-green-600" />
-              <p className="text-xs text-gray-600">Profit</p>
-            </div>
-            <p className="text-sm sm:text-base font-bold text-green-600">
-              {formatCurrency(stats.totalProfit)}
-            </p>
-          </div>
-
-          <div className="bg-gray-50 rounded-lg border border-gray-200 p-3 min-w-[130px] sm:min-w-0 flex-shrink-0">
-            <div className="flex items-center gap-2 mb-1">
-              <CheckCircle className="h-4 w-4 text-blue-600" />
-              <p className="text-xs text-gray-600">Completed</p>
-            </div>
-            <p className="text-xl font-bold text-blue-600">{stats.completed}</p>
-          </div>
-
-          <div className="bg-gray-50 rounded-lg border border-gray-200 p-3 min-w-[130px] sm:min-w-0 flex-shrink-0">
-            <div className="flex items-center gap-2 mb-1">
-              <Clock className="h-4 w-4 text-orange-600" />
-              <p className="text-xs text-gray-600">Active</p>
-            </div>
-            <p className="text-xl font-bold text-orange-600">{stats.active}</p>
           </div>
         </div>
       </div>
@@ -337,9 +300,8 @@ const LorryTrips = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
-              showFilters ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-300 text-gray-700'
-            }`}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${showFilters ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-300 text-gray-700'
+              }`}
           >
             <Filter className="h-4 w-4" />
             Status
@@ -362,11 +324,10 @@ const LorryTrips = () => {
               <button
                 key={status}
                 onClick={() => setFilterStatus(status)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
-                  filterStatus === status
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${filterStatus === status
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
               >
                 {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
               </button>
@@ -393,7 +354,7 @@ const LorryTrips = () => {
                 <motion.div
                   key={trip._id}
                   layout
-                  className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
+                  className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-visible relative"
                 >
                   {/* Card Header */}
                   <div className="p-4 border-b border-gray-100">
@@ -413,7 +374,7 @@ const LorryTrips = () => {
                       </div>
 
                       {/* Action Menu */}
-                      <div className="relative flex-shrink-0">
+                      <div className="relative flex-shrink-0 z-10">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -426,29 +387,82 @@ const LorryTrips = () => {
 
                         <AnimatePresence>
                           {showActionMenu === trip._id && (
-                            <motion.div
-                              initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                              animate={{ opacity: 1, scale: 1, y: 0 }}
-                              exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                              className="absolute right-0 top-10 z-30 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <button
-                                onClick={() => navigate(`/trips/edit/${trip._id}`)}
-                                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                            <>
+                              {/* Backdrop for mobile */}
+                              <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="fixed inset-0 z-40 bg-black/20 sm:hidden"
+                                onClick={() => setShowActionMenu(null)}
+                              />
+                              
+                              {/* Dropdown Menu */}
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                className="absolute right-0 top-full mt-2 z-50 w-56 bg-white rounded-lg shadow-2xl border border-gray-200 py-2 max-h-[calc(100vh-200px)] overflow-y-auto"
+                                onClick={(e) => e.stopPropagation()}
                               >
-                                <Edit className="h-4 w-4" />
-                                Edit Trip
-                              </button>
-                              <div className="border-t border-gray-100 my-1"></div>
-                              <button
-                                onClick={() => handleDeleteTrip(trip._id, trip.trip_number)}
-                                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                                Delete Trip
-                              </button>
-                            </motion.div>
+                                {/* Status Update Section */}
+                                <div className="px-3 py-2 border-b border-gray-100">
+                                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Update Status</p>
+                                </div>
+
+                                {['scheduled', 'dispatched', 'loaded', 'in_transit', 'delivered', 'completed', 'cancelled'].map((status) => {
+                                  const config = getStatusConfig(status);
+                                  const StatusIconItem = config.icon;
+                                  const isCurrentStatus = trip.status === status;
+
+                                  return (
+                                    <button
+                                      key={status}
+                                      onClick={() => handleStatusUpdate(trip._id, status)}
+                                      disabled={isCurrentStatus}
+                                      className={`flex items-center gap-3 w-full px-4 py-2.5 text-sm transition-colors ${isCurrentStatus
+                                          ? 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                                          : 'text-gray-700 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                      <StatusIconItem className="h-4 w-4 flex-shrink-0" />
+                                      <span className="flex-1 text-left">
+                                        {config.label}
+                                      </span>
+                                      {isCurrentStatus && (
+                                        <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                                      )}
+                                    </button>
+                                  );
+                                })}
+
+                                {/* Actions Section */}
+                                <div className="border-t border-gray-200 mt-2 pt-2">
+                                  <div className="px-3 py-2">
+                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</p>
+                                  </div>
+                                  
+                                  <button
+                                    onClick={() => {
+                                      setShowActionMenu(null);
+                                      navigate(`/trips/edit/${trip._id}`);
+                                    }}
+                                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                                  >
+                                    <Edit className="h-4 w-4 flex-shrink-0" />
+                                    <span>Edit Trip</span>
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleDeleteClick(trip._id, trip.trip_number, trip.driver_id.name, trip.material_name)}
+                                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
+                                  >
+                                    <Trash2 className="h-4 w-4 flex-shrink-0" />
+                                    <span>Delete Trip</span>
+                                  </button>
+                                </div>
+                              </motion.div>
+                            </>
                           )}
                         </AnimatePresence>
                       </div>
@@ -519,7 +533,7 @@ const LorryTrips = () => {
             <Package className="h-12 w-12 sm:h-16 sm:w-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">No trips found</h3>
             <p className="text-sm text-gray-600 mb-6">
-              {searchText || filterStatus !== "all" 
+              {searchText || filterStatus !== "all"
                 ? "Try adjusting your search or filters"
                 : "Get started by adding the first trip for this lorry"
               }
@@ -534,6 +548,23 @@ const LorryTrips = () => {
           </div>
         )}
       </div>
+      
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setSelectedTrip(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Delete Trip"
+        message={`Are you sure you want to delete this trip?`}
+        isLoading={isDeleting}
+        itemName={selectedTrip ?
+          `Trip: ${selectedTrip.tripNumber} (Driver: ${selectedTrip.driverName || 'N/A'}, Material: ${selectedTrip.material || 'N/A'})`
+          : ""
+        }
+      />
     </div>
   );
 };

@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import { FaPlus } from "react-icons/fa6";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "../../api/client";
+import DeleteConfirmationModal from "../../components/DeleteConfirmationModal";
 
 interface Customer {
   _id: string;
@@ -27,7 +28,14 @@ const Customers = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [searchText, setSearchText] = useState("");
   const [showActionMenu, setShowActionMenu] = useState<string | null>(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  // Replace the existing confirmDeleteId state with these
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedDeleteCustomer, setSelectedDeleteCustomer] = useState<{
+    id: string;
+    name: string;
+    phone?: string;
+  } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const navigate = useNavigate();
 
@@ -52,10 +60,32 @@ const Customers = () => {
     try {
       await api.delete(`/customers/delete/${id}`);
       toast.success("Customer deleted successfully");
-      setShowActionMenu(null);
       fetchCustomers();
     } catch (error: any) {
       toast.error(error.response?.data?.error || "Failed to delete customer");
+    }
+  };
+
+  // New function to open delete modal
+  const handleDeleteClick = (id: string, name: string, phone?: string) => {
+    setSelectedDeleteCustomer({ id, name, phone });
+    setDeleteModalOpen(true);
+    setShowActionMenu(null);
+  };
+
+  // Function to handle confirmed deletion
+  const handleConfirmDelete = async () => {
+    if (!selectedDeleteCustomer) return;
+
+    setIsDeleting(true);
+    try {
+      await handleDelete(selectedDeleteCustomer.id);
+      setDeleteModalOpen(false);
+      setSelectedDeleteCustomer(null);
+    } catch (error: any) {
+      // Error is already handled in handleDelete function
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -191,8 +221,8 @@ const Customers = () => {
                           </button>
                           <div className="border-t border-gray-100 my-1"></div>
                           <button
-                            onClick={() => setConfirmDeleteId(customer._id)}
-                            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
+                            onClick={() => handleDeleteClick(customer._id, customer.name, customer.phone)}
+                            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
                           >
                             <Trash2 className="h-4 w-4" />
                             Delete Customer
@@ -386,53 +416,22 @@ const Customers = () => {
         )}
       </AnimatePresence>
 
-      {/* Confirm Delete Modal */}
-      <AnimatePresence>
-        {confirmDeleteId && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-            onClick={() => setConfirmDeleteId(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                  <Trash2 className="h-5 w-5 text-red-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-800">Delete Customer</h3>
-              </div>
-              <p className="text-sm text-gray-600 mb-6">
-                Are you sure you want to delete this customer? This action cannot be undone.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setConfirmDeleteId(null)}
-                  className="flex-1 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition border border-gray-300"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    handleDelete(confirmDeleteId!);
-                    setConfirmDeleteId(null);
-                  }}
-                  className="flex-1 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-md transition"
-                >
-                  Delete
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setSelectedDeleteCustomer(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Delete Customer"
+        message={`Are you sure you want to delete this customer?`}
+        isLoading={isDeleting}
+        itemName={selectedDeleteCustomer ?
+          `Customer: ${selectedDeleteCustomer.name}${selectedDeleteCustomer.phone ? ` (${selectedDeleteCustomer.phone})` : ''}`
+          : ""
+        }
+      />
     </div>
   );
 };
