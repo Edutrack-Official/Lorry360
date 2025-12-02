@@ -23,6 +23,8 @@ import {
   AlertCircle,
   TrendingUp,
   UserCheck,
+  AlarmClock,
+  BellPlus,
 } from "lucide-react";
 
 const RailTooltip: React.FC<{ label: string }> = ({ label }) => (
@@ -88,8 +90,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     // { name: "Maintenance", href: "/maintenance", icon: Wrench, roles: ["owner", "admin"], color: "yellow" },
     // { name: "Reports", href: "/reports", icon: TrendingUp, roles: ["owner", "admin"], color: "pink" },
     { name: "Settings", href: "/settings", icon: Settings, roles: ["owner", "admin"], color: "gray" },
+      { name: "Reminder", href: "/reminders", icon: BellPlus, roles: ["owner"] },
     { name: "Owners", href: "/owners", icon: Users, roles: ["admin"], color: "cyan" },
-      { name: "Reminder", href: "/reminders", icon: Users, roles: ["owner"] },
+    
 
   ];
 

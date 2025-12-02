@@ -1,51 +1,193 @@
 import React, { useEffect, useState } from "react";
-import api from "../api/client";
-
+import { motion, AnimatePresence } from "framer-motion";
 import {
+  Truck,
   Users,
-  School,
-  FileText,
-  BookOpen,
-  Layers,
+  TrendingUp,
+  DollarSign,
+  Package,
+  Building2,
+  UserCheck,
+  MapPin,
   LayoutDashboard,
   RefreshCw,
+  Activity,
+  ArrowUp,
+  Clock,
+  Calendar,
+  UserPlus,
+  AlertCircle,
 } from "lucide-react";
-import { motion } from "framer-motion";
-import LoadingSpinner from "../components/LoadingSpinner";
+import toast from "react-hot-toast";
+import api from "../api/client";
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
-    users: 0,
-    institutes: 0,
-    questionSets: 0,
-    tests: 0,
-    courses: 0,
+    lorries: { total: 0, active: 0, inactive: 0 },
+    drivers: { total: 0, active: 0, inactive: 0 },
+    crushers: { total: 0 },
+    customers: { total: 0, active: 0 },
+    trips: {
+      total: 0,
+      today: 0,
+      thisMonth: 0,
+      customer: 0,
+      collaborative: 0,
+    },
+    settlements: {
+      total: 0,
+      pending: 0,
+      completed: 0,
+      totalAmount: 0,
+      dueAmount: 0,
+    },
+    collaborations: {
+      active: 0,
+      pendingReceived: 0,
+      pendingSent: 0,
+    },
+    tripStats: {
+      totalRevenue: 0,
+      totalCost: 0,
+      totalProfit: 0,
+      avgProfitPerTrip: 0,
+      totalCrusherUnits: 0,
+      totalCustomerUnits: 0,
+    },
   });
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchStats = async () => {
+  const fetchStats = async (showRefreshToast = false) => {
     try {
-      setLoading(true);
-      const [usersRes, institutesRes, questionSetsRes, testsRes, coursesRes] =
-        await Promise.all([
-          api.get("/users"),
-          api.get("/institutes"),
-          api.get("/questionset/all"),
-          api.get("/test/all"),
-          api.get("/course/all"),
-        ]);
+      if (showRefreshToast) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+
+      // Fetch data from all correct endpoints
+      const [
+        lorriesRes,
+        driversRes,
+        crushersRes,
+        customersRes,
+        tripsRes,
+        settlementsRes,
+        tripStatsRes,
+        driverStatsRes,
+        activeCollabsRes,
+        receivedRequestsRes,
+        sentRequestsRes,
+      ] = await Promise.all([
+        api.get("/lorries").catch(() => ({ data: { data: { count: 0, lorries: [] } } })),
+        api.get("/drivers").catch(() => ({ data: { data: { count: 0, drivers: [] } } })),
+        api.get("/crushers").catch(() => ({ data: { data: { count: 0, crushers: [] } } })),
+        api.get("/customers").catch(() => ({ data: { data: { count: 0, customers: [] } } })),
+        api.get("/trips").catch(() => ({ data: { data: { count: 0, trips: [] } } })),
+        api.get("/settlements").catch(() => ({ data: { data: { count: 0, settlements: [] } } })),
+        api.get("/trips/stats/month").catch(() => ({ data: { data: {} } })),
+        api.get("/drivers/stats").catch(() => ({ data: { data: {} } })),
+        api.get("/collaborations/active").catch(() => ({ data: { data: [] } })),
+        api.get("/collaborations/requests/received").catch(() => ({ data: { data: [] } })),
+        api.get("/collaborations/requests/sent").catch(() => ({ data: { data: [] } })),
+      ]);
+
+      // Extract data safely
+      const lorriesData = lorriesRes.data?.data?.lorries || [];
+      const driversData = driversRes.data?.data?.drivers || [];
+      const crushersData = crushersRes.data?.data?.crushers || [];
+      const customersData = customersRes.data?.data?.customers || [];
+      const tripsData = tripsRes.data?.data?.trips || [];
+      const settlementsData = settlementsRes.data?.data?.settlements || [];
+      const tripStatsData = tripStatsRes.data?.data || {};
+      const activeCollabsData = activeCollabsRes.data?.data || [];
+      const receivedRequestsData = receivedRequestsRes.data?.data || [];
+      const sentRequestsData = sentRequestsRes.data?.data || [];
+
+      // Calculate today's trips
+      const today = new Date().toISOString().split("T")[0];
+      const todayTrips = tripsData.filter(
+        (trip: any) => trip.trip_date?.split("T")[0] === today
+      ).length;
+
+      // Calculate lorry status counts
+      const activeLorries = lorriesData.filter((l: any) => l.status === "active").length;
+      const inactiveLorries = lorriesData.filter((l: any) => l.status === "inactive").length;
+
+      // Calculate driver status counts
+      const activeDrivers = driversData.filter((d: any) => d.status === "active").length;
+      const inactiveDrivers = driversData.filter((d: any) => d.status === "inactive").length;
+
+      // Calculate customer counts
+      const activeCustomers = customersData.filter((c: any) => c.isActive).length;
+
+      // Calculate trip type counts
+      const customerTrips = tripsData.filter((t: any) => t.customer_id).length;
+      const collaborativeTrips = tripsData.filter((t: any) => t.collab_owner_id).length;
+
+      // Calculate settlement stats
+      const pendingSettlements = settlementsData.filter((s: any) => s.status === "pending").length;
+      const completedSettlements = settlementsData.filter((s: any) => s.status === "completed").length;
+      const totalSettlementAmount = settlementsData.reduce((sum: number, s: any) => sum + (s.net_amount || 0), 0);
+      const totalDueAmount = settlementsData.reduce((sum: number, s: any) => sum + (s.due_amount || 0), 0);
 
       setStats({
-        users: usersRes.data.count || 0,
-        institutes: institutesRes.data.count || 0,
-        questionSets: questionSetsRes.data.count || 0,
-        tests: testsRes.data.count || 0,
-        courses: coursesRes.data.count || 0,
+        lorries: {
+          total: lorriesRes.data?.data?.count || 0,
+          active: activeLorries,
+          inactive: inactiveLorries,
+        },
+        drivers: {
+          total: driversRes.data?.data?.count || 0,
+          active: activeDrivers,
+          inactive: inactiveDrivers,
+        },
+        crushers: {
+          total: crushersRes.data?.data?.count || 0,
+        },
+        customers: {
+          total: customersRes.data?.data?.count || 0,
+          active: activeCustomers,
+        },
+        trips: {
+          total: tripsRes.data?.data?.count || 0,
+          today: todayTrips,
+          thisMonth: tripStatsData.total_trips || 0,
+          customer: customerTrips,
+          collaborative: collaborativeTrips,
+        },
+        settlements: {
+          total: settlementsRes.data?.data?.count || 0,
+          pending: pendingSettlements,
+          completed: completedSettlements,
+          totalAmount: totalSettlementAmount,
+          dueAmount: totalDueAmount,
+        },
+        collaborations: {
+          active: activeCollabsData.length || 0,
+          pendingReceived: receivedRequestsData.length || 0,
+          pendingSent: sentRequestsData.length || 0,
+        },
+        tripStats: {
+          totalRevenue: tripStatsData.total_revenue || 0,
+          totalCost: tripStatsData.total_cost || 0,
+          totalProfit: tripStatsData.total_profit || 0,
+          avgProfitPerTrip: tripStatsData.average_profit_per_trip || 0,
+          totalCrusherUnits: tripStatsData.total_crusher_units || 0,
+          totalCustomerUnits: tripStatsData.total_customer_units || 0,
+        },
       });
+
+      if (showRefreshToast) {
+        toast.success("Dashboard refreshed successfully!");
+      }
     } catch (err) {
       console.error("Error fetching dashboard stats:", err);
+      toast.error("Failed to load dashboard data");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -53,101 +195,488 @@ const Dashboard = () => {
     fetchStats();
   }, []);
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount || 0);
+  };
+
   if (loading) {
-    return <LoadingSpinner text="Loading dashboard..." />;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-lg font-semibold text-gray-700">Loading dashboard...</p>
+        </div>
+      </div>
+    );
   }
 
-  const statCard = (
-    Icon: React.ElementType,
-    label: string,
-    value: number,
-    gradient: string
-  ) => (
-    <motion.div
-      whileHover={{ y: -6, scale: 1.04 }}
-      className="relative overflow-hidden p-6 rounded-2xl shadow-lg bg-white border border-gray-100 hover:shadow-2xl transition-all"
-    >
-      {/* Background accent */}
-      <div
-        className={`absolute inset-0 opacity-5 bg-gradient-to-br ${gradient}`}
-      />
-
-      {/* Bottom accent bar */}
-      <motion.div
-        initial={{ width: 0 }}
-        whileHover={{ width: "100%" }}
-        transition={{ duration: 0.4 }}
-        className={`absolute bottom-0 left-0 h-1 bg-gradient-to-r ${gradient}`}
-      />
-
-      <div className="relative flex items-center">
-        <div
-          className={`p-4 rounded-full bg-gradient-to-r ${gradient} shadow-lg`}
-        >
-          <Icon className="h-6 w-6 text-white" />
-        </div>
-        <div className="ml-4">
-          <p className="text-sm font-medium text-gray-600">{label}</p>
-          <p className="text-3xl font-bold text-gray-900">{value}</p>
-        </div>
-      </div>
-    </motion.div>
-  );
+  const statCards = [
+    {
+      icon: Truck,
+      label: "Total Lorries",
+      value: stats.lorries.total,
+      subtitle: `${stats.lorries.active} Active • ${stats.lorries.inactive} Inactive`,
+      gradient: "from-blue-500 to-blue-700",
+      bgGradient: "from-blue-50 to-blue-100",
+      iconBg: "from-blue-100 to-blue-200",
+      change: `${stats.lorries.active} Active`,
+      isPositive: true,
+    },
+    {
+      icon: UserCheck,
+      label: "Total Drivers",
+      value: stats.drivers.total,
+      subtitle: `${stats.drivers.active} Active • ${stats.drivers.inactive} Inactive`,
+      gradient: "from-green-500 to-green-700",
+      bgGradient: "from-green-50 to-green-100",
+      iconBg: "from-green-100 to-green-200",
+      change: `${stats.drivers.active} Active`,
+      isPositive: true,
+    },
+    {
+      icon: Building2,
+      label: "Crushers",
+      value: stats.crushers.total,
+      subtitle: "Material sources",
+      gradient: "from-orange-500 to-orange-700",
+      bgGradient: "from-orange-50 to-orange-100",
+      iconBg: "from-orange-100 to-orange-200",
+      change: "Material Sources",
+      isPositive: true,
+    },
+    {
+      icon: Users,
+      label: "Customers",
+      value: stats.customers.total,
+      subtitle: `${stats.customers.active} Active`,
+      gradient: "from-purple-500 to-purple-700",
+      bgGradient: "from-purple-50 to-purple-100",
+      iconBg: "from-purple-100 to-purple-200",
+      change: `${stats.customers.active} Active`,
+      isPositive: true,
+    },
+    {
+      icon: Package,
+      label: "Total Trips",
+      value: stats.trips.total,
+      subtitle: `${stats.trips.today} Today • ${stats.trips.thisMonth} This Month`,
+      gradient: "from-indigo-500 to-indigo-700",
+      bgGradient: "from-indigo-50 to-indigo-100",
+      iconBg: "from-indigo-100 to-indigo-200",
+      change: `${stats.trips.thisMonth} This Month`,
+      isPositive: true,
+    },
+    {
+      icon: DollarSign,
+      label: "Settlements",
+      value: stats.settlements.total,
+      subtitle: `${stats.settlements.pending} Pending • ${stats.settlements.completed} Completed`,
+      gradient: "from-pink-500 to-pink-700",
+      bgGradient: "from-pink-50 to-pink-100",
+      iconBg: "from-pink-100 to-pink-200",
+      change: formatCurrency(stats.settlements.dueAmount),
+      isPositive: stats.settlements.dueAmount === 0,
+    },
+  ];
 
   return (
-    <div className="space-y-6 fade-in p-6">
-      {/* 🔹 Header (like Institutes page) */}
-      <div className="bg-white p-4 rounded-t-xl border shadow-md flex flex-col gap-4">
-        <div className="flex justify-between items-center">
-          {/* Left */}
-          <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-bold">Dashboard</h1>
-            <LayoutDashboard size={32} className="text-gray-800" />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-4 sm:p-6 lg:p-8">
+      {/* Header Section */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 mb-6 border-2 border-gray-100"
+      >
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          {/* Left - Title */}
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-gradient-to-br from-blue-100 to-indigo-200 rounded-2xl">
+              <LayoutDashboard className="h-8 w-8 text-blue-600" />
+            </div>
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">
+                Fleet Dashboard
+              </h1>
+              <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Last updated: {new Date().toLocaleString("en-IN")}
+              </p>
+            </div>
           </div>
 
-          {/* Right */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={fetchStats}
-              className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition flex items-center gap-2"
-            >
-              <RefreshCw size={18} />
-              Refresh
-            </button>
-          </div>
+          {/* Right - Refresh Button */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => fetchStats(true)}
+            disabled={refreshing}
+            className={`px-6 py-3 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2 ${
+              refreshing
+                ? "bg-gray-300 cursor-not-allowed"
+                : "bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
+            }`}
+          >
+            <RefreshCw
+              className={`h-5 w-5 ${refreshing ? "animate-spin" : ""}`}
+            />
+            {refreshing ? "Refreshing..." : "Refresh"}
+          </motion.button>
         </div>
+      </motion.div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+        <AnimatePresence>
+          {statCards.map((card, index) => {
+            const Icon = card.icon;
+            return (
+              <motion.div
+                key={card.label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                whileHover={{ y: -8, scale: 1.02 }}
+                className="relative overflow-hidden bg-white rounded-2xl shadow-xl border-2 border-gray-100 hover:shadow-2xl transition-all duration-300"
+              >
+                {/* Background Gradient */}
+                <div
+                  className={`absolute inset-0 opacity-5 bg-gradient-to-br ${card.bgGradient}`}
+                />
+
+                {/* Top Accent Bar */}
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: "100%" }}
+                  transition={{ duration: 0.8, delay: index * 0.1 }}
+                  className={`absolute top-0 left-0 h-1.5 bg-gradient-to-r ${card.gradient}`}
+                />
+
+                {/* Content */}
+                <div className="relative p-6">
+                  {/* Icon and Value */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div
+                      className={`p-4 rounded-2xl bg-gradient-to-br ${card.iconBg} shadow-lg`}
+                    >
+                      <Icon className="h-8 w-8 text-gray-700" />
+                    </div>
+
+                    {/* Change Badge */}
+                    <div
+                      className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold ${
+                        card.isPositive
+                          ? "bg-green-100 text-green-700"
+                          : "bg-orange-100 text-orange-700"
+                      }`}
+                    >
+                      {card.isPositive ? (
+                        <ArrowUp className="h-3 w-3" />
+                      ) : (
+                        <Activity className="h-3 w-3" />
+                      )}
+                      <span className="truncate max-w-[120px]">{card.change}</span>
+                    </div>
+                  </div>
+
+                  {/* Label */}
+                  <p className="text-sm font-semibold text-gray-600 mb-2">
+                    {card.label}
+                  </p>
+
+                  {/* Value */}
+                  <p className="text-4xl font-bold text-gray-900 mb-2">
+                    {card.value.toLocaleString()}
+                  </p>
+
+                  {/* Subtitle */}
+                  <p className="text-xs text-gray-500">{card.subtitle}</p>
+                </div>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
       </div>
 
-      {/* 🔹 Stats Section */}
-      <div className="bg-white rounded-b-xl shadow-md p-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {statCard(Users, "Total Users", stats.users, "from-blue-500 to-blue-700")}
-          {statCard(
-            School,
-            "Institutes",
-            stats.institutes,
-            "from-green-500 to-green-700"
-          )}
-          {statCard(
-            FileText,
-            "Question Sets",
-            stats.questionSets,
-            "from-yellow-400 to-orange-500"
-          )}
-          {statCard(
-            Layers,
-            "Tests",
-            stats.tests,
-            "from-purple-500 to-indigo-600"
-          )}
-          {statCard(
-            BookOpen,
-            "Courses",
-            stats.courses,
-            "from-red-500 to-pink-600"
-          )}
+      {/* Financial Summary Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+        className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 border-2 border-gray-100 mb-6"
+      >
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2.5 bg-gradient-to-br from-green-100 to-emerald-200 rounded-xl">
+            <TrendingUp className="h-6 w-6 text-green-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900">
+            Financial Overview (This Month)
+          </h2>
         </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="p-6 rounded-xl bg-gradient-to-br from-green-50 to-emerald-100 border-2 border-green-200">
+            <p className="text-sm font-semibold text-green-700 mb-2">
+              Total Revenue
+            </p>
+            <p className="text-3xl font-bold text-green-600">
+              {formatCurrency(stats.tripStats.totalRevenue)}
+            </p>
+            <p className="text-xs text-green-600 mt-2">
+              {stats.tripStats.totalCustomerUnits} Units
+            </p>
+          </div>
+
+          <div className="p-6 rounded-xl bg-gradient-to-br from-orange-50 to-red-100 border-2 border-orange-200">
+            <p className="text-sm font-semibold text-orange-700 mb-2">
+              Total Cost
+            </p>
+            <p className="text-3xl font-bold text-orange-600">
+              {formatCurrency(stats.tripStats.totalCost)}
+            </p>
+            <p className="text-xs text-orange-600 mt-2">
+              {stats.tripStats.totalCrusherUnits} Units
+            </p>
+          </div>
+
+          <div className="p-6 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 border-2 border-blue-200">
+            <p className="text-sm font-semibold text-blue-700 mb-2">
+              Total Profit
+            </p>
+            <p className="text-3xl font-bold text-blue-600">
+              {formatCurrency(stats.tripStats.totalProfit)}
+            </p>
+            <p className="text-xs text-blue-600 mt-2">
+              Profit Margin: {stats.tripStats.totalRevenue > 0 
+                ? ((stats.tripStats.totalProfit / stats.tripStats.totalRevenue) * 100).toFixed(1) 
+                : 0}%
+            </p>
+          </div>
+
+          <div className="p-6 rounded-xl bg-gradient-to-br from-purple-50 to-pink-100 border-2 border-purple-200">
+            <p className="text-sm font-semibold text-purple-700 mb-2">
+              Avg Profit/Trip
+            </p>
+            <p className="text-3xl font-bold text-purple-600">
+              {formatCurrency(stats.tripStats.avgProfitPerTrip)}
+            </p>
+            <p className="text-xs text-purple-600 mt-2">
+              Per trip average
+            </p>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Two Column Layout: Trips & Collaborations */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* Trip Breakdown */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.7 }}
+          className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 border-2 border-gray-100"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2.5 bg-gradient-to-br from-indigo-100 to-purple-200 rounded-xl">
+              <Package className="h-6 w-6 text-indigo-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Trip Distribution
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+            <div className="p-6 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <MapPin className="h-6 w-6 text-blue-600 mb-2" />
+                  <p className="text-sm font-semibold text-blue-700 mb-1">
+                    Customer Trips
+                  </p>
+                  <p className="text-3xl font-bold text-blue-600">
+                    {stats.trips.customer}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-blue-600">
+                    {stats.trips.total > 0 
+                      ? ((stats.trips.customer / stats.trips.total) * 100).toFixed(0) 
+                      : 0}%
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Users className="h-6 w-6 text-purple-600 mb-2" />
+                  <p className="text-sm font-semibold text-purple-700 mb-1">
+                    Collaborative Trips
+                  </p>
+                  <p className="text-3xl font-bold text-purple-600">
+                    {stats.trips.collaborative}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-purple-600">
+                    {stats.trips.total > 0 
+                      ? ((stats.trips.collaborative / stats.trips.total) * 100).toFixed(0) 
+                      : 0}%
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 rounded-xl bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Calendar className="h-6 w-6 text-green-600 mb-2" />
+                  <p className="text-sm font-semibold text-green-700 mb-1">
+                    Today's Trips
+                  </p>
+                  <p className="text-3xl font-bold text-green-600">
+                    {stats.trips.today}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-green-600">
+                    Active today
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Collaborations Status */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.8 }}
+          className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 border-2 border-gray-100"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2.5 bg-gradient-to-br from-yellow-100 to-orange-200 rounded-xl">
+              <UserPlus className="h-6 w-6 text-orange-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Collaborations
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+            <div className="p-6 rounded-xl bg-gradient-to-br from-green-50 to-emerald-100 border-2 border-green-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <UserPlus className="h-6 w-6 text-green-600 mb-2" />
+                  <p className="text-sm font-semibold text-green-700 mb-1">
+                    Active Collaborations
+                  </p>
+                  <p className="text-3xl font-bold text-green-600">
+                    {stats.collaborations.active}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-200 text-green-800">
+                    Active
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 rounded-xl bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <AlertCircle className="h-6 w-6 text-orange-600 mb-2" />
+                  <p className="text-sm font-semibold text-orange-700 mb-1">
+                    Requests Received
+                  </p>
+                  <p className="text-3xl font-bold text-orange-600">
+                    {stats.collaborations.pendingReceived}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-orange-600">
+                    Awaiting action
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Activity className="h-6 w-6 text-blue-600 mb-2" />
+                  <p className="text-sm font-semibold text-blue-700 mb-1">
+                    Requests Sent
+                  </p>
+                  <p className="text-3xl font-bold text-blue-600">
+                    {stats.collaborations.pendingSent}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-blue-600">
+                    Pending approval
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
       </div>
+
+      {/* Settlement Summary */}
+      {stats.settlements.total > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9 }}
+          className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 border-2 border-gray-100"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2.5 bg-gradient-to-br from-pink-100 to-red-200 rounded-xl">
+              <DollarSign className="h-6 w-6 text-pink-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Settlement Summary
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div className="p-6 rounded-xl bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-200 text-center">
+              <p className="text-sm font-semibold text-yellow-700 mb-2">
+                Total Amount
+              </p>
+              <p className="text-3xl font-bold text-yellow-600">
+                {formatCurrency(stats.settlements.totalAmount)}
+              </p>
+            </div>
+
+            <div className="p-6 rounded-xl bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-200 text-center">
+              <p className="text-sm font-semibold text-red-700 mb-2">
+                Due Amount
+              </p>
+              <p className="text-3xl font-bold text-red-600">
+                {formatCurrency(stats.settlements.dueAmount)}
+              </p>
+            </div>
+
+            <div className="p-6 rounded-xl bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 text-center">
+              <p className="text-sm font-semibold text-green-700 mb-2">
+                Paid Amount
+              </p>
+              <p className="text-3xl font-bold text-green-600">
+                {formatCurrency(stats.settlements.totalAmount - stats.settlements.dueAmount)}
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 };
