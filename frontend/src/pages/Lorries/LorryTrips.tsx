@@ -509,10 +509,8 @@ const LorryTrips = () => {
                     <div className="pt-3 border-t border-gray-100">
                       <div className="flex items-center justify-between text-sm">
                         <div>
-                          <p className="text-xs text-gray-500 mb-1">Units & Rate</p>
-                          <p className="font-medium text-gray-900">
-                            {trip.no_of_unit_customer} × {formatCurrency(trip.rate_per_unit)}
-                          </p>
+                          <p className="text-xs text-gray-500 mb-1">Units: {trip.no_of_unit_customer}</p>
+                          <p className="text-xs text-gray-500 mb-1">Amount: {trip.customer_amount}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-xs text-gray-500 mb-1">Profit</p>
