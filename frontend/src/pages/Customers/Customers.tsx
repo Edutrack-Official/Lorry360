@@ -337,23 +337,6 @@ const Customers = () => {
                         <p className="text-sm text-gray-700 line-clamp-2">{customer.address}</p>
                       </div>
                     </div>
-
-                    {/* Created Date - Optional */}
-                    {/* {customer.createdAt && (
-                      <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors">
-                        <div className="p-1.5 bg-white rounded-md shadow-sm">
-                          <Clock className="h-3.5 w-3.5 text-purple-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-700">
-                            Added {new Date(customer.createdAt).toLocaleDateString('en-IN')}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {Math.floor((new Date().getTime() - new Date(customer.createdAt).getTime()) / (1000 * 60 * 60 * 24))} days ago
-                          </p>
-                        </div>
-                      </div>
-                    )} */}
                   </div>
                 </div>
               </motion.div>
@@ -412,7 +395,6 @@ const Customers = () => {
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
                         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getStatusConfig(selectedCustomer.isActive).color}`}>
-                          {/* <StatusIcon className="h-3 w-3" /> */}
                           {getStatusConfig(selectedCustomer.isActive).label}
                         </span>
                         <p className="text-gray-600">Customer Details</p>

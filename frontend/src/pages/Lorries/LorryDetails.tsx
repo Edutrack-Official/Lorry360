@@ -302,30 +302,19 @@ const LorryDetails = () => {
             </p>
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4 min-w-[140px] sm:min-w-0 flex-shrink-0">
+          {/* <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4 min-w-[140px] sm:min-w-0 flex-shrink-0">
             <div className="flex items-center gap-2 mb-2">
               <Receipt className="h-4 w-4 text-purple-600" />
               <p className="text-xs text-gray-600">Records</p>
             </div>
             <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.totalExpenses}</p>
-          </div>
+          </div> */}
         </div>
       </div>
 
       {/* Tabs Navigation */}
       <div className="bg-white border-b sm:top-[113px] z-30">
         <nav className="flex overflow-x-auto scrollbar-hide px-4 sm:px-6">
-          {/* <Link
-            to={`/lorries/${lorryId}`}
-            className={`py-3 px-4 border-b-2 font-medium text-sm whitespace-nowrap flex items-center gap-2 transition-colors ${
-              activeTab === 'overview'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <Truck className="h-4 w-4" />
-            Overview
-          </Link> */}
           <Link
             to={`/lorries/${lorryId}/trips`}
             className={`py-3 px-4 border-b-2 font-medium text-sm whitespace-nowrap flex items-center gap-2 transition-colors ${
