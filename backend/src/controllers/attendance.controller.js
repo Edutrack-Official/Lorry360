@@ -42,6 +42,7 @@ const getAllAttendance = async (owner_id, filterParams = {}) => {
   const { driver_id, lorry_id, start_date, end_date, status } = filterParams;
   const query = { owner_id };
   
+  
   if (driver_id) query.driver_id = driver_id;
   if (lorry_id) query.lorry_id = lorry_id;
   if (status) query.status = status;
