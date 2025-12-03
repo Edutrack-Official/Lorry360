@@ -205,6 +205,7 @@ const CustomerPaymentForm = () => {
 
       await api.post("/payments/create", submissionData);
       toast.success("Payment recorded successfully");
+      navigate(`/customers/${customerId}/payments`);
       
       const paymentsRes = await api.get(`/payments/customer/${customerId}`);
       setPayments(paymentsRes.data.data?.payments || []);
@@ -227,6 +228,9 @@ const CustomerPaymentForm = () => {
       setSubmitting(false);
     }
   };
+
+  const today = new Date().toISOString().split('T')[0];
+
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -354,6 +358,7 @@ const CustomerPaymentForm = () => {
                   name="payment_date"
                   value={formData.payment_date}
                   onChange={handleInputChange}
+                  max={today}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-base"
                 />
                 {errors.payment_date && (
@@ -416,23 +421,34 @@ const CustomerPaymentForm = () => {
             <input type="hidden" name="customer_id" value={formData.customer_id} />
 
             {/* Action Buttons */}
-            <div className="flex flex-col-reverse sm:flex-row gap-3 pt-6 border-t border-gray-200">
-              <button
-                type="button"
-                onClick={() => navigate(`/customers/${customerId}/payments`)}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-              >
-                <X className="h-4 w-4" />
-                Cancel
-              </button>
-
+           {/* Submit Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-200">
               <button
                 type="submit"
                 disabled={submitting || paymentStats.pendingAmount <= 0}
-                className="w-full sm:flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors font-medium"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors flex-1 sm:flex-none"
               >
-                <Save className="h-4 w-4" />
-                {submitting ? 'Recording...' : 'Record Payment'}
+                {submitting ? (
+                  <>
+                    <Save className="h-4 w-4" />
+                    Recording...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    Record Payment
+                  </>
+                )}
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => navigate(`/customers/${customerId}/payments`)}
+                disabled={submitting}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex-1 sm:flex-none disabled:opacity-50"
+              >
+                <X className="h-4 w-4" />
+                Cancel
               </button>
             </div>
           </form>

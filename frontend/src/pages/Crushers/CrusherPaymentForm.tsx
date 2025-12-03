@@ -215,6 +215,8 @@ const CrusherPaymentForm = () => {
 
       await api.post("/payments/create", submissionData);
       toast.success("Payment recorded successfully");
+            navigate(`/crushers/${crusherId}/payments`);
+
       
       // Refresh data
       const targetCrusherId = crusherId || searchParams.get('crusher');
@@ -243,6 +245,9 @@ const CrusherPaymentForm = () => {
       setSubmitting(false);
     }
   };
+
+  const today = new Date().toISOString().split('T')[0];
+
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -336,11 +341,6 @@ const CrusherPaymentForm = () => {
                 {crusher.address && (
                   <p className="text-orange-600 text-sm break-words">{crusher.address}</p>
                 )}
-                {crusher.materials && crusher.materials.length > 0 && (
-                  <p className="text-orange-600 text-sm break-words">
-                    Materials: {crusher.materials.map(m => m.material_name).join(', ')}
-                  </p>
-                )}
               </div>
             </div>
           </div>
@@ -385,6 +385,7 @@ const CrusherPaymentForm = () => {
                 <input
                   type="date"
                   name="payment_date"
+                  max={today}
                   value={formData.payment_date}
                   onChange={handleInputChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-base"
@@ -449,23 +450,33 @@ const CrusherPaymentForm = () => {
             <input type="hidden" name="crusher_id" value={formData.crusher_id} />
 
             {/* Action Buttons */}
-            <div className="flex flex-col-reverse sm:flex-row gap-3 pt-6 border-t border-gray-200">
-              <button
-                type="button"
-                onClick={() => navigate(getBackUrl())}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-              >
-                <X className="h-4 w-4" />
-                Cancel
-              </button>
-
+            <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-200">
               <button
                 type="submit"
                 disabled={submitting || paymentStats.pendingAmount <= 0}
-                className="w-full sm:flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:bg-orange-400 disabled:cursor-not-allowed transition-colors font-medium"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:bg-orange-400 disabled:cursor-not-allowed transition-colors flex-1 sm:flex-none"
               >
-                <Save className="h-4 w-4" />
-                {submitting ? 'Recording...' : 'Record Payment'}
+                {submitting ? (
+                  <>
+                    <Save className="h-4 w-4" />
+                    Recording...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    Record Payment
+                  </>
+                )}
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => navigate(getBackUrl())}
+                disabled={submitting}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex-1 sm:flex-none disabled:opacity-50"
+              >
+                <X className="h-4 w-4" />
+                Cancel
               </button>
             </div>
           </form>

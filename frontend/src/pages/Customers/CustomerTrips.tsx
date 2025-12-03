@@ -203,19 +203,19 @@ const CustomerTrips = () => {
           {/* Financial Summary */}
           <div className="grid grid-cols-3 gap-2 pt-3 border-t border-gray-100">
             <div className="text-center">
-              <div className="text-xs text-gray-500 mb-0.5">Customer</div>
+              <div className="text-xs text-gray-500 mb-0.5">Customer Amount</div>
               <div className="text-sm sm:text-base font-semibold text-green-600">
                 {formatCurrency(trip.customer_amount)}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-gray-500 mb-0.5">Crusher</div>
+              <div className="text-xs text-gray-500 mb-0.5">Crusher Amount</div>
               <div className="text-sm sm:text-base font-semibold text-orange-600">
                 {formatCurrency(trip.crusher_amount)}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-gray-500 mb-0.5">Profit</div>
+              <div className="text-xs text-gray-500 mb-0.5">Profit Amount</div>
               <div className={`text-sm sm:text-base font-semibold ${trip.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {formatCurrency(trip.profit)}
               </div>
