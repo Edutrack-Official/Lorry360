@@ -364,7 +364,7 @@ const Drivers = () => {
                                 {isActiveDriver ? "Deactivate" : "Activate"}
                               </button>
                               <div className="border-t border-gray-100 my-1"></div>
-                              <button
+                              {/* <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleDeleteClick(driver._id, driver.name, driver.phone);
@@ -373,7 +373,7 @@ const Drivers = () => {
                               >
                                 <Trash2 className="h-4 w-4" />
                                 Delete Driver
-                              </button>
+                              </button> */}
                             </motion.div>
                           )}
                         </AnimatePresence>
