@@ -437,7 +437,7 @@ const Drivers = () => {
                       </div>
 
                       {/* Join Date */}
-                      <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors">
+                      {/* <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors">
                         <div className="p-1.5 bg-white rounded-md shadow-sm">
                           <Clock className="h-3.5 w-3.5 text-purple-600" />
                         </div>
@@ -449,7 +449,7 @@ const Drivers = () => {
                             {Math.floor((new Date().getTime() - new Date(driver.createdAt).getTime()) / (1000 * 60 * 60 * 24))} days ago
                           </p>
                         </div>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
                 </motion.div>

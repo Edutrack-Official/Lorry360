@@ -344,27 +344,6 @@ const ManageCrusherForm: React.FC = () => {
           </div>
         </form>
       </div>
-
-      {/* Information Panel */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-start gap-3">
-          <div className="flex-shrink-0">
-            <Package className="w-5 h-5 text-blue-600 mt-0.5" />
-          </div>
-          <div>
-            <h3 className="text-sm font-medium text-blue-800 mb-1">
-              Crusher Management Information
-            </h3>
-            <ul className="text-xs text-blue-700 space-y-1">
-              <li>• Crusher name is required and must be unique</li>
-              <li>• You can add multiple materials with their prices</li>
-              <li>• Material names must be unique within the same crusher</li>
-              <li>• Prices must be positive numbers (can include decimals)</li>
-              <li>• Only owners can create and manage crushers</li>
-            </ul>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

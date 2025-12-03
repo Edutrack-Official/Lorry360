@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { MapPin, User, Phone, Mail, Search, MoreVertical, Edit, Trash2, Building, X } from "lucide-react";
+import { MapPin, User, Phone, Mail, Search, MoreVertical, Edit, Trash2, Building, X, Clock } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { FaPlus } from "react-icons/fa6";
@@ -167,111 +167,137 @@ const Customers = () => {
 
       {/* Cards Grid */}
       {filtered.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-          {filtered.map((customer) => (
-            <motion.div
-              key={customer._id}
-              layout
-              className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden"
-              onClick={() => navigate(`/customers/${customer._id}/trips`)}
-            >
-              <div className="p-4 sm:p-5">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-base sm:text-lg text-gray-900 truncate mb-1">
-                      {customer.name}
-                    </h3>
-                  </div>
-
-                  {/* Action Menu */}
-                  <div className="relative flex-shrink-0">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowActionMenu(showActionMenu === customer._id ? null : customer._id);
-                      }}
-                      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                      <MoreVertical className="h-4 w-4 text-gray-500" />
-                    </button>
-
-                    <AnimatePresence>
-                      {showActionMenu === customer._id && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                          className="absolute right-0 top-8 z-30 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <button
-                            onClick={() => navigate(`/customers/edit/${customer._id}`)}
-                            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
-                          >
-                            <Edit className="h-4 w-4" />
-                            Edit Customer
-                          </button>
-                          <button
-                            onClick={() => setSelectedCustomer(customer)}
-                            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
-                          >
-                            <User className="h-4 w-4" />
-                            View Details
-                          </button>
-                          <div className="border-t border-gray-100 my-1"></div>
-                          <button
-                            onClick={() => handleDeleteClick(customer._id, customer.name, customer.phone)}
-                            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Delete Customer
-                          </button>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </div>
-
-                {/* Contact Info */}
-                <div className="space-y-2 mb-3">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Phone className="h-3 w-3 flex-shrink-0" />
-                    <span className="truncate">{customer.phone}</span>
-                  </div>
-                  <div className="flex items-start gap-2 text-sm text-gray-600">
-                    <MapPin className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                    <span className="line-clamp-2">{customer.address}</span>
-                  </div>
-                </div>
-
-                {/* Site Addresses */}
-                {/* {customer.site_addresses.length > 0 && (
-                  <div className="mb-3">
-                    <div className="flex items-center gap-1 text-xs font-medium text-gray-700 mb-2">
-                      <MapPin className="h-3 w-3" />
-                      Site Addresses ({customer.site_addresses.length})
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filtered.map((customer) => {
+            return (
+              <motion.div
+                key={customer._id}
+                layout
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer active:scale-98"
+                onClick={() => navigate(`/customers/${customer._id}/trips`)}
+              >
+                <div className="p-4 sm:p-5">
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-1 truncate">
+                        {customer.name}
+                      </h3>
                     </div>
-                    <div className="space-y-1">
-                      {customer.site_addresses.slice(0, 2).map((site, index) => (
-                        <div
-                          key={index}
-                          className="text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded border border-gray-200 truncate"
-                        >
-                          {site}
-                        </div>
-                      ))}
-                      {customer.site_addresses.length > 2 && (
-                        <div className="text-xs text-blue-600 font-medium">
-                          +{customer.site_addresses.length - 2} more sites
-                        </div>
-                      )}
+
+                    {/* Action Menu */}
+                    <div className="relative ml-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowActionMenu(showActionMenu === customer._id ? null : customer._id);
+                        }}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                      >
+                        <MoreVertical className="h-4 w-4 text-gray-500" />
+                      </button>
+
+                      <AnimatePresence>
+                        {showActionMenu === customer._id && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                            transition={{ duration: 0.15 }}
+                            className="absolute right-0 top-10 z-30 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/customers/edit/${customer._id}`);
+                              }}
+                              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <Edit className="h-4 w-4 text-gray-500" />
+                              Edit Customer
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedCustomer(customer);
+                              }}
+                              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <User className="h-4 w-4 text-gray-500" />
+                              View Details
+                            </button>
+                            <div className="border-t border-gray-100 my-1"></div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteClick(customer._id, customer.name, customer.phone);
+                              }}
+                              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Delete Customer
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </div>
-                )} */}
-              </div>
-            </motion.div>
-          ))}
+
+                  {/* Site Addresses Badge (Optional) */}
+                  {customer.site_addresses && customer.site_addresses.length > 0 && (
+                    <div className="mb-4">
+                      <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium border bg-blue-50 text-blue-700 border-blue-200">
+                        <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        {customer.site_addresses.length} Site{customer.site_addresses.length > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Customer Details */}
+                  <div className="space-y-3">
+                    {/* Phone */}
+                    <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors">
+                      <div className="p-1.5 bg-white rounded-md shadow-sm">
+                        <Phone className="h-3.5 w-3.5 text-blue-600" />
+                      </div>
+                      <span className="text-sm font-medium text-gray-700">{customer.phone}</span>
+                    </div>
+
+                    {/* Address */}
+                    <div className="flex items-start gap-3 p-2 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors">
+                      <div className="p-1.5 bg-white rounded-md shadow-sm mt-0.5">
+                        <MapPin className="h-3.5 w-3.5 text-green-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-700 line-clamp-2">{customer.address}</p>
+                      </div>
+                    </div>
+
+                    {/* Created Date */}
+                    {/* {customer.createdAt && (
+                      <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors">
+                        <div className="p-1.5 bg-white rounded-md shadow-sm">
+                          <Clock className="h-3.5 w-3.5 text-purple-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-700">
+                            Added {new Date(customer.createdAt).toLocaleDateString('en-IN')}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {Math.floor((new Date().getTime() - new Date(customer.createdAt).getTime()) / (1000 * 60 * 60 * 24))} days ago
+                          </p>
+                        </div>
+                      </div>
+                    )} */}
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 p-8 sm:p-12 text-center">
