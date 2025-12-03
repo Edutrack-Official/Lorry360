@@ -4,7 +4,6 @@ import api from "../../api/client";
 import {
   Truck,
   Package,
-  Receipt,
   ArrowLeft,
   Plus,
   CheckCircle2,
@@ -301,14 +300,6 @@ const LorryDetails = () => {
               {formatCurrency(stats.netProfit)}
             </p>
           </div>
-
-          {/* <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4 min-w-[140px] sm:min-w-0 flex-shrink-0">
-            <div className="flex items-center gap-2 mb-2">
-              <Receipt className="h-4 w-4 text-purple-600" />
-              <p className="text-xs text-gray-600">Records</p>
-            </div>
-            <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.totalExpenses}</p>
-          </div> */}
         </div>
       </div>
 
@@ -337,7 +328,7 @@ const LorryDetails = () => {
                 : 'border-transparent text-gray-600 hover:text-gray-900'
             }`}
           >
-            <Receipt className="h-4 w-4" />
+            <IndianRupee className="h-4 w-4" />
             Expenses
             <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs font-semibold">
               {expenses.length}
@@ -412,7 +403,7 @@ const LorryDetails = () => {
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
               <div className="px-4 py-3 sm:px-5 sm:py-4 border-b border-gray-200 flex items-center justify-between">
                 <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <Receipt className="h-5 w-5 text-green-600" />
+                  <IndianRupee className="h-5 w-5 text-green-600" />
                   Recent Expenses
                 </h3>
                 <Link
@@ -454,7 +445,7 @@ const LorryDetails = () => {
                   </div>
                 ) : (
                   <div className="text-center py-8 sm:py-12">
-                    <Receipt className="h-12 w-12 sm:h-16 sm:w-16 text-gray-300 mx-auto mb-3" />
+                    <IndianRupee className="h-12 w-12 sm:h-16 sm:w-16 text-gray-300 mx-auto mb-3" />
                     <p className="text-sm sm:text-base text-gray-600 mb-4">No expenses recorded yet</p>
                     <Link
                       to={`/expenses/create?lorry=${lorryId}`}

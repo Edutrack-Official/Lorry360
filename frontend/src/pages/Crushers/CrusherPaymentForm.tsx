@@ -10,11 +10,9 @@ import {
   X,
   AlertCircle,
   Banknote,
-  Receipt,
   Smartphone,
   Wallet,
   TrendingUp,
-  Calculator,
   IndianRupee
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -266,7 +264,7 @@ const CrusherPaymentForm = () => {
   const paymentModes = [
     { value: 'cash', label: 'Cash', Icon: Banknote },
     { value: 'bank_transfer', label: 'Bank Transfer', Icon: TrendingUp },
-    { value: 'cheque', label: 'Cheque', Icon: Receipt },
+    { value: 'cheque', label: 'Cheque', Icon: IndianRupee },
     { value: 'upi', label: 'UPI', Icon: Smartphone },
     { value: 'other', label: 'Other', Icon: Wallet }
   ];

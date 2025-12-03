@@ -1,21 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate, Outlet } from "react-router-dom";
 import api from "../../api/client";
-import { Trash2 } from "lucide-react";
+import { IndianRupee } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import {
   Building,
   Package,
-  Receipt,
-  Calendar,
-  Edit,
-  MoreVertical,
   ArrowLeft,
-  Plus,
-  BadgeAlert,
-  MapPin,
-  Phone,
-  Home
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -312,7 +303,7 @@ const fetchTrips = async () => {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              <Receipt className="h-4 w-4 flex-shrink-0" />
+              <IndianRupee className="h-4 w-4 flex-shrink-0" />
               <span>Payments</span>
               <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
                 {payments.length}

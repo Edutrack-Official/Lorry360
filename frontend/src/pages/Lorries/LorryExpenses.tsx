@@ -11,7 +11,6 @@ import {
   Plus,
   ArrowLeft,
   Truck,
-  Receipt,
   X,
   Loader2,
   TrendingUp,
@@ -23,7 +22,8 @@ import {
   FileText,
   CreditCard,
   Smartphone,
-  Wallet
+  Wallet,
+  IndianRupee
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -503,7 +503,7 @@ const LorryExpenses = () => {
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-gray-200 p-8 sm:p-12 text-center">
-            <Receipt className="h-12 w-12 sm:h-16 sm:w-16 text-gray-300 mx-auto mb-4" />
+            <IndianRupee className="h-12 w-12 sm:h-16 sm:w-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">No expenses found</h3>
           </div>
         )}

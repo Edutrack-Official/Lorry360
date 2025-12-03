@@ -11,7 +11,6 @@ import {
   AlertCircle,
   Banknote,
   Building2,
-  Receipt,
   Smartphone,
   Wallet,
   IndianRupee
@@ -241,7 +240,7 @@ const CustomerPaymentForm = () => {
   const paymentModes = [
     { value: 'cash', label: 'Cash', Icon: Banknote },
     { value: 'bank_transfer', label: 'Bank Transfer', Icon: Building2 },
-    { value: 'cheque', label: 'Cheque', Icon: Receipt },
+    { value: 'cheque', label: 'Cheque', Icon: IndianRupee },
     { value: 'upi', label: 'UPI', Icon: Smartphone },
     { value: 'other', label: 'Other', Icon: Wallet }
   ];

@@ -82,15 +82,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigation = [
    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["owner"], color: "blue" },
     { name: "Lorries", href: "/lorries", icon: Truck, roles: ["owner"], color: "green" },
-    { name: "Customers", href: "/customers", icon: Building2, roles: ["owner"], color: "purple" },
     { name: "Drivers", href: "/drivers", icon: UserCircle2, roles: ["owner"], color: "orange" },
-    { name: "Collab", href: "/settlement", icon: UserCheck, roles: ["owner"], color: "teal" },
+    { name: "Customers", href: "/customers", icon: Building2, roles: ["owner"], color: "purple" },
     { name: "Crushers", href: "/crushers", icon: Package, roles: ["owner"], color: "red" },
+    { name: "Collab", href: "/settlement", icon: UserCheck, roles: ["owner"], color: "teal" },
     // { name: "Trips", href: "/trips", icon: MapPin, roles: ["owner"], color: "indigo" },
     // { name: "Maintenance", href: "/maintenance", icon: Wrench, roles: ["owner"], color: "yellow" },
     // { name: "Reports", href: "/reports", icon: TrendingUp, roles: ["owner"], color: "pink" },
     { name: "Settings", href: "/settings", icon: Settings, roles: ["owner"], color: "gray" },
-      { name: "Reminder", href: "/reminders", icon: BellPlus, roles: ["owner"] },
+    { name: "Reminder", href: "/reminders", icon: BellPlus, roles: ["owner"] },
     { name: "Owners", href: "/owners", icon: Users, roles: ["admin"], color: "cyan" },
     
 

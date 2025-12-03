@@ -1,21 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate, Outlet } from "react-router-dom";
 import api from "../../api/client";
-import { Trash2 } from "lucide-react";
+import { IndianRupee, Trash2 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import {
   User,
   Package,
-  Receipt,
-  Calendar,
-  Edit,
-  MoreVertical,
   ArrowLeft,
-  Plus,
-  BadgeAlert,
-  MapPin,
-  Phone,
-  Home,
   CreditCard
 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -307,7 +298,7 @@ const CustomerDetails = () => {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              <CreditCard className="h-4 w-4 flex-shrink-0" />
+              <IndianRupee className="h-4 w-4 flex-shrink-0" />
               <span>Payments</span>
               <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs font-medium">
                 {payments.length}
