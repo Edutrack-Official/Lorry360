@@ -5,19 +5,11 @@ import { AuthProvider } from './contexts/AuthContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-
-
 import ProtectedRoute from './components/ProtectedRoute';
-
-
+import AdminRoute, { OwnerRoute } from './AdminRoute'; // Add this import
 import Lorries from './pages/Lorries/Lorries';
 import ManageLorryForm from './pages/Lorries/ManageLorryForm';
-
-
-
 import ResultsPage from './pages/Resultes/ResultsPage';
-
-
 import NotFound from './pages/NotFound';
 import Customers from './pages/Customers/Customers';
 import ManageCustomerForm from './pages/Customers/ManageCustomerForm';
@@ -25,8 +17,6 @@ import Crushers from './pages/Crushers/Crushers';
 import ManageCrusherForm from './pages/Crushers/ManageCrusherForm';
 import Owners from './pages/Owners/Owners';
 import ManageOwnerForm from './pages/Owners/ManageOwnerForm';
-
-
 import LorryTrips from './pages/Lorries/LorryTrips';
 import TripForm from './pages/Lorries/TripForm';
 import Drivers from './pages/Drivers/Drivers';
@@ -57,9 +47,7 @@ import CrusherPaymentForm from './pages/Crushers/CrusherPaymentForm';
 import Reminders from './pages/Reminders/Reminders';
 import ManageReminderForm from './pages/Reminders/ManageReminderForm';
 import ReminderDetails from './pages/Reminders/ReminderDetails';
-
-
-
+import ForgotPassword from './pages/ForgotPassword';
 
 function App() {
   return (
@@ -79,6 +67,8 @@ function App() {
           <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
             {/* Results - Full screen without nav */}
@@ -99,90 +89,100 @@ function App() {
                   <Layout>
                     <Routes>
                       {/* Dashboard */}
-                      <Route path="/dashboard" element={<Dashboard />} />
-
-
+                      <Route path="/dashboard" element={<OwnerRoute><Dashboard /></OwnerRoute>} />
                     
-                      {/* Lorries */}
-                      <Route path="/lorries" element={<Lorries />} />
-                      <Route path="/lorries/create" element={<ManageLorryForm />} />
-                      <Route path="/lorries/edit/:id" element={<ManageLorryForm />} />
-                      <Route path="/invoice" element={<InvoiceGenerator />} />
-                      <Route path="/proinvoice" element={<ProformaInvoiceGenerator />} />
+                      {/* Lorries - OWNER ONLY */}
+                      <Route path="/lorries" element={<OwnerRoute><Lorries /></OwnerRoute>} />
+                      <Route path="/lorries/create" element={<OwnerRoute><ManageLorryForm /></OwnerRoute>} />
+                      <Route path="/lorries/edit/:id" element={<OwnerRoute><ManageLorryForm /></OwnerRoute>} />
+                      <Route path="/invoice" element={<OwnerRoute><InvoiceGenerator /></OwnerRoute>} />
+                      <Route path="/proinvoice" element={<OwnerRoute><ProformaInvoiceGenerator /></OwnerRoute>} />
 
-                      <Route path="/reminders" element={<Reminders />} />
-                      <Route path="/reminders/edit/:id" element={<ManageReminderForm />} />
-                      <Route path="/reminders/create" element={<ManageReminderForm />} />
-                      <Route path="/reminders/:id" element={<ReminderDetails />} />
+                      <Route path="/reminders" element={<OwnerRoute><Reminders /></OwnerRoute>} />
+                      <Route path="/reminders/edit/:id" element={<OwnerRoute><ManageReminderForm /></OwnerRoute>} />
+                      <Route path="/reminders/create" element={<OwnerRoute><ManageReminderForm /></OwnerRoute>} />
+                      <Route path="/reminders/:id" element={<OwnerRoute><ReminderDetails /></OwnerRoute>} />
 
-
-                      {/* Lorry Details with nested routes */}
-                      <Route path="/lorries/:lorryId" element={<LorryDetails />}>
+                      {/* Lorry Details with nested routes - OWNER ONLY */}
+                      <Route path="/lorries/:lorryId" element={<OwnerRoute><LorryDetails /></OwnerRoute>}>
                         <Route path="trips" element={<LorryTrips />} />
                         <Route path="expenses" element={<LorryExpenses />} />
                       </Route>
 
-                      {/* Standalone forms */}
-                      <Route path="/trips/create" element={<TripForm />} />
-                      <Route path="/trips/edit/:tripId" element={<TripForm />} />
-                      <Route path="/expenses/create" element={<ExpenseForm />} />
-                      <Route path="/expenses/edit/:expenseId" element={<ExpenseForm />} />
+                      {/* Standalone forms - OWNER ONLY */}
+                      <Route path="/trips/create" element={<OwnerRoute><TripForm /></OwnerRoute>} />
+                      <Route path="/trips/edit/:tripId" element={<OwnerRoute><TripForm /></OwnerRoute>} />
+                      <Route path="/expenses/create" element={<OwnerRoute><ExpenseForm /></OwnerRoute>} />
+                      <Route path="/expenses/edit/:expenseId" element={<OwnerRoute><ExpenseForm /></OwnerRoute>} />
 
-                      {/* Customers Management */}
-                      <Route path="/customers" element={<Customers />} />
-                      <Route path="/customers/create" element={<ManageCustomerForm />} />
-                      <Route path="/customers/edit/:id" element={<ManageCustomerForm />} />
-                      <Route path="customers/:customerId" element={<CustomerDetails />}>
+                      {/* Customers Management - OWNER ONLY */}
+                      <Route path="/customers" element={<OwnerRoute><Customers /></OwnerRoute>} />
+                      <Route path="/customers/create" element={<OwnerRoute><ManageCustomerForm /></OwnerRoute>} />
+                      <Route path="/customers/edit/:id" element={<OwnerRoute><ManageCustomerForm /></OwnerRoute>} />
+                      <Route path="customers/:customerId" element={<OwnerRoute><CustomerDetails /></OwnerRoute>}>
                         <Route index element={<Navigate to="trips" replace />} />
                         <Route path="trips" element={<CustomerTrips />} />
                         <Route path="payments" element={<CustomerPayments />} />
                       </Route>
-                      <Route path="/customers/:customerId/trips/create" element={<CustomerTripForm />} />
-                      <Route path="/customers/:customerId/payments/create" element={<CustomerPaymentForm />} />
+                      <Route path="/customers/:customerId/trips/create" element={<OwnerRoute><CustomerTripForm /></OwnerRoute>} />
+                      <Route path="/customers/:customerId/payments/create" element={<OwnerRoute><CustomerPaymentForm /></OwnerRoute>} />
 
-
-
-                      {/* Crushers Management */}
-                      <Route path="/crushers" element={<Crushers />} />
-                      <Route path="/crushers/create" element={<ManageCrusherForm />} />
-                      <Route path="/crushers/edit/:id" element={<ManageCrusherForm />} />
-                      <Route path="/crushers/:crusherId" element={<CrusherDetails />}>
+                      {/* Crushers Management - OWNER ONLY */}
+                      <Route path="/crushers" element={<OwnerRoute><Crushers /></OwnerRoute>} />
+                      <Route path="/crushers/create" element={<OwnerRoute><ManageCrusherForm /></OwnerRoute>} />
+                      <Route path="/crushers/edit/:id" element={<OwnerRoute><ManageCrusherForm /></OwnerRoute>} />
+                      <Route path="/crushers/:crusherId" element={<OwnerRoute><CrusherDetails /></OwnerRoute>}>
                         <Route index element={<Navigate to="trips" replace />} />
                         <Route path="trips" element={<CrusherTrips />} />
                         <Route path="payments" element={<CrusherPayments />} />
                       </Route>
-                      <Route path="trips/create" element={<CrusherTripForm />} />
-                      <Route path="/crushers/:crusherId/payments/create" element={<CrusherPaymentForm />} />
+                      <Route path="trips/create" element={<OwnerRoute><CrusherTripForm /></OwnerRoute>} />
+                      <Route path="/crushers/:crusherId/payments/create" element={<OwnerRoute><CrusherPaymentForm /></OwnerRoute>} />
 
+                      {/* Collaboration Management - OWNER ONLY */}
+                      <Route path="/collaborations" element={<OwnerRoute><CollaborationDashboard /></OwnerRoute>} />
+                      <Route path="/collaborations/transactions/:collaborationId" element={<OwnerRoute><CollaboratorsTab /></OwnerRoute>} />
+                      <Route path="/collaborations/requests" element={<OwnerRoute><CollaborationRequestsTab /></OwnerRoute>} />
 
-                      {/* Collaboration Management */}
-                      <Route path="/collaborations" element={<CollaborationDashboard />} />
-                      <Route path="/collaborations/transactions/:collaborationId" element={<CollaboratorsTab />} />
-                      <Route path="/collaborations/requests" element={<CollaborationRequestsTab />} />
+                      <Route path="/settlement" element={<OwnerRoute><SettlementTab /></OwnerRoute>} />
 
+                      {/* Drivers Management - OWNER ONLY */}
+                      <Route path="/drivers" element={<OwnerRoute><Drivers /></OwnerRoute>} />
+                      <Route path="/drivers/create" element={<OwnerRoute><ManageDriverForm /></OwnerRoute>} />
+                      <Route path="/drivers/edit/:id" element={<OwnerRoute><ManageDriverForm /></OwnerRoute>} />
+                      <Route path="/drivers/:driverId" element={<OwnerRoute><DriverDetails /></OwnerRoute>} />
 
-                      <Route path="/settlement" element={<SettlementTab />} />
+                      <Route path="/attendance/create" element={<OwnerRoute><ManageAttendanceForm /></OwnerRoute>} />
+                      <Route path="/attendance/edit/:id" element={<OwnerRoute><ManageAttendanceForm /></OwnerRoute>} />
 
-                      {/* drivers Management */}
-                      <Route path="/drivers" element={<Drivers />} />
-                      <Route path="/drivers/create" element={<ManageDriverForm />} />
-                      <Route path="/drivers/edit/:id" element={<ManageDriverForm />} />
-                      <Route path="/drivers/:driverId" element={<DriverDetails />} />
-
-                      <Route path="/attendance/create" element={<ManageAttendanceForm />} />
-                      <Route path="/attendance/edit/:id" element={<ManageAttendanceForm />} />
-
-
-
-                      {/* Owners Management */}
-                      <Route path="/owners" element={<Owners />} />
-                      <Route path="/owners/create" element={<ManageOwnerForm />} />
-                      <Route path="/owners/edit/:id" element={<ManageOwnerForm />} />
-
-                      {/* Users */}
+                      {/* Owners Management - ADMIN ONLY */}
+                      <Route 
+                        path="/owners" 
+                        element={
+                          <AdminRoute>
+                            <Owners />
+                          </AdminRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/owners/create" 
+                        element={
+                          <AdminRoute>
+                            <ManageOwnerForm />
+                          </AdminRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/owners/edit/:id" 
+                        element={
+                          <AdminRoute>
+                            <ManageOwnerForm />
+                          </AdminRoute>
+                        } 
+                      />
+                      <Route path="/notfound" element={<NotFound />} />
 
                       <Route path="*" element={<NotFound />} />
-
                     </Routes>
                   </Layout>
                 </ProtectedRoute>

@@ -33,7 +33,7 @@ const Owners = () => {
   // Filters
   const [searchText, setSearchText] = useState("");
   const [filterPlan, setFilterPlan] = useState<"all" | "trial" | "basic" | "professional" | "enterprise">("all");
-  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("active");
+  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
@@ -459,13 +459,13 @@ const Owners = () => {
                     </Link>
 
                     {/* View Details */}
-                    <button
+                    {/* <button
                       onClick={() => setSelectedOwner(owner)}
                       className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 shadow-md transition"
                       title="View Details"
                     >
                       <BsThreeDotsVertical className="h-5 w-5" />
-                    </button>
+                    </button> */}
 
                     {/* Toggle Status */}
                     <button
@@ -477,7 +477,7 @@ const Owners = () => {
                       }`}
                       title={owner.isActive ? "Deactivate" : "Activate"}
                     >
-                      {owner.isActive ? <Trash2 size={18} /> : "A"}
+                      {owner.isActive ? <Trash2 size={18} /> : " A "}
                     </button>
                   </td>
                 </tr>
@@ -537,62 +537,6 @@ const Owners = () => {
         </div>
       )}
 
-      {/* Popup Modal for Details */}
-      {selectedOwner && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 sm:w-[90%] md:w-[600px] relative animate-fadeIn">
-            <button
-              onClick={() => setSelectedOwner(null)}
-              className="absolute top-3 right-3 p-2 rounded-full hover:bg-red-100 transition"
-            >
-              <X className="w-5 h-5 text-gray-500" />
-            </button>
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">
-              {selectedOwner.name}
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-700">
-              <p>
-                <strong>Company:</strong> {selectedOwner.company_name}
-              </p>
-              <p>
-                <strong>Plan:</strong> {getPlanBadge(selectedOwner.plan_type)}
-              </p>
-              <p>
-                <strong>Email:</strong> {selectedOwner.email}
-              </p>
-              <p>
-                <strong>Phone:</strong> {selectedOwner.phone}
-              </p>
-              <p>
-                <strong>Status:</strong> {getStatusBadge(selectedOwner.isActive)}
-              </p>
-              <p>
-                <strong>Role:</strong> <span className="capitalize">{selectedOwner.role}</span>
-              </p>
-              <p className="sm:col-span-2">
-                <strong>Address:</strong> {selectedOwner.address}
-              </p>
-              <p>
-                <strong>City:</strong> {selectedOwner.city}
-              </p>
-              <p>
-                <strong>State:</strong> {selectedOwner.state}
-              </p>
-              <p>
-                <strong>Pincode:</strong> {selectedOwner.pincode}
-              </p>
-              <p>
-                <strong>Created At:</strong>{" "}
-                {new Date(selectedOwner.createdAt).toLocaleString()}
-              </p>
-              <p>
-                <strong>Updated At:</strong>{" "}
-                {new Date(selectedOwner.updatedAt).toLocaleString()}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Confirm Deactivate */}
       {confirmDeleteId && (

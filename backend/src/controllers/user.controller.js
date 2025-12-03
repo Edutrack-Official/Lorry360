@@ -81,11 +81,11 @@ const createUser = async (userData) => {
 };
 
 const getAllUsers = async (filterParams = {}) => {
-  const { role, plan_type } = filterParams;
-  const query = { isActive: true };
+  const query = { 
+    role: "owner"
+  };
   
-  if (role) query.role = role;
-  if (plan_type) query.plan_type = plan_type;
+  
 
   const users = await User.find(query)
     .select('-passwordHash')
@@ -154,10 +154,11 @@ const forgotPassword = async (email, otp) => {
 
   const user = await User.findOne({ email, isActive: true });
 
-  // Always return success message to prevent email probing
-  const genericResponse = { message: 'If this email exists, a reset OTP has been sent.' };
-
-  if (!user) return genericResponse;
+    if (!user) {
+    const err = new Error('User not found');
+    err.status = 404;
+    throw err;
+  }
 
   await sendPasswordResetEmail({ 
     toEmail: email, 
