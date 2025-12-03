@@ -1,11 +1,25 @@
 import React, { useEffect, useState } from "react";
-import { MapPin, User, Phone, Mail, Search, MoreVertical, Edit, Trash2, Building, X, Clock } from "lucide-react";
+import { 
+  MapPin, 
+  User, 
+  Phone, 
+  Mail, 
+  Search, 
+  MoreVertical, 
+  Edit, 
+  Trash2, 
+  Building, 
+  X, 
+  Clock, 
+  Power,
+  CheckCircle2,
+  PauseCircle
+} from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { FaPlus } from "react-icons/fa6";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "../../api/client";
-import DeleteConfirmationModal from "../../components/DeleteConfirmationModal";
 
 interface Customer {
   _id: string;
@@ -13,6 +27,7 @@ interface Customer {
   phone: string;
   address: string;
   site_addresses: string[];
+  isActive: boolean;
   owner_id: {
     _id: string;
     name: string;
@@ -27,16 +42,8 @@ const Customers = () => {
   const [loading, setLoading] = useState(true);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [searchText, setSearchText] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
   const [showActionMenu, setShowActionMenu] = useState<string | null>(null);
-  // Replace the existing confirmDeleteId state with these
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [selectedDeleteCustomer, setSelectedDeleteCustomer] = useState<{
-    id: string;
-    name: string;
-    phone?: string;
-  } | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
   const navigate = useNavigate();
 
   const fetchCustomers = async () => {
@@ -56,40 +63,37 @@ const Customers = () => {
     fetchCustomers();
   }, []);
 
-  const handleDelete = async (id: string) => {
+  const handleToggleStatus = async (id: string, isActive: boolean) => {
     try {
-      await api.delete(`/customers/delete/${id}`);
-      toast.success("Customer deleted successfully");
+      const newStatus = !isActive;
+      await api.put(`/customers/update/${id}`, { isActive: newStatus });
+      toast.success(`Customer ${newStatus ? "activated" : "deactivated"} successfully`);
+      setShowActionMenu(null);
       fetchCustomers();
     } catch (error: any) {
-      toast.error(error.response?.data?.error || "Failed to delete customer");
+      toast.error(error.response?.data?.error || "Failed to update status");
     }
   };
 
-  // New function to open delete modal
-  const handleDeleteClick = (id: string, name: string, phone?: string) => {
-    setSelectedDeleteCustomer({ id, name, phone });
-    setDeleteModalOpen(true);
-    setShowActionMenu(null);
-  };
-
-  // Function to handle confirmed deletion
-  const handleConfirmDelete = async () => {
-    if (!selectedDeleteCustomer) return;
-
-    setIsDeleting(true);
-    try {
-      await handleDelete(selectedDeleteCustomer.id);
-      setDeleteModalOpen(false);
-      setSelectedDeleteCustomer(null);
-    } catch (error: any) {
-      // Error is already handled in handleDelete function
-    } finally {
-      setIsDeleting(false);
+  const getStatusConfig = (isActive: boolean) => {
+    if (isActive) {
+      return {
+        color: "bg-green-50 text-green-700 border-green-200",
+        icon: CheckCircle2,
+        label: "Active",
+        dotColor: "bg-green-500"
+      };
+    } else {
+      return {
+        color: "bg-red-50 text-red-700 border-red-200",
+        icon: PauseCircle,
+        label: "Inactive",
+        dotColor: "bg-red-500"
+      };
     }
   };
 
-  // Apply Search
+  // Apply Search and Filter
   const filtered = customers.filter((customer) => {
     const matchesSearch =
       customer.name.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -99,12 +103,26 @@ const Customers = () => {
         site.toLowerCase().includes(searchText.toLowerCase())
       );
 
-    return matchesSearch;
+    const matchesStatus =
+      filterStatus === "all" ||
+      (filterStatus === "active" && customer.isActive) ||
+      (filterStatus === "inactive" && !customer.isActive);
+
+    return matchesSearch && matchesStatus;
   });
 
   const clearSearch = () => {
     setSearchText("");
   };
+
+  // Close action menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setShowActionMenu(null);
+    if (showActionMenu) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [showActionMenu]);
 
   if (loading) {
     return (
@@ -163,12 +181,49 @@ const Customers = () => {
             </Link>
           </div>
         </div>
+
+        {/* Status Filters */}
+        <div className="flex items-center gap-2 mt-4 overflow-x-auto pb-1 scrollbar-hide">
+          <button
+            onClick={() => setFilterStatus("all")}
+            className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+              filterStatus === "all" 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-white border border-gray-300 text-gray-700'
+            }`}
+          >
+            All ({customers.length})
+          </button>
+          <button
+            onClick={() => setFilterStatus("active")}
+            className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+              filterStatus === "active" 
+                ? 'bg-green-600 text-white' 
+                : 'bg-white border border-gray-300 text-gray-700'
+            }`}
+          >
+            Active ({customers.filter(c => c.isActive).length})
+          </button>
+          <button
+            onClick={() => setFilterStatus("inactive")}
+            className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+              filterStatus === "inactive" 
+                ? 'bg-red-600 text-white' 
+                : 'bg-white border border-gray-300 text-gray-700'
+            }`}
+          >
+            Inactive ({customers.filter(c => !c.isActive).length})
+          </button>
+        </div>
       </div>
 
       {/* Cards Grid */}
       {filtered.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filtered.map((customer) => {
+            const statusConfig = getStatusConfig(customer.isActive);
+            const StatusIcon = statusConfig.icon;
+
             return (
               <motion.div
                 key={customer._id}
@@ -223,6 +278,17 @@ const Customers = () => {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
+                                handleToggleStatus(customer._id, customer.isActive);
+                              }}
+                              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <Power className="h-4 w-4 text-gray-500" />
+                              {customer.isActive ? "Deactivate" : "Activate"}
+                            </button>
+                            <div className="border-t border-gray-100 my-1"></div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setSelectedCustomer(customer);
                               }}
                               className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
@@ -230,32 +296,27 @@ const Customers = () => {
                               <User className="h-4 w-4 text-gray-500" />
                               View Details
                             </button>
-                            <div className="border-t border-gray-100 my-1"></div>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteClick(customer._id, customer.name, customer.phone);
-                              }}
-                              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              Delete Customer
-                            </button>
                           </motion.div>
                         )}
                       </AnimatePresence>
                     </div>
                   </div>
 
-                  {/* Site Addresses Badge (Optional) */}
-                  {customer.site_addresses && customer.site_addresses.length > 0 && (
-                    <div className="mb-4">
-                      <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium border bg-blue-50 text-blue-700 border-blue-200">
-                        <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  {/* Status Badge */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium border ${statusConfig.color}`}>
+                      <StatusIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                      {statusConfig.label}
+                    </div>
+
+                    {/* Site Addresses Badge */}
+                    {customer.site_addresses && customer.site_addresses.length > 0 && (
+                      <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium border bg-blue-50 text-blue-700 border-blue-200">
+                        <MapPin className="h-3 w-3" />
                         {customer.site_addresses.length} Site{customer.site_addresses.length > 1 ? 's' : ''}
                       </span>
-                    </div>
-                  )}
+                    )}
+                  </div>
 
                   {/* Customer Details */}
                   <div className="space-y-3">
@@ -277,7 +338,7 @@ const Customers = () => {
                       </div>
                     </div>
 
-                    {/* Created Date */}
+                    {/* Created Date - Optional */}
                     {/* {customer.createdAt && (
                       <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors">
                         <div className="p-1.5 bg-white rounded-md shadow-sm">
@@ -303,8 +364,22 @@ const Customers = () => {
         <div className="bg-white rounded-xl border border-gray-200 p-8 sm:p-12 text-center">
           <User className="h-12 w-12 sm:h-16 sm:w-16 text-gray-300 mx-auto mb-4" />
           <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
-            {searchText ? "No customers found" : "No customers yet"}
+            {searchText || filterStatus !== "all" 
+              ? "No customers found matching your criteria" 
+              : "No customers yet"}
           </h3>
+          <p className="text-sm text-gray-600 mb-4">
+            {searchText && "Try a different search term"}
+            {!searchText && filterStatus !== "all" && "Try changing the status filter"}
+            {!searchText && filterStatus === "all" && "Get started by adding your first customer"}
+          </p>
+          <Link
+            to="/customers/create"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm text-sm font-medium"
+          >
+            <FaPlus size={16} />
+            Add Customer
+          </Link>
         </div>
       )}
 
@@ -327,11 +402,22 @@ const Customers = () => {
             >
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h3 className="text-2xl font-bold text-gray-900">
-                      {selectedCustomer.name}
-                    </h3>
-                    <p className="text-gray-600 mt-1">Customer Details</p>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <User className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-gray-900">
+                        {selectedCustomer.name}
+                      </h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getStatusConfig(selectedCustomer.isActive).color}`}>
+                          {/* <StatusIcon className="h-3 w-3" /> */}
+                          {getStatusConfig(selectedCustomer.isActive).label}
+                        </span>
+                        <p className="text-gray-600">Customer Details</p>
+                      </div>
+                    </div>
                   </div>
                   <button
                     onClick={() => setSelectedCustomer(null)}
@@ -355,20 +441,44 @@ const Customers = () => {
                         {selectedCustomer.phone}
                       </div>
                     </div>
-                  </div>
-
-                  {/* Address Information */}
-                  <div className="space-y-4">
-                    <h4 className="font-semibold text-gray-900 border-b border-gray-200 pb-2">
-                      Address Information
-                    </h4>
 
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Primary Address</label>
+                      <label className="text-sm font-medium text-gray-700">Address</label>
                       <div className="flex items-start gap-2 mt-1 text-gray-900">
                         <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
                         <span>{selectedCustomer.address}</span>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Status & Timestamps */}
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                      Status Information
+                    </h4>
+
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Current Status</label>
+                      <div className="mt-1">
+                        <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border ${getStatusConfig(selectedCustomer.isActive).color}`}>
+                          {/* <StatusIcon className="h-4 w-4" /> */}
+                          {selectedCustomer.isActive ? "Active" : "Inactive"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Created</label>
+                      <p className="text-gray-900 mt-1">
+                        {new Date(selectedCustomer.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-gray-700">Last Updated</label>
+                      <p className="text-gray-900 mt-1">
+                        {new Date(selectedCustomer.updatedAt).toLocaleString()}
+                      </p>
                     </div>
                   </div>
 
@@ -391,22 +501,6 @@ const Customers = () => {
                       </div>
                     </div>
                   )}
-
-                  {/* Timestamps */}
-                  <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Created At</label>
-                      <p className="text-gray-900 mt-1">
-                        {new Date(selectedCustomer.createdAt).toLocaleString()}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Last Updated</label>
-                      <p className="text-gray-900 mt-1">
-                        {new Date(selectedCustomer.updatedAt).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
                 </div>
 
                 <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
@@ -415,6 +509,16 @@ const Customers = () => {
                     className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
                   >
                     Edit Customer
+                  </button>
+                  <button
+                    onClick={() => handleToggleStatus(selectedCustomer._id, selectedCustomer.isActive)}
+                    className={`flex-1 py-2.5 rounded-lg transition-colors font-medium ${
+                      selectedCustomer.isActive
+                        ? 'bg-red-100 text-red-600 hover:bg-red-200'
+                        : 'bg-green-100 text-green-600 hover:bg-green-200'
+                    }`}
+                  >
+                    {selectedCustomer.isActive ? "Deactivate" : "Activate"}
                   </button>
                   <button
                     onClick={() => setSelectedCustomer(null)}
@@ -428,23 +532,6 @@ const Customers = () => {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Delete Confirmation Modal */}
-      <DeleteConfirmationModal
-        isOpen={deleteModalOpen}
-        onClose={() => {
-          setDeleteModalOpen(false);
-          setSelectedDeleteCustomer(null);
-        }}
-        onConfirm={handleConfirmDelete}
-        title="Delete Customer"
-        message={`Are you sure you want to delete this customer?`}
-        isLoading={isDeleting}
-        itemName={selectedDeleteCustomer ?
-          `Customer: ${selectedDeleteCustomer.name}${selectedDeleteCustomer.phone ? ` (${selectedDeleteCustomer.phone})` : ''}`
-          : ""
-        }
-      />
     </div>
   );
 };
