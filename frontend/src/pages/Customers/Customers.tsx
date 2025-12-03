@@ -279,19 +279,6 @@ const Customers = () => {
           <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
             {searchText ? "No customers found" : "No customers yet"}
           </h3>
-          <p className="text-sm text-gray-600 mb-6">
-            {searchText
-              ? "Try adjusting your search terms"
-              : "Get started by adding your first customer"
-            }
-          </p>
-          <Link
-            to="/customers/create"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm font-medium"
-          >
-            <FaPlus size={16} />
-            Add First Customer
-          </Link>
         </div>
       )}
 

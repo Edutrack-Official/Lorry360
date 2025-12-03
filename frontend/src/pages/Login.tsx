@@ -100,7 +100,7 @@ const Login: React.FC = () => {
             <div className="w-full md:w-1/2 p-8 sm:p-10">
               <div className="mb-6 flex items-center gap-2">
                 <Truck className="h-8 w-8 text-indigo-600" />
-                <span className="text-xl font-bold text-gray-900">GoldDust 360</span>
+                <span className="text-xl font-bold text-gray-900">LOMA</span>
               </div>
 
               <h2 className="mb-1 text-3xl font-bold text-gray-900">Welcome back</h2>
@@ -191,19 +191,21 @@ const Login: React.FC = () => {
             </div>
 
             {/* Right visual */}
-            <div className="hidden md:flex w-full md:w-1/2 items-center justify-center p-10 bg-white">
-              <div className="w-full text-center">
-                <img
-                  src="/images/truck.jpg"
-                  alt="Lorry Management Illustration"
-                  className="mx-auto mb-6 w-[60%] rounded-xl max-w-md drop-shadow-xl"
-                />
-                <h3 className="mb-2 text-2xl font-semibold text-gray-900">
-                  Manage. Track. Optimize.
-                </h3>
-                <p className="mx-auto max-w-md text-sm text-gray-600">
-                  Monitor your fleet, track shipments, and optimize routes—all from one powerful dashboard.
-                </p>
+            <div className="hidden md:flex w-full md:w-1/2 items-center justify-center p-10 bg-gradient-to-br from-blue-50 to-indigo-50 relative overflow-hidden">
+              {/* Decorative circles */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-200 rounded-full blur-3xl opacity-30"></div>
+              <div className="absolute bottom-0 left-0 w-48 h-48 bg-indigo-200 rounded-full blur-3xl opacity-30"></div>
+              
+              <div className="w-full max-w-md relative z-10">
+                <div className="text-center mb-8">
+                  <h3 className="mb-3 text-3xl font-bold text-gray-900">
+                    Manage. Track. Optimize.
+                  </h3>
+                  <p className="text-gray-600">
+                    Monitor your fleet, track shipments, and optimize routes—all from one powerful dashboard.
+                  </p>
+                </div>
+
               </div>
             </div>
           </div>

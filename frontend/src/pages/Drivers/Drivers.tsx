@@ -465,19 +465,6 @@ const Drivers = () => {
               <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
                 No drivers found
               </h3>
-              <p className="text-sm sm:text-base text-gray-600 mb-6">
-                {searchText || filterStatus !== "all"
-                  ? "Try adjusting your search or filters to find what you're looking for"
-                  : "Get started by adding your first driver to the team"
-                }
-              </p>
-              <Link
-                to="/drivers/create"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm font-medium"
-              >
-                <Plus className="h-5 w-5" />
-                Add First Driver
-              </Link>
             </div>
           </div>
         )}

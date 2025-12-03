@@ -426,16 +426,6 @@ const Lorries = () => {
                       <StatusIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       {statusConfig.label}
                     </div>
-
-                    {/* Owner Info */}
-                    {/* {lorry.owner_id?.name && (
-                      <div className="mt-4 pt-4 border-t border-gray-100">
-                        <p className="text-xs text-gray-500 mb-1">Owner</p>
-                        <p className="text-sm font-medium text-gray-700 truncate">
-                          {lorry.owner_id.name}
-                        </p>
-                      </div>
-                    )} */}
                   </div>
                 </motion.div>
               );
@@ -450,19 +440,6 @@ const Lorries = () => {
               <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
                 No lorries found
               </h3>
-              <p className="text-sm sm:text-base text-gray-600 mb-6">
-                {searchText || filterStatus !== "all"
-                  ? "Try adjusting your search or filters to find what you're looking for"
-                  : "Get started by adding your first lorry to the fleet"
-                }
-              </p>
-              <Link
-                to="/lorries/create"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm font-medium"
-              >
-                <Plus className="h-5 w-5" />
-                Add First Lorry
-              </Link>
             </div>
           </div>
         )}

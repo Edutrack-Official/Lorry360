@@ -197,13 +197,13 @@ const Crushers = () => {
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer active:scale-98"
+                  className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer active:scale-98 flex flex-col h-full" // Added flex and h-full
                   onClick={(e) => {
                     if ((e.target as HTMLElement).closest('button, a, input')) return;
                     navigate(`/crushers/${crusher._id}/trips`);
                   }}
                 >
-                  <div className="p-4 sm:p-5">
+                  <div className="p-4 sm:p-5 flex-1"> {/* Added flex-1 */}
                     {/* Header with Action Menu */}
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1 min-w-0">
@@ -306,24 +306,24 @@ const Crushers = () => {
                         )}
                       </div>
                     </div>
+                  </div>
 
-                    {/* Card Footer */}
-                    <div className="pt-3 border-t border-gray-100">
-                      <div className="flex items-center justify-between text-xs text-gray-600">
-                        <div>
-                          Created: {new Date(crusher.createdAt).toLocaleDateString()}
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedCrusher(crusher);
-                          }}
-                          className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
-                        >
-                          <Eye size={12} />
-                          View
-                        </button>
+                  {/* Card Footer - Positioned at bottom */}
+                  <div className="pt-3 border-t border-gray-100 mt-auto"> {/* Added mt-auto */}
+                    <div className="flex items-center justify-between text-xs text-gray-600 px-4 pb-4 sm:px-5 sm:pb-5">
+                      <div>
+                        Created: {new Date(crusher.createdAt).toLocaleDateString()}
                       </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCrusher(crusher);
+                        }}
+                        className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+                      >
+                        <Eye size={12} />
+                        View
+                      </button>
                     </div>
                   </div>
                 </motion.div>
@@ -390,21 +390,6 @@ const Crushers = () => {
               <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
                 No crushers found
               </h3>
-              <p className="text-sm sm:text-base text-gray-600 mb-6">
-                {searchText
-                  ? "Try adjusting your search to find what you're looking for"
-                  : "Get started by creating your first crusher"
-                }
-              </p>
-              {!searchText && (
-                <Link
-                  to="/crushers/create"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm font-medium"
-                >
-                  <Plus className="h-5 w-5" />
-                  Add First Crusher
-                </Link>
-              )}
             </div>
           </div>
         )}

@@ -130,14 +130,6 @@ const CustomerPayments = () => {
         <div className="text-center py-12">
           <CreditCard className="h-16 w-16 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No payments yet</h3>
-          <p className="text-gray-500 mb-4">Start by recording your first payment from this customer</p>
-          <Link
-            to={`/customers/${customerId}/payments/create`}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-          >
-            <Plus className="h-4 w-4" />
-            Record First Payment
-          </Link>
         </div>
       )}
     </div>

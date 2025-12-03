@@ -506,19 +506,6 @@ const LorryExpenses = () => {
           <div className="bg-white rounded-xl border border-gray-200 p-8 sm:p-12 text-center">
             <Receipt className="h-12 w-12 sm:h-16 sm:w-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">No expenses found</h3>
-            <p className="text-sm text-gray-600 mb-6">
-              {searchText || filterCategory !== "all" || filterPaymentMode !== "all" || dateRange.start || dateRange.end
-                ? "Try adjusting your search or filters"
-                : "Get started by adding the first expense for this lorry"
-              }
-            </p>
-            <Link
-              to={`/expenses/create?lorry=${lorryId}`}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-sm font-medium"
-            >
-              <Plus className="h-4 w-4" />
-              Add First Expense
-            </Link>
           </div>
         )}
       </div>

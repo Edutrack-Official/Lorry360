@@ -2609,14 +2609,6 @@ const SettlementTab = () => {
                         <FileText className="h-10 w-10 text-gray-300" />
                       </div>
                       <h4 className="text-xl font-bold text-gray-900 mb-2">No Settlements Yet</h4>
-                      <p className="text-gray-600 mb-6">Create your first settlement to get started</p>
-                      <button
-                        onClick={() => setShowCreateForm(true)}
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all font-semibold shadow-md"
-                      >
-                        <Plus className="h-5 w-5" />
-                        Create Settlement
-                      </button>
                     </div>
                   )}
                 </div>
@@ -2818,16 +2810,6 @@ const SettlementTab = () => {
                             <h4 className="text-xl font-bold text-gray-900 mb-2">
                               No Settlements Yet
                             </h4>
-                            <p className="text-gray-600 mb-6">
-                              Create your first settlement with {selectedPartner.name}
-                            </p>
-                            <button
-                              onClick={() => setShowCreateForm(true)}
-                              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all font-semibold shadow-md"
-                            >
-                              <Plus className="h-5 w-5" />
-                              Create Settlement
-                            </button>
                           </div>
                         )}
                       </div>
@@ -3045,19 +3027,6 @@ const SettlementTab = () => {
                       <h4 className="text-2xl font-bold text-gray-900 mb-2">
                         {statusFilter === 'all' ? 'No Settlements Found' : `No ${statusFilter} Settlements`}
                       </h4>
-                      <p className="text-lg text-gray-600 mb-6">
-                        {statusFilter === 'all' 
-                          ? 'Create your first settlement to start managing payments'
-                          : `Try changing the filter or create a new settlement`
-                        }
-                      </p>
-                      <button
-                        onClick={() => setShowCreateForm(true)}
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all font-semibold shadow-md"
-                      >
-                        <Plus className="h-5 w-5" />
-                        Create Settlement
-                      </button>
                     </div>
                   )}
                 </div>
