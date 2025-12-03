@@ -234,7 +234,7 @@ const LorryExpenses = () => {
 
   const handleActionMenuToggle = (expenseId: string, e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    
+
     if (showActionMenu === expenseId) {
       setShowActionMenu(null);
       return;
@@ -248,7 +248,7 @@ const LorryExpenses = () => {
         right: window.innerWidth - rect.right
       });
     }
-    
+
     setShowActionMenu(expenseId);
   };
 
@@ -442,59 +442,55 @@ const LorryExpenses = () => {
                 <motion.div
                   key={expense._id}
                   layout
-                  className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
+                  className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow overflow-hidden"
                 >
-                  {/* Card Header */}
-                  <div className="p-4 border-b border-gray-100">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border ${categoryConfig.color}`}>
-                            <CategoryIcon className="h-3 w-3" />
-                            {categoryConfig.label}
-                          </span>
-                          <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border ${paymentConfig.color}`}>
-                            <PaymentIcon className="h-3 w-3" />
-                            {paymentConfig.label}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                          <Calendar className="h-3 w-3" />
-                          {formatDate(expense.date)}
-                        </div>
+                  {/* Card Content */}
+                  <div className="p-4">
+                    {/* Header Row: Category, Payment Mode & Amount */}
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${categoryConfig.color}`}>
+                          <CategoryIcon className="h-3.5 w-3.5" />
+                          {categoryConfig.label}
+                        </span>
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border ${paymentConfig.color}`}>
+                          <PaymentIcon className="h-3.5 w-3.5" />
+                          {paymentConfig.label}
+                        </span>
                       </div>
 
-                      {/* Amount */}
+                      {/* Amount - Prominent Display */}
                       <div className="text-right flex-shrink-0">
-                        <p className="text-lg font-bold text-red-600">
+                        <p className="text-xl font-bold text-red-600">
                           {formatCurrency(expense.amount)}
                         </p>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Card Body */}
-                  <div className="p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 mb-1">
-                          {expense.description || "No description provided"}
+                    {/* Description */}
+                    {expense.description && (
+                      <div className="mb-3">
+                        <p className="text-sm text-gray-700 line-clamp-2">
+                          {expense.description}
                         </p>
-                        <p className="text-xs text-gray-500">
-                          Added {formatDate(expense.createdAt)}
-                        </p>
+                      </div>
+                    )}
+
+                    {/* Footer Row: Date & Actions */}
+                    <div className="flex items-center justify-between gap-3 pt-3 border-t border-gray-100">
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                        <Calendar className="h-3.5 w-3.5" />
+                        <span>{formatDate(expense.date)}</span>
                       </div>
 
                       {/* Action Menu Button */}
-                      <div className="relative flex-shrink-0">
-                        <button
-                          ref={(el) => (buttonRefs.current[expense._id] = el)}
-                          onClick={(e) => handleActionMenuToggle(expense._id, e)}
-                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                        >
-                          <MoreVertical className="h-4 w-4 text-gray-500" />
-                        </button>
-                      </div>
+                      <button
+                        ref={(el) => (buttonRefs.current[expense._id] = el)}
+                        onClick={(e) => handleActionMenuToggle(expense._id, e)}
+                        className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                      >
+                        <MoreVertical className="h-4 w-4 text-gray-500" />
+                      </button>
                     </div>
                   </div>
                 </motion.div>

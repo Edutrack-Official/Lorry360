@@ -14,6 +14,14 @@ interface ExpenseFormData {
   payment_mode: 'cash' | 'bank' | 'upi';
 }
 
+interface FormErrors {
+  lorry_id?: string;
+  date?: string;
+  category?: string;
+  amount?: string;
+  payment_mode?: string;
+}
+
 interface Lorry {
   _id: string;
   registration_number: string;
@@ -40,6 +48,10 @@ const ExpenseForm = () => {
   const [pageLoading, setPageLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [lorryName, setLorryName] = useState("");
+  const [errors, setErrors] = useState<FormErrors>({});
+
+  // Get today's date in YYYY-MM-DD format for max date
+  const today = new Date().toISOString().split('T')[0];
 
   // Get lorry name from localStorage (similar to TripForm)
   useEffect(() => {
@@ -120,16 +132,37 @@ const ExpenseForm = () => {
     }
   };
 
+  const validate = (): boolean => {
+    const newErrors: FormErrors = {};
+
+    if (!formData.lorry_id) {
+      newErrors.lorry_id = "Please select a lorry";
+    }
+
+    if (!formData.date) {
+      newErrors.date = "Date is required";
+    }
+
+    if (!formData.category) {
+      newErrors.category = "Category is required";
+    }
+
+    if (!formData.amount || formData.amount <= 0) {
+      newErrors.amount = "Amount must be greater than 0";
+    }
+
+    if (!formData.payment_mode) {
+      newErrors.payment_mode = "Payment mode is required";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
-    if (!formData.lorry_id) {
-      toast.error('Please select a lorry');
-      return;
-    }
-    if (formData.amount <= 0) {
-      toast.error('Amount must be greater than 0');
+    if (!validate()) {
       return;
     }
 
@@ -163,6 +196,11 @@ const ExpenseForm = () => {
       ...prev,
       [name]: name === 'amount' ? parseFloat(value) || 0 : value
     }));
+
+    // Clear error for this field when user starts typing
+    if (errors[name as keyof FormErrors]) {
+      setErrors(prev => ({ ...prev, [name]: undefined }));
+    }
   };
 
   if (pageLoading) {
@@ -210,21 +248,30 @@ const ExpenseForm = () => {
                 </>
               ) : (
                 // Show dropdown when creating expense from general expenses page
-                <select
-                  name="lorry_id"
-                  value={formData.lorry_id}
-                  onChange={handleChange}
-                  required
-                  className="w-full input input-bordered"
-                >
-                  <option value="">Select Lorry</option>
-                  {lorries.map(lorry => (
-                    <option key={lorry._id} value={lorry._id}>
-                      {lorry.registration_number}
-                      {lorry.nick_name && ` (${lorry.nick_name})`}
-                    </option>
-                  ))}
-                </select>
+                <>
+                  <select
+                    name="lorry_id"
+                    value={formData.lorry_id}
+                    onChange={handleChange}
+                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                      errors.lorry_id ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="">Select Lorry</option>
+                    {lorries.map(lorry => (
+                      <option key={lorry._id} value={lorry._id}>
+                        {lorry.registration_number}
+                        {lorry.nick_name && ` (${lorry.nick_name})`}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.lorry_id && (
+                    <p className="mt-2 text-sm text-red-600 flex items-start gap-1">
+                      <span className="text-red-500 font-bold">•</span>
+                      {errors.lorry_id}
+                    </p>
+                  )}
+                </>
               )}
             </div>
 
@@ -239,9 +286,17 @@ const ExpenseForm = () => {
                 name="date"
                 value={formData.date}
                 onChange={handleChange}
-                required
-                className="w-full input input-bordered"
+                max={today}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                  errors.date ? 'border-red-500' : 'border-gray-300'
+                }`}
               />
+              {errors.date && (
+                <p className="mt-2 text-sm text-red-600 flex items-start gap-1">
+                  <span className="text-red-500 font-bold">•</span>
+                  {errors.date}
+                </p>
+              )}
             </div>
 
             {/* Category and Amount */}
@@ -254,8 +309,9 @@ const ExpenseForm = () => {
                   name="category"
                   value={formData.category}
                   onChange={handleChange}
-                  required
-                  className="w-full input input-bordered"
+                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                    errors.category ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 >
                   <option value="fuel">Fuel</option>
                   <option value="maintenance">Maintenance</option>
@@ -264,6 +320,12 @@ const ExpenseForm = () => {
                   <option value="fine">Fine</option>
                   <option value="other">Other</option>
                 </select>
+                {errors.category && (
+                  <p className="mt-2 text-sm text-red-600 flex items-start gap-1">
+                    <span className="text-red-500 font-bold">•</span>
+                    {errors.category}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -275,12 +337,18 @@ const ExpenseForm = () => {
                   name="amount"
                   value={formData.amount || ''}
                   onChange={handleChange}
-                  required
                   min="0"
                   step="0.01"
-                  className="w-full input input-bordered"
+                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                    errors.amount ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="0.00"
                 />
+                {errors.amount && (
+                  <p className="mt-2 text-sm text-red-600 flex items-start gap-1">
+                    {errors.amount}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -296,6 +364,8 @@ const ExpenseForm = () => {
                     className={`flex items-center justify-center gap-2 p-3 border rounded-lg cursor-pointer transition-colors ${
                       formData.payment_mode === mode 
                         ? 'border-green-500 bg-green-50 text-green-700' 
+                        : errors.payment_mode
+                        ? 'border-red-300 bg-white hover:bg-gray-50'
                         : 'border-gray-300 bg-white hover:bg-gray-50'
                     }`}
                   >
@@ -311,6 +381,11 @@ const ExpenseForm = () => {
                   </label>
                 ))}
               </div>
+              {errors.payment_mode && (
+                <p className="mt-2 text-sm text-red-600 flex items-start gap-1">
+                  {errors.payment_mode}
+                </p>
+              )}
             </div>
 
             {/* Description */}
@@ -324,7 +399,7 @@ const ExpenseForm = () => {
                 value={formData.description}
                 onChange={handleChange}
                 rows={3}
-                className="w-full input input-bordered resize-none"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
                 placeholder="Enter expense details..."
               />
             </div>
@@ -336,14 +411,24 @@ const ExpenseForm = () => {
                 disabled={loading}
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors flex-1 sm:flex-none"
               >
-                <Save className="h-4 w-4" />
-                {loading ? 'Saving...' : (isEditing ? 'Update Expense' : 'Create Expense')}
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {isEditing ? 'Updating...' : 'Creating...'}
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    {isEditing ? 'Update Expense' : 'Create Expense'}
+                  </>
+                )}
               </button>
               
               <button
                 type="button"
                 onClick={() => navigate(-1)}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex-1 sm:flex-none"
+                disabled={loading}
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex-1 sm:flex-none disabled:opacity-50"
               >
                 <X className="h-4 w-4" />
                 Cancel
