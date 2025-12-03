@@ -4,7 +4,6 @@ import {
   Truck,
   Users,
   TrendingUp,
-  DollarSign,
   Package,
   Building2,
   UserCheck,
@@ -17,6 +16,7 @@ import {
   Calendar,
   UserPlus,
   AlertCircle,
+  IndianRupee,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../api/client";
@@ -272,7 +272,7 @@ const Dashboard = () => {
       isPositive: true,
     },
     {
-      icon: DollarSign,
+      icon: IndianRupee,
       label: "Settlements",
       value: stats.settlements.total,
       subtitle: `${stats.settlements.pending} Pending • ${stats.settlements.completed} Completed`,
@@ -300,7 +300,7 @@ const Dashboard = () => {
             </div>
             <div>
               <h1 className="text-3xl sm:text-4xl font-bold text-gray-900">
-                Fleet Dashboard
+                Dashboard
               </h1>
               <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
                 <Clock className="h-4 w-4" />
@@ -640,7 +640,7 @@ const Dashboard = () => {
         >
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2.5 bg-gradient-to-br from-pink-100 to-red-200 rounded-xl">
-              <DollarSign className="h-6 w-6 text-pink-600" />
+              <IndianRupee className="h-6 w-6 text-pink-600" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900">
               Settlement Summary

@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import FloatingInput from "../../components/FloatingInput";
 import { User, MapPin, Plus, X } from "lucide-react";
 import api from "../../api/client";
+import BackButton from "../../components/BackButton";
 
 interface FormData {
   name: string;
@@ -167,12 +168,7 @@ const ManageCustomerForm: React.FC = () => {
     <div className="min-h-screen bg-gray-50 p-6 space-y-6">
       {/* Header section */}
       <div className="bg-white p-5 rounded-t-xl border shadow-md flex items-center gap-3">
-        <button
-          onClick={() => navigate("/customers")}
-          className="p-2 rounded-full hover:bg-gray-100 transition"
-        >
-          ←
-        </button>
+        <BackButton />
         <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-800">
           <User className="w-6 h-6 text-blue-600" />
           {isEditMode ? "Edit Customer" : "Add Customer"}
@@ -323,26 +319,6 @@ const ManageCustomerForm: React.FC = () => {
             </button>
           </div>
         </form>
-      </div>
-
-      {/* Information Panel */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-start gap-3">
-          <div className="flex-shrink-0">
-            <User className="w-5 h-5 text-blue-600 mt-0.5" />
-          </div>
-          <div>
-            <h3 className="text-sm font-medium text-blue-800 mb-1">
-              Customer Management Information
-            </h3>
-            <ul className="text-xs text-blue-700 space-y-1">
-              <li>• Customer name, phone, and address are required fields</li>
-              <li>• Phone number must be in Indian format (+91-xxxxxxxxxx)</li>
-              <li>• Site addresses are optional and can be added later</li>
-              <li>• Only owners can create and manage customers</li>
-            </ul>
-          </div>
-        </div>
       </div>
     </div>
   );

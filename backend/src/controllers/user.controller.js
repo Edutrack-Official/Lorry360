@@ -84,8 +84,6 @@ const getAllUsers = async (filterParams = {}) => {
   const query = { 
     role: "owner"
   };
-  
-  
 
   const users = await User.find(query)
     .select('-passwordHash')
@@ -167,8 +165,8 @@ const forgotPassword = async (email, otp) => {
     ...(user.role === 'owner' && { company_name: user.company_name })
   });
 
-  return genericResponse;
-};
+  return { message: 'OTP sent successful' };
+}
 
 const resetPassword = async (email, password) => {
   if (!email || !password) {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import api from '../../api/client';
-import { Save, X, Truck, Calendar, DollarSign, FileText, Loader2 } from 'lucide-react';
+import { Save, X, Truck, Calendar, FileText, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import BackButton from '../../components/BackButton';
 

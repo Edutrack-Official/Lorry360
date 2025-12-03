@@ -13,11 +13,11 @@ import {
   Loader2,
   TrendingUp,
   TrendingDown,
-  DollarSign,
   Calendar,
   MoreVertical,
   Edit,
-  Trash2
+  Trash2,
+  IndianRupee
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -294,7 +294,7 @@ const LorryDetails = () => {
 
           <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4 min-w-[140px] sm:min-w-0 flex-shrink-0">
             <div className="flex items-center gap-2 mb-2">
-              <DollarSign className="h-4 w-4 text-blue-600" />
+            <IndianRupee  className="h-4 w-4 text-blue-600" />
               <p className="text-xs text-gray-600">Net Profit</p>
             </div>
             <p className={`text-sm sm:text-lg font-bold ${stats.netProfit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>

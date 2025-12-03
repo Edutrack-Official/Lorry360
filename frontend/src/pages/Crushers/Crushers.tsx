@@ -6,9 +6,9 @@ import {
   Eye, 
   X, 
   Search, 
-  DollarSign, 
   Plus, 
   MoreVertical,
+  IndianRupee,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -289,7 +289,7 @@ const Crushers = () => {
                                 {material.material_name}
                               </span>
                               <div className="flex items-center gap-1 text-green-600 font-semibold text-sm whitespace-nowrap">
-                                <DollarSign size={12} />
+                                <IndianRupee size={12} />
                                 {material.price_per_unit}
                               </div>
                             </div>
@@ -450,7 +450,7 @@ const Crushers = () => {
                     >
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-green-100 rounded-lg">
-                          <DollarSign size={16} className="text-green-600" />
+                          <IndianRupee size={16} className="text-green-600" />
                         </div>
                         <div>
                           <div className="font-medium text-gray-900">

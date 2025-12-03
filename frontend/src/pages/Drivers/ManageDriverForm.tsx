@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import FloatingInput from "../../components/FloatingInput";
 import { Users, MapPin, Phone, IndianRupee } from "lucide-react";
 import api from "../../api/client";
+import BackButton from "../../components/BackButton";
 
 interface FormData {
   name: string;
@@ -181,12 +182,7 @@ const ManageDriverForm: React.FC = () => {
     <div className="min-h-screen bg-gray-50 p-6 space-y-6">
       {/* Header section */}
       <div className="bg-white p-5 rounded-t-xl border shadow-md flex items-center gap-3">
-        <button
-          onClick={() => navigate("/drivers")}
-          className="p-2 rounded-full hover:bg-gray-100 transition"
-        >
-          ←
-        </button>
+        <BackButton />
         <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-800">
           <Users className="w-6 h-6 text-blue-600" />
           {isEditMode ? "Edit Driver" : "Add Driver"}

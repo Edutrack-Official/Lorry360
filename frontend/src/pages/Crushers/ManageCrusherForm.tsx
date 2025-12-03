@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 import FloatingInput from "../../components/FloatingInput";
-import { Package, DollarSign, Plus, X } from "lucide-react";
+import { Package, Plus, X, IndianRupee } from "lucide-react";
 import api from "../../api/client";
+import BackButton from "../../components/BackButton";
 
 interface Material {
   material_name: string;
@@ -184,12 +185,7 @@ const ManageCrusherForm: React.FC = () => {
     <div className="min-h-screen bg-gray-50 p-6 space-y-6">
       {/* Header section */}
       <div className="bg-white p-5 rounded-t-xl border shadow-md flex items-center gap-3">
-        <button
-          onClick={() => navigate("/crushers")}
-          className="p-2 rounded-full hover:bg-gray-100 transition"
-        >
-          ←
-        </button>
+         <BackButton />
         <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-800">
           <Package className="w-6 h-6 text-blue-600" />
           {isEditMode ? "Edit Crusher" : "Add Crusher"}
@@ -243,7 +239,7 @@ const ManageCrusherForm: React.FC = () => {
                     Price per Unit *
                   </label>
                   <div className="relative">
-                    <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                    <IndianRupee className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                     <input
                       type="number"
                       step="0.01"
@@ -292,7 +288,7 @@ const ManageCrusherForm: React.FC = () => {
                         />
                       </div>
                       <div className="relative">
-                        <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                        <IndianRupee className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
                         <input
                           type="number"
                           step="0.01"

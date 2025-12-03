@@ -24,7 +24,6 @@ export const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
   }
 
   if (user.role !== 'admin') {
-    toast.error('Access denied. Admin privileges required.');
     return <Navigate to="/dashboard" replace />;
   }
 

@@ -6,7 +6,6 @@ import {
   CreditCard, 
   Calendar, 
   Building, 
-  DollarSign, 
   FileText, 
   X,
   AlertCircle,
@@ -15,7 +14,8 @@ import {
   Smartphone,
   Wallet,
   TrendingUp,
-  Calculator
+  Calculator,
+  IndianRupee
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../api/client';
@@ -357,7 +357,7 @@ const CrusherPaymentForm = () => {
               {/* Amount */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <DollarSign className="h-4 w-4 inline mr-1" />
+                  <IndianRupee className="h-4 w-4 inline mr-1" />
                   Amount (₹) *
                 </label>
                 <input

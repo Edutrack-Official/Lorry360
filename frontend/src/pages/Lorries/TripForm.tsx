@@ -10,7 +10,6 @@ import {
   User,
   Building,
   MapPin,
-  DollarSign,
   Calendar,
   FileText,
   Save,
@@ -18,7 +17,8 @@ import {
   Package,
   Navigation,
   Hash,
-  Users
+  Users,
+  IndianRupee
 } from "lucide-react";
 
 interface FormData {
@@ -786,7 +786,7 @@ const getCollaborativePartners = (currentUserId: any) => {
               {/* Rate per Unit */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <DollarSign className="h-4 w-4 inline mr-2" />
+                  <IndianRupee className="h-4 w-4 inline mr-2" />
                   Rate per Unit *
                 </label>
                 <input
@@ -865,7 +865,7 @@ const getCollaborativePartners = (currentUserId: any) => {
               {/* Customer Amount (User Input) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <DollarSign className="h-4 w-4 inline mr-2" />
+                  <IndianRupee className="h-4 w-4 inline mr-2" />
                   Customer Amount *
                 </label>
                 <input

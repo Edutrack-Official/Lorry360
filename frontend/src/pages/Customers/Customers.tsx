@@ -246,7 +246,7 @@ const Customers = () => {
                 </div>
 
                 {/* Site Addresses */}
-                {customer.site_addresses.length > 0 && (
+                {/* {customer.site_addresses.length > 0 && (
                   <div className="mb-3">
                     <div className="flex items-center gap-1 text-xs font-medium text-gray-700 mb-2">
                       <MapPin className="h-3 w-3" />
@@ -268,7 +268,7 @@ const Customers = () => {
                       )}
                     </div>
                   </div>
-                )}
+                )} */}
               </div>
             </motion.div>
           ))}

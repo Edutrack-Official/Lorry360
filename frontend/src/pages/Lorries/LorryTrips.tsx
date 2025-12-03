@@ -11,7 +11,6 @@ import {
   User,
   Package,
   MapPin,
-  DollarSign,
   ArrowLeft,
   Plus,
   Users,

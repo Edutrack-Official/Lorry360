@@ -4,10 +4,10 @@ import {
   ArrowUpRight, 
   ArrowDownLeft, 
   CheckCircle, 
-  DollarSign,
   MoreVertical,
   X,
-  Users
+  Users,
+  IndianRupee
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -296,7 +296,7 @@ const CollaboratorsTab = () => {
                 </div>
               ) : (
                 <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg">
-                  <DollarSign className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <IndianRupee className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                   <h4 className="text-lg font-semibold text-gray-900 mb-2">No Transactions Yet</h4>
                   <p className="mb-4">Start by requesting your first payment</p>
                   <button
@@ -461,7 +461,7 @@ const TransactionCard = ({ transaction, currentUserId, onApprove, onMarkAsPaid, 
                   }}
                   className="flex items-center gap-2 w-full px-4 py-2 text-sm text-green-600 hover:bg-green-50"
                 >
-                  <DollarSign className="h-4 w-4" />
+                  <IndianRupee className="h-4 w-4" />
                   Mark as Paid
                 </button>
               )}

@@ -26,11 +26,11 @@ const BackButton: React.FC<BackButtonProps> = ({
                   font-medium touch-manipulation ${className}`}
     >
       <ArrowLeft size={20} className="text-gray-600 flex-shrink-0" />
-      {showLabel && (
-        <span className="hidden sm:inline text-sm">
-          {label}
-        </span>
-      )}
+      {/* {showLabel && (
+        // <span className="hidden sm:inline text-sm">
+        //   {label}
+        // </span>
+      )} */}
     </button>
   );
 };
