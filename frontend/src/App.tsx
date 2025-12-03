@@ -5,53 +5,19 @@ import { AuthProvider } from './contexts/AuthContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import Tests from './pages/Test/Tests';
-import ViewTests from './pages/Test/DisplayTests';
-import Questions from './pages/Crushers/Crushers';
-import Users from './pages/Users/Users';
+
 
 import ProtectedRoute from './components/ProtectedRoute';
-import AddQuestionsPage from './pages/AddQuestionsPage';
 
-import Exams from './pages/Exams/Exams';
-import Subjects from './pages/Subjects/Subjects';
-import AddSubject from './pages/Subjects/AddSubject';
-import UploadSubjectExcel from './pages/Subjects/UploadSubjectExcel';
-import Chapters from './pages/Chapters/Chapters';
-import AddChapter from './pages/Chapters/AddChapter';
-import UploadChapterExcel from './pages/Chapters/UploadChapterExcel';
 
 import Lorries from './pages/Lorries/Lorries';
 import ManageLorryForm from './pages/Lorries/ManageLorryForm';
-import Batches from './pages/Batches/Batches';
-import AddBatch from './pages/Batches/AddBatch';
-import ManageBatchForm from './pages/Batches/ManageBatchForm';
-import Students from './pages/Students/Student';
-import AddStudent from './pages/Students/AddStudent';
-import ManageStudentForm from './pages/Students/ManageStudentForm';
 
-import QuestionSets from './pages/Customers/Customers';
-import AddQuestionSet from './pages/Customers/AddQuestionSet';
 
-import Groups from './pages/Groups/Groups';
-import ManageGroupForm from './pages/Groups/ManageGroupForm';
-import AddGroup from './pages/Groups/AddGroup';
-import RandomTestBuilder from './pages/Test/RandomTest';
-import DisplayRandomTests from './pages/RandomTest/DisplayRandomTests';
-
-// Course pages - FULL SCREEN (without Layout)
-import CourseForm from './pages/Course/CourseForm';
-import CourseList from './pages/Course/CourseList';
-import CourseDetail from './pages/Course/CourseDetail';
-import EnrolledCourses from './pages/Course/CourseEnrollment';
 
 import ResultsPage from './pages/Resultes/ResultsPage';
 
-import ManageQuestionSetForm from './pages/Customers/ManageCustomerForm';
-import AddQuestion from './pages/Crushers/AddQuestion';
-import InstituteAdmins from './pages/InstituteAdmins/InstituteAdmins';
-import InstituteAdminForm from './pages/InstituteAdmins/InstituteAdminForm';
-import CourseEnrollment from './pages/Course/CourseEnrollment';
+
 import NotFound from './pages/NotFound';
 import Customers from './pages/Customers/Customers';
 import ManageCustomerForm from './pages/Customers/ManageCustomerForm';
@@ -125,41 +91,6 @@ function App() {
               }
             />
 
-            {/* Course routes - FULL SCREEN (without Layout) */}
-
-            <Route
-              path="/courses/create"
-              element={
-                <ProtectedRoute>
-                  <CourseForm />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/courses/edit/:id"
-              element={
-                <ProtectedRoute>
-                  <CourseForm />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/courses/:courseId"
-              element={
-                <ProtectedRoute>
-                  <CourseDetail />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/my-courses"
-              element={
-                <ProtectedRoute>
-                  <EnrolledCourses />
-                </ProtectedRoute>
-              }
-            />
-
             {/* All other routes with Layout */}
             <Route
               path="/*"
@@ -171,23 +102,7 @@ function App() {
                       <Route path="/dashboard" element={<Dashboard />} />
 
 
-                      <Route
-                        path="/courses"
-                        element={
-                          <ProtectedRoute>
-                            <CourseList />
-                          </ProtectedRoute>
-                        }
-                      />
-
-                      <Route
-                        path="/enroll/course/:courseId"
-                        element={
-                          <ProtectedRoute>
-                            <CourseEnrollment />
-                          </ProtectedRoute>
-                        }
-                      />
+                    
                       {/* Lorries */}
                       <Route path="/lorries" element={<Lorries />} />
                       <Route path="/lorries/create" element={<ManageLorryForm />} />
@@ -265,7 +180,6 @@ function App() {
                       <Route path="/owners/edit/:id" element={<ManageOwnerForm />} />
 
                       {/* Users */}
-                      <Route path="/users" element={<Users />} />
 
                       <Route path="*" element={<NotFound />} />
 
