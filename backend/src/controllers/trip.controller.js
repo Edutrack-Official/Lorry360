@@ -352,10 +352,14 @@ const getTripStats = async (owner_id, period = 'month') => {
       startDate = new Date(now.getFullYear(), now.getMonth(), 1);
   }
 
-  const trips = await Trip.find({
-    owner_id,
-    trip_date: { $gte: startDate }
-  });
+const trips = await Trip.find({
+  owner_id,
+  trip_date: { $gte: startDate },
+  $or: [
+    { status: "completed" },
+    { status: "delivered" }
+  ]
+});
 
   const customerTrips = trips.filter(trip => trip.customer_id);
   const collaborativeTrips = trips.filter(trip => trip.collab_owner_id);

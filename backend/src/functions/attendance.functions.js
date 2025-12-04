@@ -73,7 +73,8 @@ app.http('getAllAttendance', {
         };
       }
 
-      const filterParams = request.query;
+      const filterParams = Object.fromEntries(request.query.entries());
+      console.log('Filter Params:', filterParams); // Debug log
       const result = await getAllAttendance(user.userId, filterParams);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
@@ -269,11 +270,12 @@ app.http('getAttendanceByDriver', {
           jsonBody: { success: false, error: 'Access denied. Owner role required.' },
         };
       }
-
+      const filterParams = Object.fromEntries(request.query.entries());
       const { driverId } = request.params;
-      const { start_date, end_date } = request.query;
+    
+      console.log('Filter Params:', filterParams,driverId); // Debug log
 
-      const result = await getAttendanceByDriver(user.userId, driverId, start_date, end_date);
+      const result = await getAttendanceByDriver(user.userId, driverId, filterParams.start_date, filterParams.end_date);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
