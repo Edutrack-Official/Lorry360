@@ -63,9 +63,10 @@ interface Trip {
 }
 
 const CrusherPaymentForm = () => {
-  const { crusherId } = useParams<{ crusherId: string }>();
+  const { crusherId, paymentId } = useParams<{ crusherId: string; paymentId?: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const isEditMode = !!paymentId;
   
   const [formData, setFormData] = useState<PaymentFormData>({
     payment_type: 'to_crusher',
@@ -79,39 +80,67 @@ const CrusherPaymentForm = () => {
   const [crusher, setCrusher] = useState<Crusher | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Fetch crusher details and payment history
   useEffect(() => {
     const fetchData = async () => {
-      const targetCrusherId = crusherId || searchParams.get('crusher');
-      if (targetCrusherId) {
+      if (crusherId || paymentId) {
         setLoading(true);
         try {
-          // Fetch crusher details
-          const crusherRes = await api.get(`/crushers/${targetCrusherId}`);
-          const crusherData = crusherRes.data.data;
-          setCrusher(crusherData);
+          // If in edit mode, fetch the payment data first
+          if (isEditMode && paymentId) {
+            try {
+              const paymentRes = await api.get(`/payments/${paymentId}`);
+              const paymentData = paymentRes.data.data;
+              
+              // Set form data from existing payment
+              setFormData({
+                payment_type: paymentData.payment_type || 'to_crusher',
+                crusher_id: paymentData.crusher_id || '',
+                amount: paymentData.amount || 0,
+                payment_date: paymentData.payment_date ? 
+                  new Date(paymentData.payment_date).toISOString().split('T')[0] : 
+                  new Date().toISOString().split('T')[0],
+                payment_mode: paymentData.payment_mode || 'cash',
+                notes: paymentData.notes || ''
+              });
 
-          // Ensure crusher_id is set in form data
-          setFormData(prev => ({
-            ...prev,
-            crusher_id: targetCrusherId
-          }));
+              // Set crusherId from payment if not in params
+              const targetCrusherId = crusherId || paymentData.crusher_id;
+              if (targetCrusherId) {
+                const crusherRes = await api.get(`/crushers/${targetCrusherId}`);
+                const crusherData = crusherRes.data.data;
+                setCrusher(crusherData);
+              }
+            } catch (error: any) {
+              console.error('Failed to fetch payment:', error);
+              toast.error('Failed to fetch payment details');
+              navigate('/crushers');
+            }
+          } else if (crusherId) {
+            // Create mode: fetch crusher data
+            const crusherRes = await api.get(`/crushers/${crusherId}`);
+            const crusherData = crusherRes.data.data;
+            setCrusher(crusherData);
+          }
 
-          // Fetch payment history
-          const paymentsRes = await api.get(`/payments/crusher/${targetCrusherId}`);
-          setPayments(paymentsRes.data.data?.payments || []);
+          // Fetch existing payments for stats (only for create mode)
+          if (!isEditMode && crusherId) {
+            const paymentsRes = await api.get(`/payments/crusher/${crusherId}`);
+            setPayments(paymentsRes.data.data?.payments || []);
+          }
 
-          // Fetch trips for this crusher
-          const tripsRes = await api.get(`/trips/crusher/${targetCrusherId}`);
-          setTrips(tripsRes.data.data?.trips || []);
+          // Fetch trips for stats
+          if (crusherId) {
+            const tripsRes = await api.get(`/trips/crusher/${crusherId}`);
+            setTrips(tripsRes.data.data?.trips || []);
+          }
 
         } catch (error: any) {
           console.error('Failed to fetch data:', error);
-          toast.error('Failed to fetch crusher data');
+          toast.error('Failed to fetch data');
         } finally {
           setLoading(false);
         }
@@ -119,9 +148,8 @@ const CrusherPaymentForm = () => {
     };
 
     fetchData();
-  }, [crusherId, searchParams]);
+  }, [crusherId, paymentId, isEditMode, navigate]);
 
-  // Calculate payment statistics
   const calculatePaymentStats = () => {
     const totalCrusherAmount = trips.reduce((sum, trip) => sum + (trip.crusher_amount || 0), 0);
     const totalPayments = payments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
@@ -175,8 +203,7 @@ const CrusherPaymentForm = () => {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    // CRITICAL FIX: Ensure crusher_id is properly set
-    if (!formData.crusher_id || formData.crusher_id.trim() === '') {
+    if (!formData.crusher_id || (typeof formData.crusher_id === 'string' && formData.crusher_id.trim() === '')) {
       newErrors.crusher_id = "Crusher is required";
     }
 
@@ -184,8 +211,8 @@ const CrusherPaymentForm = () => {
     if (!formData.payment_date) newErrors.payment_date = "Payment date is required";
     if (!formData.payment_mode) newErrors.payment_mode = "Payment mode is required";
 
-    // Validate if payment amount exceeds pending amount
-    if (formData.amount > paymentStats.pendingAmount) {
+    // For create mode only, check if amount exceeds pending amount
+    if (!isEditMode && formData.amount > paymentStats.pendingAmount) {
       newErrors.amount = `Amount cannot exceed pending amount of ${formatCurrency(paymentStats.pendingAmount)}`;
     }
 
@@ -203,39 +230,32 @@ const CrusherPaymentForm = () => {
 
     setSubmitting(true);
     try {
-      // Ensure all required fields are properly set
       const submissionData = {
         ...formData,
-        crusher_id: crusherId || searchParams.get('crusher'), // Force set from URL param or query
-        payment_type: 'to_crusher', // Force set for crusher payments
+        crusher_id: crusherId || formData.crusher_id,
+        payment_type: 'to_crusher',
         amount: parseFloat(formData.amount.toString())
       };
 
-      console.log('Submitting payment data:', submissionData);
-
-      await api.post("/payments/create", submissionData);
-      toast.success("Payment recorded successfully");
-            navigate(`/crushers/${crusherId}/payments`);
-
-      
-      // Refresh data
-      const targetCrusherId = crusherId || searchParams.get('crusher');
-      if (targetCrusherId) {
-        const paymentsRes = await api.get(`/payments/crusher/${targetCrusherId}`);
-        setPayments(paymentsRes.data.data?.payments || []);
+      if (isEditMode && paymentId) {
+        // Update existing payment
+        await api.put(`/payments/update/${paymentId}`, submissionData);
+        toast.success("Payment updated successfully");
+      } else {
+        // Create new payment
+        await api.post("/payments/create", submissionData);
+        toast.success("Payment recorded successfully");
       }
       
-      // Reset form but keep crusher_id
-      setFormData(prev => ({
-        ...prev,
-        amount: 0,
-        notes: ''
-      }));
+      // Navigate back to payments list
+      const targetCrusherId = crusherId || formData.crusher_id;
+      navigate(`/crushers/${targetCrusherId}/payments`);
+      
     } catch (error: any) {
       console.error('Payment submission error:', error);
-      let errorMessage = error.response?.data?.error || "Failed to record payment";
+      let errorMessage = error.response?.data?.error || 
+        (isEditMode ? "Failed to update payment" : "Failed to record payment");
       
-      // Handle specific Mongoose validation errors
       if (errorMessage.includes('crusher_id') && errorMessage.includes('required')) {
         errorMessage = "Crusher information is missing. Please refresh the page and try again.";
       }
@@ -248,7 +268,6 @@ const CrusherPaymentForm = () => {
 
   const today = new Date().toISOString().split('T')[0];
 
-
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -256,14 +275,6 @@ const CrusherPaymentForm = () => {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
-  };
-
-  const getBackUrl = () => {
-    if (crusherId) {
-      return `/crushers/${crusherId}/payments`;
-    } else {
-      return '/payments';
-    }
   };
 
   const paymentModes = [
@@ -274,18 +285,20 @@ const CrusherPaymentForm = () => {
     { value: 'other', label: 'Other', Icon: Wallet }
   ];
 
-  if (loading && !payments.length) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading crusher details...</p>
+          <p className="text-gray-600">
+            {isEditMode ? 'Loading payment details...' : 'Loading crusher details...'}
+          </p>
         </div>
       </div>
     );
   }
 
-  if (!crusher) {
+  if (!crusher && !isEditMode) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center">
@@ -310,7 +323,10 @@ const CrusherPaymentForm = () => {
         <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
           <div className="flex items-start gap-3 mb-4">
             <button
-              onClick={() => navigate(getBackUrl())}
+              onClick={() => {
+                const targetCrusherId = crusherId || formData.crusher_id;
+                navigate(`/crushers/${targetCrusherId}/payments`);
+              }}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
               aria-label="Back to payments"
             >
@@ -321,34 +337,40 @@ const CrusherPaymentForm = () => {
             </div>
             <div className="min-w-0 flex-1">
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-                Crusher Payments
+                {isEditMode ? 'Edit Payment' : 'Crusher Payments'}
               </h1>
               <p className="text-sm sm:text-base text-gray-600 truncate">
-                Manage payments to {crusher?.name}
+                {isEditMode 
+                  ? `Edit payment for ${crusher?.name || 'Crusher'}`
+                  : `Manage payments to ${crusher?.name || 'Crusher'}`}
               </p>
             </div>
           </div>
 
           {/* Crusher Info Card */}
-          <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
-            <div className="flex items-start gap-3">
-              <Building className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
-              <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-orange-900 break-words">{crusher.name}</h3>
-                {crusher.phone && (
-                  <p className="text-orange-700 text-sm break-words">{crusher.phone}</p>
-                )}
-                {crusher.address && (
-                  <p className="text-orange-600 text-sm break-words">{crusher.address}</p>
-                )}
+          {crusher && (
+            <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
+              <div className="flex items-start gap-3">
+                <Building className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold text-orange-900 break-words">{crusher.name}</h3>
+                  {crusher.phone && (
+                    <p className="text-orange-700 text-sm break-words">{crusher.phone}</p>
+                  )}
+                  {crusher.address && (
+                    <p className="text-orange-600 text-sm break-words">{crusher.address}</p>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Payment Form */}
         <div className="bg-white rounded-xl border shadow-sm p-4 sm:p-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-6">Record New Payment</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-6">
+            {isEditMode ? 'Edit Payment' : 'Record New Payment'}
+          </h3>
           
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4 sm:space-y-6">
@@ -371,9 +393,11 @@ const CrusherPaymentForm = () => {
                 {errors.amount && (
                   <p className="mt-2 text-sm text-red-600">{errors.amount}</p>
                 )}
-                <p className="text-xs text-gray-500 mt-2">
-                  Pending amount: {formatCurrency(paymentStats.pendingAmount)}
-                </p>
+                {!isEditMode && crusher && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    Pending amount: {formatCurrency(paymentStats.pendingAmount)}
+                  </p>
+                )}
               </div>
 
               {/* Payment Date */}
@@ -385,9 +409,9 @@ const CrusherPaymentForm = () => {
                 <input
                   type="date"
                   name="payment_date"
-                  max={today}
                   value={formData.payment_date}
                   onChange={handleInputChange}
+                  max={today}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-base"
                 />
                 {errors.payment_date && (
@@ -453,25 +477,28 @@ const CrusherPaymentForm = () => {
             <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-200">
               <button
                 type="submit"
-                disabled={submitting || paymentStats.pendingAmount <= 0}
+                disabled={submitting || (!isEditMode && paymentStats.pendingAmount <= 0)}
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:bg-orange-400 disabled:cursor-not-allowed transition-colors flex-1 sm:flex-none"
               >
                 {submitting ? (
                   <>
                     <Save className="h-4 w-4" />
-                    Recording...
+                    {isEditMode ? 'Updating...' : 'Recording...'}
                   </>
                 ) : (
                   <>
                     <Save className="h-4 w-4" />
-                    Record Payment
+                    {isEditMode ? 'Update Payment' : 'Record Payment'}
                   </>
                 )}
               </button>
               
               <button
                 type="button"
-                onClick={() => navigate(getBackUrl())}
+                onClick={() => {
+                  const targetCrusherId = crusherId || formData.crusher_id;
+                  navigate(`/crushers/${targetCrusherId}/payments`);
+                }}
                 disabled={submitting}
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex-1 sm:flex-none disabled:opacity-50"
               >

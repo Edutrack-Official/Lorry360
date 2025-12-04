@@ -5,6 +5,7 @@ const {
   getAllPayments,
   getPaymentById,
   updatePayment,
+  deletePayment,
   deleteSalaryAdvance,
   deleteSalaryBonus,
   deleteSalaryPayment,
@@ -474,6 +475,47 @@ app.http('getCustomerPayments', {
 
       const filterParams = { ...request.query, payment_type: 'from_customer' };
       const result = await getAllPayments(user.userId, filterParams);
+
+      const response = { status: 200, jsonBody: { success: true, data: result } };
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { success: false, error: err.message },
+      };
+    }
+  },
+});
+
+/**
+ * ✅ Delete Payment (Soft Delete)
+ */
+app.http('deletePayment', {
+  methods: ['DELETE'],
+  authLevel: 'anonymous',
+  route: 'payments/delete/{paymentId}',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      // Only owners can delete their payments
+      if (user.role !== 'owner') {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
+        };
+      }
+
+      const { paymentId } = request.params;
+      
+      // Use the deletePayment function from your controller
+      const result = await deletePayment(paymentId, user.userId);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {

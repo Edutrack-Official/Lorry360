@@ -15,7 +15,7 @@ import {
   Wallet,
   IndianRupee
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import api from '../../api/client';
 import toast from 'react-hot-toast';
 
@@ -60,8 +60,9 @@ interface Trip {
 }
 
 const CustomerPaymentForm = () => {
-  const { customerId } = useParams<{ customerId: string }>();
+  const { customerId, paymentId } = useParams<{ customerId: string; paymentId?: string }>();
   const navigate = useNavigate();
+  const isEditMode = !!paymentId;
   
   const [formData, setFormData] = useState<PaymentFormData>({
     payment_type: 'from_customer',
@@ -75,37 +76,71 @@ const CustomerPaymentForm = () => {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [trips, setTrips] = useState<Trip[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const fetchData = async () => {
-      if (customerId) {
+      if (customerId || paymentId) {
         setLoading(true);
         try {
-          const customerRes = await api.get(`/customers/${customerId}`);
-          const customerData = customerRes.data.data;
-          setCustomer(customerData);
+          // If in edit mode, fetch the payment data first
+          if (isEditMode && paymentId) {
+            try {
+              const paymentRes = await api.get(`/payments/${paymentId}`);
+              const paymentData = paymentRes.data.data;
+              
+              // Set form data from existing payment
+              setFormData({
+                payment_type: paymentData.payment_type || 'from_customer',
+                customer_id: paymentData.customer_id || '',
+                amount: paymentData.amount || 0,
+                payment_date: paymentData.payment_date ? 
+                  new Date(paymentData.payment_date).toISOString().split('T')[0] : 
+                  new Date().toISOString().split('T')[0],
+                payment_mode: paymentData.payment_mode || 'cash',
+                notes: paymentData.notes || ''
+              });
 
-          setFormData(prev => ({
-            ...prev,
-            customer_id: customerId
-          }));
+              // Set customerId from payment if not in params
+              const targetCustomerId = customerId || paymentData.customer_id;
+              if (targetCustomerId) {
+                const customerRes = await api.get(`/customers/${targetCustomerId}`);
+                const customerData = customerRes.data.data;
+                setCustomer(customerData);
+              }
+            } catch (error: any) {
+              console.error('Failed to fetch payment:', error);
+              toast.error('Failed to fetch payment details');
+              navigate('/customers');
+            }
+          } else if (customerId) {
+            // Create mode: fetch customer data
+            const customerRes = await api.get(`/customers/${customerId}`);
+            const customerData = customerRes.data.data;
+            setCustomer(customerData);
+          }
 
-          const paymentsRes = await api.get(`/payments/customer/${customerId}`);
-          setPayments(paymentsRes.data.data?.payments || []);
+          // Fetch existing payments for stats (only for create mode)
+          if (!isEditMode && customerId) {
+            const paymentsRes = await api.get(`/payments/customer/${customerId}`);
+            setPayments(paymentsRes.data.data?.payments || []);
+          }
 
-          const tripsRes = await api.get('/trips');
-          const allTrips = tripsRes.data.data?.trips || [];
-          const customerTrips = allTrips.filter((trip: Trip) => 
-            trip.customer_id && trip.customer_id._id === customerId
-          );
-          setTrips(customerTrips);
+          // Fetch trips for stats
+          if (customerId) {
+            const tripsRes = await api.get('/trips');
+            const allTrips = tripsRes.data.data?.trips || [];
+            const customerTrips = allTrips.filter((trip: Trip) => 
+              trip.customer_id && trip.customer_id._id === customerId
+            );
+            setTrips(customerTrips);
+          }
 
         } catch (error: any) {
           console.error('Failed to fetch data:', error);
-          toast.error('Failed to fetch customer data');
+          toast.error('Failed to fetch data');
         } finally {
           setLoading(false);
         }
@@ -113,7 +148,7 @@ const CustomerPaymentForm = () => {
     };
 
     fetchData();
-  }, [customerId]);
+  }, [customerId, paymentId, isEditMode, navigate]);
 
   const calculatePaymentStats = () => {
     const totalRevenue = trips.reduce((sum, trip) => sum + (trip.customer_amount || 0), 0);
@@ -168,7 +203,7 @@ const CustomerPaymentForm = () => {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.customer_id || formData.customer_id.trim() === '') {
+    if (!formData.customer_id || (typeof formData.customer_id === 'string' && formData.customer_id.trim() === '')) {
       newErrors.customer_id = "Customer is required";
     }
 
@@ -176,7 +211,8 @@ const CustomerPaymentForm = () => {
     if (!formData.payment_date) newErrors.payment_date = "Payment date is required";
     if (!formData.payment_mode) newErrors.payment_mode = "Payment mode is required";
 
-    if (formData.amount > paymentStats.pendingAmount) {
+    // For create mode only, check if amount exceeds pending amount
+    if (!isEditMode && formData.amount > paymentStats.pendingAmount) {
       newErrors.amount = `Amount cannot exceed pending amount of ${formatCurrency(paymentStats.pendingAmount)}`;
     }
 
@@ -196,28 +232,29 @@ const CustomerPaymentForm = () => {
     try {
       const submissionData = {
         ...formData,
-        customer_id: customerId,
+        customer_id: customerId || formData.customer_id,
         payment_type: 'from_customer',
         amount: parseFloat(formData.amount.toString())
       };
 
-      console.log('Submitting payment data:', submissionData);
-
-      await api.post("/payments/create", submissionData);
-      toast.success("Payment recorded successfully");
-      navigate(`/customers/${customerId}/payments`);
+      if (isEditMode && paymentId) {
+        // Update existing payment
+        await api.put(`/payments/update/${paymentId}`, submissionData);
+        toast.success("Payment updated successfully");
+      } else {
+        // Create new payment
+        await api.post("/payments/create", submissionData);
+        toast.success("Payment recorded successfully");
+      }
       
-      const paymentsRes = await api.get(`/payments/customer/${customerId}`);
-      setPayments(paymentsRes.data.data?.payments || []);
+      // Navigate back to payments list
+      const targetCustomerId = customerId || formData.customer_id;
+      navigate(`/customers/${targetCustomerId}/payments`);
       
-      setFormData(prev => ({
-        ...prev,
-        amount: 0,
-        notes: ''
-      }));
     } catch (error: any) {
       console.error('Payment submission error:', error);
-      let errorMessage = error.response?.data?.error || "Failed to record payment";
+      let errorMessage = error.response?.data?.error || 
+        (isEditMode ? "Failed to update payment" : "Failed to record payment");
       
       if (errorMessage.includes('customer_id') && errorMessage.includes('required')) {
         errorMessage = "Customer information is missing. Please refresh the page and try again.";
@@ -230,7 +267,6 @@ const CustomerPaymentForm = () => {
   };
 
   const today = new Date().toISOString().split('T')[0];
-
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -249,18 +285,20 @@ const CustomerPaymentForm = () => {
     { value: 'other', label: 'Other', Icon: Wallet }
   ];
 
-  if (loading && !payments.length) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading customer details...</p>
+          <p className="text-gray-600">
+            {isEditMode ? 'Loading payment details...' : 'Loading customer details...'}
+          </p>
         </div>
       </div>
     );
   }
 
-  if (!customer) {
+  if (!customer && !isEditMode) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center">
@@ -285,7 +323,10 @@ const CustomerPaymentForm = () => {
         <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
           <div className="flex items-start gap-3 mb-4">
             <button
-              onClick={() => navigate(`/customers/${customerId}/payments`)}
+              onClick={() => {
+                const targetCustomerId = customerId || formData.customer_id;
+                navigate(`/customers/${targetCustomerId}/payments`);
+              }}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
               aria-label="Back to payments"
             >
@@ -296,30 +337,36 @@ const CustomerPaymentForm = () => {
             </div>
             <div className="min-w-0 flex-1">
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-                Customer Payments
+                {isEditMode ? 'Edit Payment' : 'Customer Payments'}
               </h1>
               <p className="text-sm sm:text-base text-gray-600 truncate">
-                Manage payments for {customer?.name}
+                {isEditMode 
+                  ? `Edit payment for ${customer?.name || 'Customer'}`
+                  : `Manage payments for ${customer?.name || 'Customer'}`}
               </p>
             </div>
           </div>
 
           {/* Customer Info Card */}
-          <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-            <div className="flex items-start gap-3">
-              <User className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-              <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-green-900 break-words">{customer.name}</h3>
-                <p className="text-green-700 text-sm break-words">{customer.phone}</p>
-                <p className="text-green-600 text-sm break-words">{customer.address}</p>
+          {customer && (
+            <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+              <div className="flex items-start gap-3">
+                <User className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold text-green-900 break-words">{customer.name}</h3>
+                  <p className="text-green-700 text-sm break-words">{customer.phone}</p>
+                  <p className="text-green-600 text-sm break-words">{customer.address}</p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Payment Form */}
         <div className="bg-white rounded-xl border shadow-sm p-4 sm:p-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-6">Record New Payment</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-6">
+            {isEditMode ? 'Edit Payment' : 'Record New Payment'}
+          </h3>
           
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4 sm:space-y-6">
@@ -342,9 +389,11 @@ const CustomerPaymentForm = () => {
                 {errors.amount && (
                   <p className="mt-2 text-sm text-red-600">{errors.amount}</p>
                 )}
-                <p className="text-xs text-gray-500 mt-2">
-                  Pending amount: {formatCurrency(paymentStats.pendingAmount)}
-                </p>
+                {!isEditMode && customer && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    Pending amount: {formatCurrency(paymentStats.pendingAmount)}
+                  </p>
+                )}
               </div>
 
               {/* Payment Date */}
@@ -421,29 +470,31 @@ const CustomerPaymentForm = () => {
             <input type="hidden" name="customer_id" value={formData.customer_id} />
 
             {/* Action Buttons */}
-           {/* Submit Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-200">
               <button
                 type="submit"
-                disabled={submitting || paymentStats.pendingAmount <= 0}
+                disabled={submitting || (!isEditMode && paymentStats.pendingAmount <= 0)}
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors flex-1 sm:flex-none"
               >
                 {submitting ? (
                   <>
                     <Save className="h-4 w-4" />
-                    Recording...
+                    {isEditMode ? 'Updating...' : 'Recording...'}
                   </>
                 ) : (
                   <>
                     <Save className="h-4 w-4" />
-                    Record Payment
+                    {isEditMode ? 'Update Payment' : 'Record Payment'}
                   </>
                 )}
               </button>
               
               <button
                 type="button"
-                onClick={() => navigate(`/customers/${customerId}/payments`)}
+                onClick={() => {
+                  const targetCustomerId = customerId || formData.customer_id;
+                  navigate(`/customers/${targetCustomerId}/payments`);
+                }}
                 disabled={submitting}
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex-1 sm:flex-none disabled:opacity-50"
               >

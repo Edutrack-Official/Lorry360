@@ -90,7 +90,7 @@ function App() {
                     <Routes>
                       {/* Dashboard */}
                       <Route path="/dashboard" element={<OwnerRoute><Dashboard /></OwnerRoute>} />
-                    
+
                       {/* Lorries - OWNER ONLY */}
                       <Route path="/lorries" element={<OwnerRoute><Lorries /></OwnerRoute>} />
                       <Route path="/lorries/create" element={<OwnerRoute><ManageLorryForm /></OwnerRoute>} />
@@ -126,6 +126,8 @@ function App() {
                       </Route>
                       <Route path="/customers/:customerId/trips/create" element={<OwnerRoute><CustomerTripForm /></OwnerRoute>} />
                       <Route path="/customers/:customerId/payments/create" element={<OwnerRoute><CustomerPaymentForm /></OwnerRoute>} />
+                      <Route path="/customers/:customerId/payments/edit/:paymentId" element={<OwnerRoute><CustomerPaymentForm /></OwnerRoute>} />
+
 
                       {/* Crushers Management - OWNER ONLY */}
                       <Route path="/crushers" element={<OwnerRoute><Crushers /></OwnerRoute>} />
@@ -156,29 +158,29 @@ function App() {
                       <Route path="/attendance/edit/:id" element={<OwnerRoute><ManageAttendanceForm /></OwnerRoute>} />
 
                       {/* Owners Management - ADMIN ONLY */}
-                      <Route 
-                        path="/owners" 
+                      <Route
+                        path="/owners"
                         element={
                           <AdminRoute>
                             <Owners />
                           </AdminRoute>
-                        } 
+                        }
                       />
-                      <Route 
-                        path="/owners/create" 
+                      <Route
+                        path="/owners/create"
                         element={
                           <AdminRoute>
                             <ManageOwnerForm />
                           </AdminRoute>
-                        } 
+                        }
                       />
-                      <Route 
-                        path="/owners/edit/:id" 
+                      <Route
+                        path="/owners/edit/:id"
                         element={
                           <AdminRoute>
                             <ManageOwnerForm />
                           </AdminRoute>
-                        } 
+                        }
                       />
                       <Route path="/notfound" element={<NotFound />} />
 
