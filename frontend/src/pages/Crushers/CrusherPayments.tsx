@@ -486,34 +486,6 @@ const CrusherPayments = () => {
             <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
               {payments.length === 0 ? 'No payments yet' : 'No payments found'}
             </h3>
-            {payments.length === 0 ? (
-              <p className="text-sm text-gray-600 mb-6 max-w-md mx-auto">
-                Start by recording your first payment to this crusher
-              </p>
-            ) : searchText ? (
-              <p className="text-sm text-gray-600 mb-4">
-                No payments match "{searchText}"
-              </p>
-            ) : null}
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              {payments.length === 0 ? (
-                <Link
-                  to={`/crushers/${crusherId}/payments/create`}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  <Plus className="h-4 w-4" />
-                  Record First Payment
-                </Link>
-              ) : (
-                <button
-                  onClick={clearFilters}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                  Clear search and filters
-                </button>
-              )}
-            </div>
           </div>
         )}
       </div>

@@ -88,7 +88,7 @@ const ManageDriverForm: React.FC = () => {
     // Validate that at least one salary type is provided
     if ((!formData.salary_per_duty || formData.salary_per_duty <= 0) && 
         (!formData.salary_per_trip || formData.salary_per_trip <= 0)) {
-      newErrors.salary = "At least one salary type (Per Duty or Per Trip) must be provided";
+      newErrors.salary = "At least one salary type must be provided";
     }
 
     setErrors(newErrors);

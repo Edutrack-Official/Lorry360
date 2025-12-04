@@ -81,7 +81,7 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [attendanceData, setAttendanceData] = useState<Attendance[]>([]);
-  const [period, setPeriod] = useState<'current_month' | 'last_month' | 'custom' |'all'>('all');
+  const [period, setPeriod] = useState<'current_month' | 'last_month' | 'custom' | 'all'>('all');
   const [customDateRange, setCustomDateRange] = useState({
     start_date: '',
     end_date: ''
@@ -96,112 +96,80 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
     advance_deduction_amount: '',
     notes: ''
   });
+  const [showAdvanceError, setShowAdvanceError] = useState(false);
+  const [showBonusError, setShowBonusError] = useState(false);
+  const [showPaymentError, setShowPaymentError] = useState(false);
 
   useEffect(() => {
     fetchAttendanceData();
   }, [driverId, period, customDateRange]);
 
-  // const fetchAttendanceData = async () => {
-  //   try {
-  //     setLoading(true);
-  //     let params = new URLSearchParams();
 
-  //     if (period === 'current_month') {
-  //       const now = new Date();
-  //       const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-  //       const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  //       params.append('start_date', startDate.toISOString().split('T')[0]);
-  //       params.append('end_date', endDate.toISOString().split('T')[0]);
-  //     } else if (period === 'last_month') {
-  //       const now = new Date();
-  //       const startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  //       const endDate = new Date(now.getFullYear(), now.getMonth(), 0);
-  //       params.append('start_date', startDate.toISOString().split('T')[0]);
-  //       params.append('end_date', endDate.toISOString().split('T')[0]);
-  //     } else if (period === 'custom' && customDateRange.start_date && customDateRange.end_date) {
-  //       params.append('start_date', customDateRange.start_date);
-  //       params.append('end_date', customDateRange.end_date);
-  //     }
-
-  //     const res = await api.get(`/attendance/driver/${driverId}?${params}`);
-  //     setAttendanceData(res.data.data.attendance || []);
-  //     setError(null);
-  //   } catch (error: any) {
-  //     toast.error(error.response?.data?.error || "Failed to fetch attendance data");
-  //     setError("Failed to load salary information");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  // Calculate salary information from attendance data
-  
-  
   const fetchAttendanceData = async () => {
-  try {
-    setLoading(true);
-    let params = new URLSearchParams();
+    try {
+      setLoading(true);
+      let params = new URLSearchParams();
 
-    // Helper function to get date in IST (UTC+5:30)
-    const getDateInIST = (year:any, month:any, day:any) => {
-      // Create date in local timezone
-      const date = new Date(year, month, day);
-      // Convert to IST by adding 5.5 hours to UTC
-      const istOffset = 5.5 * 60 * 60 * 1000;
-      const istTime = new Date(date.getTime() + istOffset);
-      return istTime;
-    };
+      // Helper function to get date in IST (UTC+5:30)
+      const getDateInIST = (year: any, month: any, day: any) => {
+        // Create date in local timezone
+        const date = new Date(year, month, day);
+        // Convert to IST by adding 5.5 hours to UTC
+        const istOffset = 5.5 * 60 * 60 * 1000;
+        const istTime = new Date(date.getTime() + istOffset);
+        return istTime;
+      };
 
-    const formatDate = (date:any) => {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    };
+      const formatDate = (date: any) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
 
-    if (period === 'current_month') {
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = now.getMonth();
-      
-      // First day of current month
-      const startDate = getDateInIST(year, month, 1);
-      
-      // Last day of current month (0th day of next month gives last day of current month)
-      const endDate = getDateInIST(year, month + 1, 0);
-      
-      params.append('start_date', formatDate(startDate));
-      params.append('end_date', formatDate(endDate));
-    } else if (period === 'last_month') {
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = now.getMonth() - 1;
-      
-      // First day of last month
-      const startDate = getDateInIST(year, month, 1);
-      
-      // Last day of last month
-      const endDate = getDateInIST(year, month + 1, 0);
-      
-      params.append('start_date', formatDate(startDate));
-      params.append('end_date', formatDate(endDate));
-    } else if (period === 'custom' && customDateRange.start_date && customDateRange.end_date) {
-      params.append('start_date', customDateRange.start_date);
-      params.append('end_date', customDateRange.end_date);
+      if (period === 'current_month') {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth();
+
+        // First day of current month
+        const startDate = getDateInIST(year, month, 1);
+
+        // Last day of current month (0th day of next month gives last day of current month)
+        const endDate = getDateInIST(year, month + 1, 0);
+
+        params.append('start_date', formatDate(startDate));
+        params.append('end_date', formatDate(endDate));
+      } else if (period === 'last_month') {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() - 1;
+
+        // First day of last month
+        const startDate = getDateInIST(year, month, 1);
+
+        // Last day of last month
+        const endDate = getDateInIST(year, month + 1, 0);
+
+        params.append('start_date', formatDate(startDate));
+        params.append('end_date', formatDate(endDate));
+      } else if (period === 'custom' && customDateRange.start_date && customDateRange.end_date) {
+        params.append('start_date', customDateRange.start_date);
+        params.append('end_date', customDateRange.end_date);
+      }
+
+      const res = await api.get(`/attendance/driver/${driverId}?${params}`);
+      setAttendanceData(res.data.data.attendance || []);
+      setError(null);
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || "Failed to fetch attendance data");
+      setError("Failed to load salary information");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const res = await api.get(`/attendance/driver/${driverId}?${params}`);
-    setAttendanceData(res.data.data.attendance || []);
-    setError(null);
-  } catch (error: any) {
-    toast.error(error.response?.data?.error || "Failed to fetch attendance data");
-    setError("Failed to load salary information");
-  } finally {
-    setLoading(false);
-  }
-};
-
-const calculateSalaryInfo = () => {
+  const calculateSalaryInfo = () => {
     const totalEarned = attendanceData.reduce((sum, record) => sum + (record.salary_amount || 0), 0);
 
     // Calculate by status
@@ -283,6 +251,13 @@ const calculateSalaryInfo = () => {
 
   const handleAddAdvance = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!advanceForm.amount) {
+      setShowAdvanceError(true);
+      return;
+    }
+
+    setShowAdvanceError(false);
     setLoading(true);
     try {
       await api.post(`/salary/advance/${driverId}`, {
@@ -302,6 +277,13 @@ const calculateSalaryInfo = () => {
 
   const handleAddBonus = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!bonusForm.amount) {
+      setShowBonusError(true);
+      return;
+    }
+
+    setShowBonusError(false);
     setLoading(true);
     try {
       await api.post(`/salary/bonus/${driverId}`, {
@@ -321,6 +303,13 @@ const calculateSalaryInfo = () => {
 
   const handleMakePayment = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!paymentForm.amount) {
+      setShowPaymentError(true);
+      return;
+    }
+
+    setShowPaymentError(false);
     setLoading(true);
     try {
       await api.post(`/salary/payment/${driverId}`, {
@@ -408,7 +397,7 @@ const calculateSalaryInfo = () => {
       case 'custom':
         return 'Custom Period';
       case 'all':
-         return 'All Records'; // 👈 NEW
+        return 'All Records'; // 👈 NEW
 
       default:
         return 'Current Month';
@@ -471,7 +460,7 @@ const calculateSalaryInfo = () => {
               onChange={(e) => setPeriod(e.target.value as any)}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-                <option value="all">All</option>  {/* 👈 NEW */}
+              <option value="all">All</option>  {/* 👈 NEW */}
               <option value="current_month">Current Month</option>
               <option value="last_month">Last Month</option>
               <option value="custom">Custom Period</option>
@@ -831,17 +820,19 @@ const calculateSalaryInfo = () => {
                 <form onSubmit={handleAddAdvance} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Amount
+                      Amount *
                     </label>
                     <input
                       type="number"
                       step="0.01"
-                      required
                       value={advanceForm.amount}
                       onChange={(e) => setAdvanceForm(prev => ({ ...prev, amount: e.target.value }))}
-                      className="input input-bordered w-full"
+                      className={`input input-bordered w-full ${showAdvanceError && advanceForm.amount === '' ? 'border-red-500' : ''}`}
                       placeholder="Enter amount"
                     />
+                    {showAdvanceError && advanceForm.amount === '' && (
+                      <p className="mt-1 text-sm text-red-600">Amount is required</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -893,17 +884,19 @@ const calculateSalaryInfo = () => {
                 <form onSubmit={handleAddBonus} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Amount
+                      Amount *
                     </label>
                     <input
                       type="number"
                       step="0.01"
-                      required
                       value={bonusForm.amount}
                       onChange={(e) => setBonusForm(prev => ({ ...prev, amount: e.target.value }))}
-                      className="input input-bordered w-full"
+                      className={`input input-bordered w-full ${showBonusError && bonusForm.amount === '' ? 'border-red-500' : ''}`}
                       placeholder="Enter amount"
                     />
+                    {showBonusError && bonusForm.amount === '' && (
+                      <p className="mt-1 text-sm text-red-600">Amount is required</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -911,7 +904,6 @@ const calculateSalaryInfo = () => {
                     </label>
                     <input
                       type="text"
-                      required
                       value={bonusForm.reason}
                       onChange={(e) => setBonusForm(prev => ({ ...prev, reason: e.target.value }))}
                       className="input input-bordered w-full"
@@ -956,18 +948,20 @@ const calculateSalaryInfo = () => {
                 <form onSubmit={handleMakePayment} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Amount
+                      Amount *
                     </label>
                     <input
                       type="number"
                       step="0.01"
-                      required
                       value={paymentForm.amount}
                       onChange={(e) => setPaymentForm(prev => ({ ...prev, amount: e.target.value }))}
-                      className="input input-bordered w-full"
+                      className={`input input-bordered w-full ${showPaymentError && paymentForm.amount === '' ? 'border-red-500' : ''}`}
                       placeholder="Enter amount"
                       max={paymentInfo.salaryToBePaid}
                     />
+                    {showPaymentError && paymentForm.amount === '' && (
+                      <p className="mt-1 text-sm text-red-600">Amount is required</p>
+                    )}
                     <p className="text-xs text-gray-500 mt-1">
                       Available to pay: {formatCurrency(paymentInfo.salaryToBePaid)}
                     </p>
