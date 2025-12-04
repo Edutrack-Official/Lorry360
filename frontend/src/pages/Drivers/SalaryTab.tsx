@@ -686,10 +686,10 @@ const calculateSalaryInfo = () => {
                       </div>
                       <div>
                         <p className="font-medium text-gray-900">
-                          {transaction.type === 'given' ? 'Advance Given' : 'Advance Deducted'}
+                          {transaction.notes}
                         </p>
                         <p className="text-sm text-gray-600">
-                          {new Date(transaction.date).toLocaleDateString()} • {transaction.notes}
+                          {new Date(transaction.date).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
@@ -729,9 +729,9 @@ const calculateSalaryInfo = () => {
                         <TrendingUp className="h-4 w-4" />
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">Bonus Payment</p>
+                        <p className="font-medium text-gray-900">{bonus.reason}</p>
                         <p className="text-sm text-gray-600">
-                          {new Date(bonus.date).toLocaleDateString()} • {bonus.reason}
+                          {new Date(bonus.date).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
