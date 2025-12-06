@@ -97,23 +97,65 @@ const createTrip = async (tripData) => {
   return newTrip;
 };
 
-const getAllTrips = async (owner_id, filterParams = {}) => {
-  const { status, start_date, end_date, lorry_id, driver_id, customer_id, collab_owner_id, trip_type, crusher_id  } = filterParams;
-  const query = { owner_id };
+const getAllTrips = async (current_user_id, filterParams = {}) => {
+  const { 
+    status, 
+    start_date, 
+    end_date, 
+    lorry_id, 
+    driver_id, 
+    customer_id, 
+    collab_owner_id, 
+    trip_type, 
+    crusher_id,
+    fetch_mode = 'as_owner'
+  } = filterParams;
   
+  let query = {};
+  
+  if (fetch_mode === 'as_collaborator') {
+    // When user is the collaborator (Partner Trips to Me)
+    // Current user = collab_owner_id
+    // Partner = owner_id (must be specified in collab_owner_id param)
+    if (!collab_owner_id) {
+      throw new Error('collab_owner_id is required when fetch_mode is "as_collaborator"');
+    }
+    
+    query.collab_owner_id = current_user_id; // Current user is collaborator
+    query.owner_id = collab_owner_id; // This is actually the partner (owner)
+    
+  } else {
+    // Default: user is the owner (My Trips to Partner)
+    // Current user = owner_id
+    query.owner_id = current_user_id; // Current user is owner
+    
+    // If collab_owner_id is provided, filter by specific collaborator
+    // If not provided and trip_type is collaborative, get all collaborative trips
+    if (collab_owner_id) {
+      query.collab_owner_id = collab_owner_id; // Specific partner
+    }
+  }
+  
+  // Additional filters
   if (status) query.status = status;
   if (lorry_id) query.lorry_id = lorry_id;
   if (driver_id) query.driver_id = driver_id;
+  if (crusher_id) query.crusher_id = crusher_id;
   
   // Filter by destination type
   if (trip_type === 'customer') {
     query.customer_id = { $exists: true, $ne: null };
+    // For customer trips, collab_owner_id should be null
+    query.collab_owner_id = null;
   } else if (trip_type === 'collaborative') {
-    query.collab_owner_id = { $exists: true, $ne: null };
+    // For collaborative trips, collab_owner_id should exist
+    if (!query.collab_owner_id) {
+      // Only add this if collab_owner_id wasn't already set
+      query.collab_owner_id = { $exists: true, $ne: null };
+    }
   }
   
   if (customer_id) query.customer_id = customer_id;
-  if (collab_owner_id) query.collab_owner_id = collab_owner_id;
   
   // Date range filter
   if (start_date || end_date) {
@@ -128,6 +170,7 @@ const getAllTrips = async (owner_id, filterParams = {}) => {
     .populate('crusher_id', 'name')
     .populate('customer_id', 'name phone')
     .populate('collab_owner_id', 'name company_name phone')
+    .populate('owner_id', 'name company_name phone')
     .sort({ trip_date: -1, createdAt: -1 });
 
   return {

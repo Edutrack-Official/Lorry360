@@ -268,7 +268,98 @@ const getDriverSalarySummary = async (owner_id, driver_id) => {
     }
   };
 };
+// Soft delete salary payment
+const deleteSalaryPayment = async (driverId, paymentId, owner_id) => {
+  // First find the salary record for this driver
+  const salary = await mongoose.model('Salary').findOne({ 
+    driver_id: driverId, 
+    owner_id 
+  });
 
+  if (!salary) {
+    const err = new Error('Salary record not found');
+    err.status = 404;
+    throw err;
+  }
+
+  // Find and soft delete the payment
+  const paymentIndex = salary.amountpaid.findIndex(
+    payment => payment._id.toString() === paymentId
+  );
+
+  if (paymentIndex === -1) {
+    const err = new Error('Payment not found');
+    err.status = 404;
+    throw err;
+  }
+
+  // Soft delete by setting isActive to false or removing from array
+  // Depending on your schema, you might want to:
+  // Option 1: Remove from array
+  salary.amountpaid.splice(paymentIndex, 1);
+  
+  // Option 2: Or if you have isActive field in subdocuments:
+  // salary.amountpaid[paymentIndex].isActive = false;
+
+  await salary.save();
+  return { message: 'Salary payment deleted successfully' };
+};
+
+// Soft delete salary advance
+const deleteSalaryAdvance = async (driverId, advanceId, owner_id) => {
+  const salary = await mongoose.model('Salary').findOne({ 
+    driver_id: driverId, 
+    owner_id 
+  });
+
+  if (!salary) {
+    const err = new Error('Salary record not found');
+    err.status = 404;
+    throw err;
+  }
+
+  const advanceIndex = salary.advance_transactions.findIndex(
+    advance => advance._id.toString() === advanceId
+  );
+
+  if (advanceIndex === -1) {
+    const err = new Error('Advance transaction not found');
+    err.status = 404;
+    throw err;
+  }
+
+  salary.advance_transactions.splice(advanceIndex, 1);
+  await salary.save();
+  return { message: 'Advance transaction deleted successfully' };
+};
+
+// Soft delete salary bonus
+const deleteSalaryBonus = async (driverId, bonusId, owner_id) => {
+  const salary = await mongoose.model('Salary').findOne({ 
+    driver_id: driverId, 
+    owner_id 
+  });
+
+  if (!salary) {
+    const err = new Error('Salary record not found');
+    err.status = 404;
+    throw err;
+  }
+
+  const bonusIndex = salary.bonus.findIndex(
+    bonus => bonus._id.toString() === bonusId
+  );
+
+  if (bonusIndex === -1) {
+    const err = new Error('Bonus not found');
+    err.status = 404;
+    throw err;
+  }
+
+  salary.bonus.splice(bonusIndex, 1);
+  await salary.save();
+  return { message: 'Bonus deleted successfully' };
+};
 module.exports = {
   createSalary,
   getSalaryByDriver,
@@ -278,5 +369,8 @@ module.exports = {
   addBonus,
   makePayment,
   getSalaryStats,
-  getDriverSalarySummary
+  getDriverSalarySummary,
+  deleteSalaryPayment, // Add this
+  deleteSalaryAdvance, // Add this
+  deleteSalaryBonus,   // Add this
 };

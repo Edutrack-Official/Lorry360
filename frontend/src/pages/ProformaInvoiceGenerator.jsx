@@ -5,7 +5,8 @@ import {
   User,
   Plus,
   Trash2,
-  Search
+  Search,
+  MapPin
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -20,8 +21,10 @@ const ProformaInvoiceGenerator = () => {
   const [customCustomer, setCustomCustomer] = useState({
     name: '',
     address: '',
-    phone: ''
+    phone: '',
+    // Removed siteAddress from customCustomer since it's now a common field
   });
+  const [siteAddress, setSiteAddress] = useState(''); // Common field for all customers
   const [invoiceItems, setInvoiceItems] = useState([
     { id: 1, description: '', quantity: 1, unit: '', rate: 0, amount: 0 }
   ]);
@@ -37,7 +40,7 @@ const ProformaInvoiceGenerator = () => {
     // Set default invoice date to today
     setInvoiceDate(new Date().toISOString().split('T')[0]);
     // Generate a simple invoice number
-    setInvoiceNumber(`${Date.now()}`);
+      setInvoiceNumber(`P-${Math.floor(1000 + Math.random() * 900)}`);
     // Set default payment terms
     setPaymentTerms('50% advance payment, 50% before delivery.');
     // Set default notes
@@ -56,7 +59,7 @@ const ProformaInvoiceGenerator = () => {
       city: user.city,
       state: user.state,
       pincode: user.pincode,
-      website: user.website || 'www.yourcompany.com' // Add website field
+      website: user.website || 'www.yourcompany.com'
     };
   };
 
@@ -353,7 +356,7 @@ const ProformaInvoiceGenerator = () => {
             <div class="company-name">${companyDetails.name}</div>
             <div class="company-contact">${companyDetails.address}</div>
             <div class="company-contact">${companyDetails.city}${companyDetails.state ? ', ' + companyDetails.state : ''}${companyDetails.pincode ? ' - ' + companyDetails.pincode : ''}</div>
-            <div class="company-contact">CONTACT: ${companyDetails.phone} | EMAIL: ${companyDetails.email}${companyDetails.website ? ' | WEB: ' + companyDetails.website : ''}</div>
+            <div class="company-contact">CONTACT: ${companyDetails.phone} | EMAIL: ${companyDetails.email}</div>
           </div>
 
           <div class="document-title">PROFORMA INVOICE</div>
@@ -364,6 +367,7 @@ const ProformaInvoiceGenerator = () => {
               ${customerDetails.name}<br>
               ${customerDetails.address || ''}<br>
               ${customerDetails.phone ? `<strong>Phone:</strong> ${customerDetails.phone}` : ''}
+              ${siteAddress ? `<br><br><strong>Site Address:</strong><br>${siteAddress}` : ''}
             </div>
             <div style="text-align: right;">
               <strong>Invoice No:</strong> ${invoiceNumber}<br>
@@ -399,7 +403,7 @@ const ProformaInvoiceGenerator = () => {
 
             <div class="summary-section">
               <div class="summary-row">
-                <div class="summary-label">Subtotal:</div>
+                <div class="summary-label">Total:</div>
                 <div class="summary-value">₹${calculateSubtotal().toFixed(2)}</div>
               </div>
             </div>
@@ -424,7 +428,7 @@ const ProformaInvoiceGenerator = () => {
 
           <div class="footer-section">
             <div class="footer">
-              <p>Generated on ${new Date().toLocaleDateString()} | For Queries: ${companyDetails.phone} | ${companyDetails.email}${companyDetails.website ? ' | ' + companyDetails.website : ''}</p>
+              <p>For Queries: ${companyDetails.phone} | ${companyDetails.email}</p>
             </div>
           </div>
         </div>
@@ -451,8 +455,9 @@ const ProformaInvoiceGenerator = () => {
     setSelectedCustomer('');
     setUseCustomCustomer(false);
     setCustomCustomer({ name: '', address: '', phone: '' });
+    setSiteAddress(''); // Reset site address
     setInvoiceItems([{ id: 1, description: '', quantity: 1, unit: '', rate: 0, amount: 0 }]);
-    setInvoiceNumber(`PROFORMA-${Date.now()}`);
+    setInvoiceNumber(`P-${Math.floor(100 + Math.random() * 900)}`);
     setPaymentTerms('50% advance payment, 50% before delivery.');
     setNotes('This is a proforma invoice and not a demand for payment. Prices are subject to change without prior notice. Valid for 15 days from the date of issue.');
   };
@@ -590,6 +595,24 @@ const ProformaInvoiceGenerator = () => {
                 </div>
               </div>
             )}
+
+            {/* Site Address Section - Common for both customer types */}
+            <div className="pt-4 border-t border-gray-200">
+              <h3 className="text-md font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-blue-600" />
+                Site Address (Optional)
+              </h3>
+              <textarea
+                value={siteAddress}
+                onChange={(e) => setSiteAddress(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                rows="3"
+                placeholder="Enter site/project address where goods/services will be delivered"
+              />
+              <p className="text-sm text-gray-500 mt-2">
+                This will appear separately from the customer's address on the invoice
+              </p>
+            </div>
           </div>
         </div>
 

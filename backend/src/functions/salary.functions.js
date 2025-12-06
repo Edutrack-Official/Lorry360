@@ -9,9 +9,138 @@ const {
   addBonus,
   makePayment,
   getSalaryStats,
-  getDriverSalarySummary
+  getDriverSalarySummary,
+  deleteSalaryPayment,
+  deleteSalaryAdvance,
+  deleteSalaryBonus
+  
 } = require('../controllers/salary.controller');
 const { verifyToken } = require('../middleware/auth.middleware');
+
+
+
+/**
+ * ✅ Delete Salary Payment (Soft Delete)
+ */
+app.http('deleteSalaryPayment', {
+  methods: ['DELETE'],
+  authLevel: 'anonymous',
+  route: 'salary/payment/{driverId}/{paymentId}',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      // Only owners can delete their payments
+      if (user.role !== 'owner') {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
+        };
+      }
+
+      const { driverId, paymentId } = request.params;
+      
+      // You'll need to implement this function in your payment controller
+      const result = await deleteSalaryPayment(driverId, paymentId, user.userId);
+
+      const response = { status: 200, jsonBody: { success: true, data: result } };
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { success: false, error: err.message },
+      };
+    }
+  },
+});
+
+/**
+ * ✅ Delete Salary Advance (Soft Delete)
+ */
+app.http('deleteSalaryAdvance', {
+  methods: ['DELETE'],
+  authLevel: 'anonymous',
+  route: 'salary/advance/{driverId}/{advanceId}',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      // Only owners can delete their advances
+      if (user.role !== 'owner') {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
+        };
+      }
+
+      const { driverId, advanceId } = request.params;
+      
+      // You'll need to implement this function in your payment controller
+      const result = await deleteSalaryAdvance(driverId, advanceId, user.userId);
+
+      const response = { status: 200, jsonBody: { success: true, data: result } };
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { success: false, error: err.message },
+      };
+    }
+  },
+});
+
+/**
+ * ✅ Delete Salary Bonus (Soft Delete)
+ */
+app.http('deleteSalaryBonus', {
+  methods: ['DELETE'],
+  authLevel: 'anonymous',
+  route: 'salary/bonus/{driverId}/{bonusId}',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      // Only owners can delete their bonuses
+      if (user.role !== 'owner') {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
+        };
+      }
+
+      const { driverId, bonusId } = request.params;
+      
+      // You'll need to implement this function in your payment controller
+      const result = await deleteSalaryBonus(driverId, bonusId, user.userId);
+
+      const response = { status: 200, jsonBody: { success: true, data: result } };
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { success: false, error: err.message },
+      };
+    }
+  },
+});
 
 /**
  * ✅ Get or Create Salary for Driver

@@ -64,41 +64,48 @@
   /**
    * ✅ Get All Trips for Owner (with filters)
    */
-  app.http('getAllTrips', {
-    methods: ['GET'],
-    authLevel: 'anonymous',
-    route: 'trips',
-    handler: async (request) => {
-      try {
-        await connectDB();
-        
-        const { decoded: user, newAccessToken } = await verifyToken(request);
+app.http('getAllTrips', {
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  route: 'trips',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
 
-        // Only owners can view their trips
-        if (user.role !== 'owner') {
-          return {
-            status: 403,
-            jsonBody: { success: false, error: 'Access denied. Owner role required.' },
-          };
-        }
-
-        const filterParams = request.query;
-        const result = await getAllTrips(user.userId, filterParams);
-
-        const response = { status: 200, jsonBody: { success: true, data: result } };
-        if (newAccessToken) {
-          response.jsonBody.newAccessToken = newAccessToken;
-        }
-        
-        return response;
-      } catch (err) {
+      // Only owners can view their trips
+      if (user.role !== 'owner') {
         return {
-          status: err.status || 500,
-          jsonBody: { success: false, error: err.message },
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
         };
       }
-    },
-  });
+
+      // Convert URLSearchParams → plain object
+      const filterParams = Object.fromEntries(request.query.entries());
+
+      console.log("Trip Filter Params:", filterParams);
+
+      const result = await getAllTrips(user.userId, filterParams);
+
+      const response = { status: 200, jsonBody: { success: true, data: result } };
+
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { success: false, error: err.message },
+      };
+    }
+  },
+});
+
 
   /**
    * ✅ Get Collaborative Trips For Me (trips delivered to me)

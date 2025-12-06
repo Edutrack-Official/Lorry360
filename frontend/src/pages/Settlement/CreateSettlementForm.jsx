@@ -607,12 +607,12 @@ const CreateSettlementForm = ({ partners, settlements, onCalculate, onCreate, on
                     <p className="text-3xl sm:text-5xl font-bold text-blue-600 mb-3 break-all">
                       {formatCurrency(calculation.net_amount)}
                     </p>
-                    <p className="text-sm sm:text-base text-blue-700 font-semibold">
-                      {calculation.amount_breakdown.net_payable_by === 'owner_A' 
-                        ? `💸 You owe ${selectedPartner?.name}` 
-                        : `💰 ${selectedPartner?.name} owes you`}
-                    </p>
-                  </div>
+                  <p className="text-sm sm:text-base text-blue-700 font-semibold">
+                  {calculation.amount_breakdown.net_payable_by === 'owner_A' 
+                    ? `💸 You pay ${selectedPartner?.name}` 
+                    : `💰 ${selectedPartner?.name} pays you`}
+                </p>
+                        </div>
 
                   {calculation.trip_count > 0 && (
                     <button

@@ -48,6 +48,12 @@ import Reminders from './pages/Reminders/Reminders';
 import ManageReminderForm from './pages/Reminders/ManageReminderForm';
 import ReminderDetails from './pages/Reminders/ReminderDetails';
 import ForgotPassword from './pages/ForgotPassword';
+import CollaborationListPage from './pages/Partner/CollaborationListPage';
+import CollaborationDetailsPage from './pages/Partner/CollaborationDetailsPage';
+
+
+
+// import PartnerCollaboratorsTab from './pages/Partner/CollaborationTab';
 
 function App() {
   return (
@@ -103,6 +109,10 @@ function App() {
                       <Route path="/reminders/create" element={<OwnerRoute><ManageReminderForm /></OwnerRoute>} />
                       <Route path="/reminders/:id" element={<OwnerRoute><ReminderDetails /></OwnerRoute>} />
 
+
+                      <Route path="/partners" element={<OwnerRoute><CollaborationListPage /></OwnerRoute>} />
+                      <Route path="/partners/collaboration/:partnerId" element={<OwnerRoute><CollaborationDetailsPage /></OwnerRoute>} />
+ 
                       {/* Lorry Details with nested routes - OWNER ONLY */}
                       <Route path="/lorries/:lorryId" element={<OwnerRoute><LorryDetails /></OwnerRoute>}>
                         <Route path="trips" element={<LorryTrips />} />

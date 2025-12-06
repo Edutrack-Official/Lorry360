@@ -2890,7 +2890,7 @@ const SettlementTab = () => {
                                 </div>
                               </div>
 
-                              {(unsettled.myTripsForPartner > 0 || unsettled.partnerTripsForMe > 0) && (
+                              {/* {(unsettled.myTripsForPartner > 0 || unsettled.partnerTripsForMe > 0) && (
                                 <div className="mb-4 p-3 bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-xl">
                                   <p className="text-xs font-bold text-yellow-800 mb-2 flex items-center gap-1">
                                     <AlertCircle className="h-4 w-4" />
@@ -2925,7 +2925,47 @@ const SettlementTab = () => {
                                     )}
                                   </div>
                                 </div>
-                              )}
+                              )} */}
+
+                              {(unsettled.myTripsForPartner > 0 || unsettled.partnerTripsForMe > 0) && (
+  <div className="mb-4 p-3 bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-xl">
+    <p className="text-xs font-bold text-yellow-800 mb-2 flex items-center gap-1">
+      <AlertCircle className="h-4 w-4" />
+      Money to settle
+    </p>
+    <div className="space-y-1.5">
+      {unsettled.myTripsForPartner > 0 && (
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-orange-700 font-medium">You should pay</span>
+          <span className="font-bold text-orange-900">
+            {formatCurrency(unsettled.myTripsForPartner)}
+          </span>
+        </div>
+      )}
+      {unsettled.partnerTripsForMe > 0 && (
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-green-700 font-medium">Partner should pay you</span>
+          <span className="font-bold text-green-900">
+            {formatCurrency(unsettled.partnerTripsForMe)}
+          </span>
+        </div>
+      )}
+      {unsettled.netAmount !== 0 && (
+        <div className="flex items-center justify-between text-xs pt-1.5 border-t border-yellow-300">
+          <span className="font-bold text-yellow-900">Total to settle</span>
+          <span className={`font-bold ${
+            unsettled.netAmount > 0 ? 'text-orange-900' : 'text-green-900'
+          }`}>
+            {unsettled.netAmount > 0 
+              ? `You pay ${formatCurrency(Math.abs(unsettled.netAmount))}`
+              : `You get ${formatCurrency(Math.abs(unsettled.netAmount))}`
+            }
+          </span>
+        </div>
+      )}
+    </div>
+  </div>
+)}
 
                               <button className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 rounded-xl hover:from-blue-600 hover:to-blue-700 hover:text-white transition-all font-semibold group-hover:shadow-md">
                                 <FileText className="h-5 w-5" />
