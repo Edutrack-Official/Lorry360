@@ -135,7 +135,12 @@ const CrusherPaymentForm = () => {
           // Fetch trips for stats
           if (crusherId) {
             const tripsRes = await api.get(`/trips/crusher/${crusherId}`);
-            setTrips(tripsRes.data.data?.trips || []);
+            const crusherTrips = (tripsRes.data.data?.trips || []).filter(
+              (trip: any) => trip.status === "completed"
+            );
+            setTrips(crusherTrips || []);
+
+
           }
 
         } catch (error: any) {

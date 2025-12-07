@@ -84,8 +84,10 @@ const CustomerDetails = () => {
   const fetchTrips = async () => {
     try {
       const res = await api.get(`/trips/customer/${customerId}`);
-      const customerTrips = res.data.data?.trips || [];
-      setTrips(customerTrips);
+      const customerTrips = (res.data.data?.trips || []).filter(
+        (trip: any) => trip.status === "completed"
+      );    
+    setTrips(customerTrips);
     } catch (error: any) {
       console.error("Failed to fetch trips:", error);
       toast.error("Failed to fetch trips");

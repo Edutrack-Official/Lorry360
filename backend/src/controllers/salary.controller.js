@@ -1,5 +1,5 @@
 const Salary = require('../models/salary.model');
-
+const mongoose = require('mongoose');
 const createSalary = async (salaryData) => {
   const {
     owner_id,

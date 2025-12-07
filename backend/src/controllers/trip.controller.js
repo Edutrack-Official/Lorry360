@@ -653,6 +653,7 @@ const getTripsByCrusherId = async (owner_id, crusher_id, filterParams = {}) => {
     .populate('crusher_id', 'name')
     .populate('customer_id', 'name phone')
     .populate('owner_id', 'name company_name phone')
+    .populate('collab_owner_id', 'name company_name phone')
     .sort({ trip_date: -1, createdAt: -1 });
 
   return {

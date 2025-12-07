@@ -673,7 +673,11 @@ const getPaymentsByCrusher = async (owner_id, crusher_id) => {
     .populate('crusher_id', 'name')
     .sort({ payment_date: -1 });
 
-  const trips = await Trip.find({ owner_id, crusher_id });
+const trips = await Trip.find({
+  owner_id,
+  crusher_id,
+  status: "completed"
+});
   
   const totalPaid = payments.reduce((sum, payment) => sum + payment.amount, 0);
   const totalOwed = trips.reduce((sum, trip) => sum + trip.crusher_amount, 0);

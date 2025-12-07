@@ -91,8 +91,11 @@ const CrusherDetails = () => {
 const fetchTrips = async () => {
   try {
     const res = await api.get(`/trips/crusher/${crusherId}`); // Use the same endpoint
-    const crusherTrips = res.data.data?.trips || [];
-    setTrips(crusherTrips);
+ const crusherTrips = (res.data.data?.trips || []).filter(
+              (trip: any) => trip.status === "completed"
+            );
+            
+            setTrips(crusherTrips);
   } catch (error: any) {
     console.error("Failed to fetch trips:", error);
     toast.error("Failed to fetch trips");

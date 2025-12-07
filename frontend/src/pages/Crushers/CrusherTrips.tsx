@@ -49,8 +49,11 @@ const CrusherTrips = () => {
     if (!crusherId) return;
     
     try {
-      const res = await api.get(`/trips/crusher/${crusherId}`);
-      const crusherTrips = res.data.data?.trips || [];
+      const tripsRes = await api.get(`/trips/crusher/${crusherId}`);
+       const crusherTrips = (tripsRes.data.data?.trips || []).filter(
+              (trip: any) => trip.status === "completed"
+            );
+            console.log("Fetched completed crusher trips:", crusherTrips);
       setTrips(crusherTrips);
     } catch (error: any) {
       console.error("Failed to fetch crusher trips:", error);

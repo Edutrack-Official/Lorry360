@@ -133,7 +133,7 @@ const CustomerPaymentForm = () => {
             const tripsRes = await api.get('/trips');
             const allTrips = tripsRes.data.data?.trips || [];
             const customerTrips = allTrips.filter((trip: Trip) => 
-              trip.customer_id && trip.customer_id._id === customerId
+              trip.customer_id && trip.customer_id._id === customerId && trip.status === 'completed'
             );
             setTrips(customerTrips);
           }

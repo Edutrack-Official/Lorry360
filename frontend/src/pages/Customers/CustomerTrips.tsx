@@ -53,7 +53,9 @@ const CustomerTrips = () => {
     
     try {
       const res = await api.get(`/trips/customer/${customerId}`);
-      const customerTrips = res.data.data?.trips || [];
+    const customerTrips = (res.data.data?.trips || []).filter(
+  (trip: any) => trip.status === "completed"
+);
       setTrips(customerTrips);
     } catch (error: any) {
       console.error("Failed to fetch customer trips:", error);

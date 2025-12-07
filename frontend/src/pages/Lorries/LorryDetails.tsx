@@ -56,6 +56,7 @@ const LorryDetails = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [showActionMenu, setShowActionMenu] = useState(false);
+  const [completedtrips, setCompletedTrips] = useState<Trip[]>([]);
 
   const getActiveTab = () => {
     const path = location.pathname;
@@ -82,7 +83,10 @@ const LorryDetails = () => {
       const res = await api.get(`/trips`);
       const allTrips = res.data.data?.trips || [];
       const lorryTrips = allTrips.filter((trip: any) => trip.lorry_id?._id === lorryId);
-      setTrips(lorryTrips.slice(0, 5));
+      setTrips(lorryTrips);
+      setCompletedTrips(allTrips.filter((trip: any) => 
+  trip.lorry_id?._id === lorryId && trip.status === "completed"
+    ));
     } catch (error: any) {
       console.error("Failed to fetch trips:", error);
     }
@@ -174,9 +178,10 @@ const LorryDetails = () => {
   };
 
   const calculateStats = () => {
-    const totalTrips = trips.length;
+    console.log("trips",completedtrips)
+    const totalTrips = completedtrips.length;
     const totalExpenses = expenses.length;
-    const totalProfit = trips.reduce((sum, trip) => sum + trip.profit, 0);
+    const totalProfit = completedtrips.reduce((sum, trip) => sum + trip.profit, 0);
     const totalExpenseAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0);
     const netProfit = totalProfit - totalExpenseAmount;
 
@@ -266,7 +271,7 @@ const LorryDetails = () => {
           <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4 min-w-[140px] sm:min-w-0 flex-shrink-0">
             <div className="flex items-center gap-2 mb-2">
               <Package className="h-4 w-4 text-blue-600" />
-              <p className="text-xs text-gray-600">Trips</p>
+              <p className="text-xs text-gray-600">Completed Trips</p>
             </div>
             <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.totalTrips}</p>
           </div>
