@@ -936,8 +936,21 @@ const CollaborationDetailsPage = () => {
         })
       ]);
       
-      setMyTrips(myTripsRes.data.data?.trips || []);
-      setPartnerTrips(partnerTripsRes.data.data?.trips || []);
+    //   setMyTrips(myTripsRes.data.data?.trips || []);
+    //   setPartnerTrips(partnerTripsRes.data.data?.trips || []);
+
+    setMyTrips(
+  (myTripsRes.data.data?.trips || []).filter(
+    (trip:any) => trip.status === "completed"
+  )
+);
+
+setPartnerTrips(
+  (partnerTripsRes.data.data?.trips || []).filter(
+    (trip:any) => trip.status === "completed"
+  )
+);
+
     } catch (error: any) {
       console.error('Failed to fetch trips:', error);
     }
@@ -1234,10 +1247,9 @@ const CollaborationDetailsPage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-3 rounded-lg border border-blue-200">
-              <p className="text-xs text-blue-700 mb-1">Total Trips Value</p>
-              <p className="text-lg font-bold text-blue-900">{formatCurrency(totals.netTripAmount)}</p>
-              <p className="text-xs text-blue-600">
-                Partner: {formatCurrency(totals.totalPartnerTripsAmount)} • Mine: {formatCurrency(totals.totalMyTripsAmount)}
+              <p className="text-l text-blue-800 mb-1">Total Trips Value</p>
+              <p className="text-l text-blue-600">
+                Partner Trips: {formatCurrency(totals.totalPartnerTripsAmount)} <p></p> My Trips: {formatCurrency(totals.totalMyTripsAmount)}
               </p>
             </div>
             <div className="bg-gradient-to-br from-green-50 to-green-100 p-3 rounded-lg border border-green-200">

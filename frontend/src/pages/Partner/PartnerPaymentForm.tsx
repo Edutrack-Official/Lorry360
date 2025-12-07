@@ -357,7 +357,7 @@ const PartnerPaymentForm = () => {
             <button
               onClick={() => {
                 const targetPartnerId = partnerId || formData.collab_owner_id;
-                navigate(`/partners/collaboration/${targetPartnerId}`);
+                navigate(-1);
               }}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
               aria-label="Back to collaboration"
