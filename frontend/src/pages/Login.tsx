@@ -100,7 +100,7 @@ const Login: React.FC = () => {
             <div className="w-full md:w-1/2 p-8 sm:p-10">
               <div className="mb-6 flex items-center gap-2">
                 <Truck className="h-8 w-8 text-indigo-600" />
-                <span className="text-xl font-bold text-gray-900">LOMA</span>
+                <span className="text-xl font-bold text-gray-900">LUMA360</span>
               </div>
 
               <h2 className="mb-1 text-3xl font-bold text-gray-900">Welcome back</h2>

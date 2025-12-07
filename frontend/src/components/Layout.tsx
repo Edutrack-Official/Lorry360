@@ -155,7 +155,7 @@
 //             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
 //               <Truck className="h-6 w-6 text-blue-600" />
 //             </div>
-//             <span className="text-xl font-bold text-white tracking-tight">FLEET360</span>
+//             <span className="text-xl font-bold text-white tracking-tight">LUMA360</span>
 //           </div>
 //           <button
 //             onClick={() => setSidebarOpen(false)}
@@ -277,7 +277,7 @@
 //                 </div>
 //                 <div className="min-w-0">
 //                   <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">
-//                     FLEET360
+//                     LUMA360
 //                   </h1>
 //                 </div>
 //               </div>
@@ -391,7 +391,7 @@
 //                           <p className="text-sm font-bold text-gray-900 truncate capitalize">
 //                             {user?.name || "Admin User"}
 //                           </p>
-//                           <p className="text-xs text-gray-600 truncate">{user?.email || "admin@fleet360.com"}</p>
+//                           <p className="text-xs text-gray-600 truncate">{user?.email || "admin@LUMA360.com"}</p>
 //                         </div>
 //                       </div>
 //                     </div>
@@ -632,7 +632,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
               <Truck className="h-6 w-6 text-blue-600" />
             </div>
-            <span className="text-xl font-bold text-white tracking-tight">FLEET360</span>
+            <span className="text-xl font-bold text-white tracking-tight">LUMA360</span>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
@@ -754,7 +754,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </div>
                 <div className="min-w-0">
                   <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">
-                    FLEET360
+                    LUMA360
                   </h1>
                 </div>
               </div>
@@ -868,7 +868,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           <p className="text-sm font-bold text-gray-900 truncate capitalize">
                             {user?.name || "Admin User"}
                           </p>
-                          <p className="text-xs text-gray-600 truncate">{user?.email || "admin@fleet360.com"}</p>
+                          <p className="text-xs text-gray-600 truncate">{user?.email || "admin@LUMA360.com"}</p>
                         </div>
                       </div>
                     </div>
