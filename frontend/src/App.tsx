@@ -51,7 +51,6 @@ import ForgotPassword from './pages/ForgotPassword';
 import CollaborationListPage from './pages/Partner/CollaborationListPage';
 import CollaborationDetailsPage from './pages/Partner/CollaborationDetailsPage';
 import PartnerPaymentForm from './pages/Partner/PartnerPaymentForm';
-import PartnerPayments from './pages/Partner/PartnerPayments';
 
 
 

@@ -6,7 +6,8 @@ import {
   Plus,
   Trash2,
   Search,
-  MapPin
+  MapPin,
+  Loader
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -22,9 +23,8 @@ const ProformaInvoiceGenerator = () => {
     name: '',
     address: '',
     phone: '',
-    // Removed siteAddress from customCustomer since it's now a common field
   });
-  const [siteAddress, setSiteAddress] = useState(''); // Common field for all customers
+  const [siteAddress, setSiteAddress] = useState('');
   const [invoiceItems, setInvoiceItems] = useState([
     { id: 1, description: '', quantity: 1, unit: '', rate: 0, amount: 0 }
   ]);
@@ -33,28 +33,22 @@ const ProformaInvoiceGenerator = () => {
   const [paymentTerms, setPaymentTerms] = useState('');
   const [notes, setNotes] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [downloading, setDownloading] = useState(false);
 
-  // Fetch customers on component mount
   useEffect(() => {
     fetchCustomers();
-    // Set default invoice date to today
     setInvoiceDate(new Date().toISOString().split('T')[0]);
-    // Generate a simple invoice number
-      setInvoiceNumber(`P-${Math.floor(1000 + Math.random() * 900)}`);
-    // Set default payment terms
-    setPaymentTerms('50% advance payment, 50% before delivery.');
-    // Set default notes
+    setInvoiceNumber(`P-${Math.floor(1000 + Math.random() * 9000)}`);
+    setPaymentTerms('Weekly payment terms. Payment due within 7 days of invoice date.');
     setNotes('This is a proforma invoice and not a demand for payment. Prices are subject to change without prior notice. Valid for 15 days from the date of issue.');
   }, []);
 
-  // Get company details from auth user
   const getCompanyDetails = () => {
     if (!user) return {};
-    console.log("user",user)
     return {
       name: user.company_name,
       address: user.address,
-      phone: user.phone ,
+      phone: user.phone,
       email: user.email,
       city: user.city,
       state: user.state,
@@ -74,16 +68,14 @@ const ProformaInvoiceGenerator = () => {
     }
   };
 
-  // Calculate amount when quantity or rate changes
   useEffect(() => {
     const updatedItems = invoiceItems.map(item => ({
       ...item,
       amount: item.quantity * item.rate
     }));
     setInvoiceItems(updatedItems);
-  }, [invoiceItems]);
+  }, [invoiceItems.map(item => `${item.quantity}-${item.rate}`).join(',')]);
 
-  // Add new item at the top
   const addInvoiceItem = () => {
     const newItem = {
       id: Date.now(),
@@ -120,7 +112,7 @@ const ProformaInvoiceGenerator = () => {
     return invoiceItems.reduce((sum, item) => sum + item.amount, 0);
   };
 
-  const downloadProformaPDF = () => {
+  const downloadProformaPDF = async () => {
     const customerDetails = getSelectedCustomerDetails();
     const companyDetails = getCompanyDetails();
     
@@ -134,335 +126,166 @@ const ProformaInvoiceGenerator = () => {
       return;
     }
 
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      toast.error('Please allow popups to download PDF');
-      return;
-    }
+    setDownloading(true);
 
-    const proformaContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Proforma Invoice ${invoiceNumber}</title>
-        <style>
-          @media print {
-            .page-break {
-              page-break-before: always;
-              break-before: page;
-            }
-            .keep-together {
-              page-break-inside: avoid;
-              break-inside: avoid;
-            }
-            .section-break {
-              page-break-after: always;
-              break-after: page;
-            }
-            .force-page-break {
-              page-break-before: always;
-            }
-            .no-break {
-              page-break-inside: avoid;
-              break-inside: avoid;
-            }
-          }
-          
-          body { 
-            font-family: Arial, sans-serif; 
-            margin: 15px; 
-            color: #000;
-            line-height: 1.4;
-            font-size: 12px;
-          }
-          
-          .header { 
-            text-align: center; 
-            margin-bottom: 15px; 
-            border-bottom: 2px solid #000;
-            padding-bottom: 12px;
-            page-break-after: avoid;
-          }
-          
-          .company-name { 
-            font-size: 22px; 
-            font-weight: bold; 
-            margin-bottom: 6px; 
-            color: #000;
-          }
-          
-          .company-contact {
-            font-size: 11px;
-            margin-bottom: 4px;
-          }
-          
-          .document-title {
-            font-size: 18px;
-            font-weight: bold;
-            color: #333;
-            margin: 12px 0;
-            text-align: center;
-            page-break-before: avoid;
-          }
-          
-          .info-section { 
-            display: flex; 
-            justify-content: space-between; 
-            margin-bottom: 15px;
-            padding: 12px;
-            border: 1px solid #000;
-            page-break-inside: avoid;
-          }
-          
-          /* Improved table styling for page breaks */
-          table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-bottom: 15px;
-          }
-          
-          th, td { 
-            border: 1px solid #000; 
-            padding: 6px; 
-            text-align: left; 
-            font-size: 10px;
-          }
-          
-          th { 
-            background-color: #f8f9fa; 
-            font-weight: bold;
-          }
-          
-          /* Ensure table rows don't break across pages */
-          tbody tr {
-            page-break-inside: avoid;
-            page-break-after: auto;
-            break-inside: avoid;
-          }
-          
-          thead {
-            display: table-header-group;
-          }
-          
-          tfoot {
-            display: table-footer-group;
-          }
-          
-          .summary-section {
-            margin-top: 15px;
-            page-break-inside: avoid;
-          }
-          
-          .summary-row {
-            display: flex;
-            justify-content: flex-end;
-            margin-bottom: 5px;
-          }
-          
-          .summary-label {
-            font-weight: bold;
-            width: 120px;
-            text-align: right;
-            padding-right: 10px;
-          }
-          
-          .summary-value {
-            font-weight: bold;
-            width: 100px;
-            text-align: right;
-          }
-          
-          .footer { 
-            margin-top: 20px; 
-            text-align: center; 
-            border-top: 1px solid #000;
-            padding-top: 12px;
-            font-size: 10px;
-            page-break-before: avoid;
-          }
-          
-          .notes-section {
-            margin-top: 15px;
-            page-break-inside: avoid;
-          }
-          
-          .notes {
-            padding: 10px;
-            border: 1px dashed #000;
-            background-color: #f9f9f9;
-            margin-bottom: 10px;
-            font-size: 10px;
-          }
-          
-          .payment-terms {
-            padding: 10px;
-            border: 1px solid #000;
-            background-color: #f0f8ff;
-            font-size: 10px;
-          }
-          
-          .section-title {
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: #333;
-            font-size: 11px;
-          }
-          
-          .page-container {
-            min-height: 95vh;
-            display: flex;
-            flex-direction: column;
-          }
-          
-          .content-section {
-            flex: 1;
-          }
-          
-          .footer-section {
-            margin-top: auto;
-          }
-          
-          @media print {
-            body { margin: 10px; }
-            .header { margin-bottom: 10px; }
-            .info-section { margin-bottom: 10px; }
-            
-            /* Better table printing behavior */
-            table { 
-              page-break-inside: auto;
-            }
-            tr { 
-              page-break-inside: avoid;
-              page-break-after: auto;
-            }
-            thead {
-              display: table-header-group;
-            }
-            tfoot {
-              display: table-footer-group;
-            }
-            
-            /* Ensure notes and payment terms stay with table when possible */
-            .table-notes-container {
-              page-break-inside: avoid;
-            }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="page-container">
-          <!-- First Page -->
-          <div class="header">
-            <div class="company-name">${companyDetails.name}</div>
-            <div class="company-contact">${companyDetails.address}</div>
-            <div class="company-contact">${companyDetails.city}${companyDetails.state ? ', ' + companyDetails.state : ''}${companyDetails.pincode ? ' - ' + companyDetails.pincode : ''}</div>
-            <div class="company-contact">CONTACT: ${companyDetails.phone} | EMAIL: ${companyDetails.email}</div>
+    // Helper function to format numbers with commas (Indian numbering system)
+    const formatIndianCurrency = (num) => {
+      const n = num.toFixed(2);
+      const [integer, decimal] = n.split('.');
+      const lastThree = integer.substring(integer.length - 3);
+      const otherNumbers = integer.substring(0, integer.length - 3);
+      const formatted = otherNumbers !== '' ? otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + lastThree : lastThree;
+      return formatted + '.' + decimal;
+    };
+
+    try {
+      // Import html2pdf dynamically - handle both default and named exports
+      const module = await import('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js');
+      const html2pdf = module.default || window.html2pdf;
+
+      const proformaContent = `
+        <div style="font-family: 'Arial', sans-serif; color: #000; padding: 15px; box-sizing: border-box; background: #fff;">
+          <!-- Header Section -->
+          <div style="text-align: center; margin-bottom: 15px; border-bottom: 2px solid #000; padding-bottom: 12px;">
+            <h1 style="font-size: 28px; font-weight: bold; margin: 0 0 8px 0;">${companyDetails.name}</h1>
+            <p style="margin: 0 0 4px 0; font-size: 14px; color: #000;">${companyDetails.address}</p>
+            <p style="margin: 0 0 4px 0; font-size: 14px; color: #000;">${companyDetails.city}${companyDetails.state ? ', ' + companyDetails.state : ''}${companyDetails.pincode ? ' - ' + companyDetails.pincode : ''}</p>
+            <p style="margin: 0; font-size: 14px; color: #000;">CONTACT: ${companyDetails.phone} | EMAIL: ${companyDetails.email}</p>
           </div>
 
-          <div class="document-title">PROFORMA INVOICE</div>
-
-          <div class="info-section keep-together">
-            <div>
-              <strong>To:</strong><br>
-              ${customerDetails.name}<br>
-              ${customerDetails.address || ''}<br>
-              ${customerDetails.phone ? `<strong>Phone:</strong> ${customerDetails.phone}` : ''}
-              ${siteAddress ? `<br><br><strong>Site Address:</strong><br>${siteAddress}` : ''}
-            </div>
-            <div style="text-align: right;">
-              <strong>Invoice No:</strong> ${invoiceNumber}<br>
-              <strong>Date:</strong> ${new Date(invoiceDate).toLocaleDateString()}<br>
-            </div>
+          <div style="text-align: center; margin-bottom: 15px; padding: 8px; border: 2px solid #000;">
+            <h2 style="font-size: 20px; font-weight: bold; margin: 0; color: #000; letter-spacing: 1px;">PROFORMA INVOICE</h2>
           </div>
 
-          <div class="content-section">
-            <table>
-              <thead>
-                <tr>
-                  <th>S.No</th>
-                  <th>Description</th>
-                  <th>Quantity</th>
-                  <th>Unit</th>
-                  <th>Rate (₹)</th>
-                  <th>Amount (₹)</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${invoiceItems.map((item, index) => `
+          <!-- Customer and Invoice Details -->
+          <table style="width: 100%; margin-bottom: 15px; border: 1px solid #000;">
+            <tr>
+              <td style="width: 55%; vertical-align: top; padding: 12px; border-right: 1px solid #000;">
+                <p style="margin: 0 0 6px 0; font-size: 13px; font-weight: bold; color: #000;">BILL TO:</p>
+                <p style="margin: 0 0 4px 0; font-size: 14px; font-weight: bold;">${customerDetails.name}</p>
+                ${customerDetails.address ? `<p style="margin: 0 0 4px 0; font-size: 13px; color: #000;">${customerDetails.address}</p>` : ''}
+                ${customerDetails.phone ? `<p style="margin: 0; font-size: 13px; color: #000;"><strong>Phone:</strong> ${customerDetails.phone}</p>` : ''}
+                ${siteAddress ? `<p style="margin: 8px 0 0 0; font-size: 13px; font-weight: bold; color: #000;">SITE ADDRESS:</p><p style="margin: 2px 0 0 0; font-size: 13px; color: #000;">${siteAddress}</p>` : ''}
+              </td>
+              <td style="width: 45%; vertical-align: top; padding: 12px;">
+                <table style="width: 100%; border-collapse: collapse;">
                   <tr>
-                    <td>${index + 1}</td>
-                    <td>${item.description}</td>
-                    <td>${item.quantity}</td>
-                    <td>${item.unit}</td>
-                    <td>${item.rate.toFixed(2)}</td>
-                    <td>${item.amount.toFixed(2)}</td>
+                    <td style="padding: 4px 0; font-size: 13px; font-weight: bold; color: #000;">Invoice No:</td>
+                    <td style="padding: 4px 0; font-size: 13px; text-align: right;">${invoiceNumber}</td>
                   </tr>
-                `).join('')}
-              </tbody>
-            </table>
+                  <tr>
+                    <td style="padding: 4px 0; font-size: 13px; font-weight: bold; color: #000;">Date:</td>
+                    <td style="padding: 4px 0; font-size: 13px; text-align: right;">${new Date(invoiceDate).toLocaleDateString('en-GB')}</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
 
-            <div class="summary-section">
-              <div class="summary-row">
-                <div class="summary-label">Total:</div>
-                <div class="summary-value">₹${calculateSubtotal().toFixed(2)}</div>
-              </div>
-            </div>
+          <!-- Items Table -->
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 0;">
+            <thead style="display: table-header-group;">
+              <tr>
+                <th style="border: 1px solid #000; padding: 10px 8px; text-align: center; font-size: 13px; font-weight: bold; width: 8%; background: #fff;">S.No</th>
+                <th style="border: 1px solid #000; padding: 10px 8px; text-align: left; font-size: 13px; font-weight: bold; width: 32%; background: #fff;">Description</th>
+                <th style="border: 1px solid #000; padding: 10px 8px; text-align: center; font-size: 13px; font-weight: bold; width: 12%; background: #fff;">Quantity</th>
+                <th style="border: 1px solid #000; padding: 10px 8px; text-align: center; font-size: 13px; font-weight: bold; width: 12%; background: #fff;">Unit</th>
+                <th style="border: 1px solid #000; padding: 10px 8px; text-align: right; font-size: 13px; font-weight: bold; width: 18%; background: #fff;">Rate (₹)</th>
+                <th style="border: 1px solid #000; padding: 10px 8px; text-align: right; font-size: 13px; font-weight: bold; width: 18%; background: #fff;">Amount (₹)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${invoiceItems.map((item, index) => `
+                <tr style="page-break-inside: avoid; break-inside: avoid;">
+                  <td style="border: 1px solid #000; padding: 9px 8px; text-align: center; font-size: 13px;">${index + 1}</td>
+                  <td style="border: 1px solid #000; padding: 9px 8px; font-size: 13px;">${item.description}</td>
+                  <td style="border: 1px solid #000; padding: 9px 8px; text-align: center; font-size: 13px;">${item.quantity}</td>
+                  <td style="border: 1px solid #000; padding: 9px 8px; text-align: center; font-size: 13px;">${item.unit}</td>
+                  <td style="border: 1px solid #000; padding: 9px 8px; text-align: right; font-size: 13px;">${formatIndianCurrency(item.rate)}</td>
+                  <td style="border: 1px solid #000; padding: 9px 8px; text-align: right; font-size: 13px; font-weight: bold;">${formatIndianCurrency(item.amount)}</td>
+                </tr>
+              `).join('')}
+              <tr style="page-break-inside: avoid; break-inside: avoid;">
+                <td colspan="5" style="border: 1px solid #000; padding: 10px 8px; text-align: right; font-size: 14px; font-weight: bold; background: #fff;">TOTAL:</td>
+                <td style="border: 1px solid #000; padding: 10px 8px; text-align: right; font-size: 14px; font-weight: bold; background: #fff;">₹${formatIndianCurrency(calculateSubtotal())}</td>
+              </tr>
+            </tbody>
+          </table>
 
-            <!-- Notes and Payment Terms - Kept together with table -->
-            <div class="table-notes-container no-break">
-              ${paymentTerms ? `
-                <div class="payment-terms">
-                  <div class="section-title">Payment Terms:</div>
-                  ${paymentTerms.split('\n').map(term => term.trim()).filter(term => term).map(term => `${term}<br>`).join('')}
-                </div>
-              ` : ''}
-              
-              ${notes ? `
-                <div class="notes">
-                  <div class="section-title">Notes:</div>
-                  ${notes.split('\n').map(note => note.trim()).filter(note => note).map(note => `${note}<br>`).join('')}
-                </div>
-              ` : ''}
-            </div>
-          </div>
+          <div style="margin-bottom: 15px;"></div>
 
-          <div class="footer-section">
-            <div class="footer">
-              <p>For Queries: ${companyDetails.phone} | ${companyDetails.email}</p>
+          <!-- Payment Terms -->
+          ${paymentTerms ? `
+            <div style="margin-top: 15px; page-break-inside: avoid; break-inside: avoid; padding: 12px; border: 1px solid #000;" class="keep-together">
+              <p style="margin: 0 0 6px 0; font-size: 13px; font-weight: bold; color: #000;">PAYMENT TERMS:</p>
+              <p style="margin: 0; font-size: 13px; color: #000; line-height: 1.6;">${paymentTerms.split('\n').filter(line => line.trim()).map(line => line.trim()).join('<br>')}</p>
             </div>
+          ` : ''}
+
+          <!-- Notes -->
+          ${notes ? `
+            <div style="margin-top: 12px; page-break-inside: avoid; break-inside: avoid; padding: 12px; border: 1px dashed #000;" class="keep-together">
+              <p style="margin: 0 0 6px 0; font-size: 13px; font-weight: bold; color: #000;">NOTES:</p>
+              <p style="margin: 0; font-size: 13px; color: #000; line-height: 1.6;">${notes.split('\n').filter(line => line.trim()).map(line => line.trim()).join('<br>')}</p>
+            </div>
+          ` : ''}
+
+          <!-- Footer -->
+          <div style="margin-top: 25px; text-align: center; border-top: 1px solid #000; padding-top: 12px;">
+            <p style="margin: 0; font-size: 12px; color: #000;">For any queries, please contact: ${companyDetails.phone} | ${companyDetails.email}</p>
+            <p style="margin: 5px 0 0 0; font-size: 12px; color: #000;">Thank you for your business!</p>
           </div>
         </div>
+      `;
 
-        <script>
-          setTimeout(() => {
-            window.print();
-            setTimeout(() => {
-              window.close();
-            }, 1000);
-          }, 500);
-        </script>
-      </body>
-      </html>
-    `;
+      // Create a temporary div to hold the content
+      const element = document.createElement('div');
+      element.innerHTML = proformaContent;
 
-    printWindow.document.write(proformaContent);
-    printWindow.document.close();
-    
-    toast.success('Proforma Invoice generated successfully!');
+      const opt = {
+        margin: [10, 10, 10, 10],
+        filename: `Proforma_Invoice_${invoiceNumber}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+          scale: 2,
+          useCORS: true,
+          letterRendering: true,
+          logging: false
+        },
+        jsPDF: { 
+          unit: 'mm', 
+          format: 'a4', 
+          orientation: 'portrait'
+        },
+        pagebreak: { 
+          mode: ['css', 'legacy'],
+          avoid: 'tr'
+        }
+      };
+
+      // Generate and download PDF
+      await html2pdf().set(opt).from(element).save();
+      
+      toast.success('Proforma Invoice PDF downloaded successfully!');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF. Please try again.');
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const resetForm = () => {
     setSelectedCustomer('');
     setUseCustomCustomer(false);
     setCustomCustomer({ name: '', address: '', phone: '' });
-    setSiteAddress(''); // Reset site address
+    setSiteAddress('');
     setInvoiceItems([{ id: 1, description: '', quantity: 1, unit: '', rate: 0, amount: 0 }]);
-    setInvoiceNumber(`P-${Math.floor(100 + Math.random() * 900)}`);
+    setInvoiceNumber(`P-${Math.floor(1000 + Math.random() * 9000)}`);
     setPaymentTerms('50% advance payment, 50% before delivery.');
     setNotes('This is a proforma invoice and not a demand for payment. Prices are subject to change without prior notice. Valid for 15 days from the date of issue.');
   };
 
-  // Filter customers based on search
   const filteredCustomers = customers.filter(customer =>
     customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     customer.phone.includes(searchTerm)
@@ -485,10 +308,20 @@ const ProformaInvoiceGenerator = () => {
           </button>
           <button
             onClick={downloadProformaPDF}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            disabled={downloading}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            <Download className="h-4 w-4" />
-            Download Proforma
+            {downloading ? (
+              <>
+                <Loader className="h-4 w-4 animate-spin" />
+                Generating PDF...
+              </>
+            ) : (
+              <>
+                <Download className="h-4 w-4" />
+                Download Proforma
+              </>
+            )}
           </button>
         </div>
       </div>

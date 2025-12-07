@@ -25,6 +25,8 @@ import {
   UserCheck,
   AlarmClock,
   BellPlus,
+  FileText,
+  FileCheck
 } from "lucide-react";
 
 const RailTooltip: React.FC<{ label: string }> = ({ label }) => (
@@ -86,13 +88,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: "Customers", href: "/customers", icon: Building2, roles: ["owner"], color: "purple" },
     { name: "Crushers", href: "/crushers", icon: Package, roles: ["owner"], color: "red" },
     { name: "Collab", href: "/partners", icon: UserCheck, roles: ["owner"], color: "teal" },
-    // { name: "Trips", href: "/trips", icon: MapPin, roles: ["owner"], color: "indigo" },
-    // { name: "Maintenance", href: "/maintenance", icon: Wrench, roles: ["owner"], color: "yellow" },
-    // { name: "Reports", href: "/reports", icon: TrendingUp, roles: ["owner"], color: "pink" },
-    { name: "Settings", href: "/settings", icon: Settings, roles: ["owner"], color: "gray" },
     { name: "Reminder", href: "/reminders", icon: BellPlus, roles: ["owner"] },
     { name: "Owners", href: "/owners", icon: Users, roles: ["admin"], color: "cyan" },
-    
+    { name: "Invoice", href: "/invoice", icon: FileCheck, roles: ["owner"], color: "cyan" },
+    { name: "Proforma Invoice", href: "/proinvoice", icon: FileText, roles: ["owner"], color: "cyan" },
+
+    { name: "Settings", href: "/settings", icon: Settings, roles: ["owner"], color: "gray" },
 
   ];
 
