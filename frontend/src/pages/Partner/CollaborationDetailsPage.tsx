@@ -971,7 +971,7 @@ setPartnerTrips(
     }
   };
 
-  const handleApprovePayment = async (paymentId: string, ownerId: string) => {
+  const handleApprovePayment = async (paymentId: string, ownerId:any) => {
     try {
       await api.put(`/payments/collab/${paymentId}/status`, {
         status: 'approved',
@@ -984,7 +984,7 @@ setPartnerTrips(
     }
   };
 
-  const handleRejectPayment = async (paymentId: string, ownerId: string) => {
+  const handleRejectPayment = async (paymentId: any, ownerId: any) => {
     try {
       await api.put(`/payments/collab/${paymentId}/status`, {
         status: 'rejected',

@@ -1063,7 +1063,7 @@ const Dashboard = () => {
                   </p>
 
                   {/* Subtitle */}
-                  <p className="text-xs text-gray-500">{card.subtitle}</p>
+                  {/* <p className="text-xs text-gray-500">{card.subtitle}</p> */}
                 </div>
               </motion.div>
             );
@@ -1467,53 +1467,6 @@ const Dashboard = () => {
         </motion.div>
       </div>
 
-      {/* Settlement Summary */}
-      {dashboardData.settlements.total > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.0 }}
-          className="bg-white rounded-2xl shadow-xl p-6 border-2 border-gray-100"
-        >
-          {/* <div className="flex items-center gap-3 mb-6">
-            <div className="p-2.5 bg-gradient-to-br from-pink-100 to-red-200 rounded-xl">
-              <IndianRupee className="h-6 w-6 text-pink-600" />
-            </div>
-            <h2 className="text-xl font-bold text-gray-900">
-              Settlement Summary
-            </h2>
-          </div> */}
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div className="p-6 rounded-xl bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-200 text-center">
-              <p className="text-sm font-semibold text-yellow-700 mb-2">
-                Total Amount
-              </p>
-              <p className="text-3xl font-bold text-yellow-600">
-                {formatCurrency(dashboardData.settlements.totalAmount)}
-              </p>
-            </div>
-
-            <div className="p-6 rounded-xl bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-200 text-center">
-              <p className="text-sm font-semibold text-red-700 mb-2">
-                Due Amount
-              </p>
-              <p className="text-3xl font-bold text-red-600">
-                {formatCurrency(dashboardData.settlements.dueAmount)}
-              </p>
-            </div>
-
-            <div className="p-6 rounded-xl bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 text-center">
-              <p className="text-sm font-semibold text-green-700 mb-2">
-                Paid Amount
-              </p>
-              <p className="text-3xl font-bold text-green-600">
-                {formatCurrency(dashboardData.settlements.paidAmount)}
-              </p>
-            </div>
-          </div>
-        </motion.div>
-      )}
 
       {/* Performance Metrics */}
       <motion.div

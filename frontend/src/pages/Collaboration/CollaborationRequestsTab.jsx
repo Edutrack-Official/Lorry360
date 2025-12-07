@@ -739,13 +739,13 @@ const RequestCard = ({ request, type, onAccept, onReject, onCancel }) => {
                 <CheckCircle className="h-5 w-5" />
                 Accept
               </button>
-              <button
+              {/* <button
                 onClick={() => onReject(request._id)}
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl hover:from-red-700 hover:to-red-800 transition-all font-bold shadow-md hover:shadow-lg"
               >
                 <X className="h-5 w-5" />
                 Reject
-              </button>
+              </button> */}
             </>
           )}
           {type === 'sent' && (

@@ -434,6 +434,13 @@ const getCollaborativePartners = (currentUserId: any) => {
     setSubmitting(true);
     try {
       if (isEditMode) {
+
+        if(destinationType=='customer') {
+          formData.collab_owner_id="";
+        }
+        else {
+          formData.customer_id="";
+        }
         await api.put(`/trips/update/${tripId}`, formData);
         toast.success("Trip updated successfully");
       } else {

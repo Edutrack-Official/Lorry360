@@ -240,28 +240,34 @@ const getCollaborativeTripById = async (id, collab_owner_id) => {
 };
 
 const updateTrip = async (id, owner_id, updateData) => {
-  // Handle empty strings for customer_id and collab_owner_id
-  if (updateData.customer_id !== undefined) {
-    if (updateData.customer_id === "") {
-      delete updateData.customer_id;
-      // If customer_id is being removed and collab_owner_id exists, keep it
-      // If both are being handled, ensure at least one exists
-    } else {
-      // If setting a valid customer_id, remove collab_owner_id
-      delete updateData.collab_owner_id;
-    }
+  console.log("updateData:", updateData);
+  
+  // Make a copy to avoid mutating the original
+  const processedData = { ...updateData };
+  
+  // Handle empty strings - convert to null
+  if (processedData.customer_id === "") {
+    processedData.customer_id = null;
   }
-
-  if (updateData.collab_owner_id !== undefined) {
-    if (updateData.collab_owner_id === "") {
-      delete updateData.collab_owner_id;
-    } else {
-      // If setting a valid collab_owner_id, remove customer_id
-      delete updateData.customer_id;
-    }
+  
+  if (processedData.collab_owner_id === "") {
+    processedData.collab_owner_id = null;
   }
-
-  // Validate that at least one destination exists after updates
+  
+  // Determine which destination to keep
+  // If collab_owner_id has value, nullify customer_id
+  if (processedData.collab_owner_id) {
+    processedData.customer_id = null;
+  }
+  
+  // If customer_id has value, nullify collab_owner_id
+  if (processedData.customer_id) {
+    processedData.collab_owner_id = null;
+  }
+  
+  console.log("processedData:", processedData);
+  
+  // Rest of your code using processedData instead of updateData...
   const existingTrip = await Trip.findOne({ _id: id, owner_id });
   if (!existingTrip) {
     const err = new Error('Trip not found');
@@ -269,31 +275,31 @@ const updateTrip = async (id, owner_id, updateData) => {
     throw err;
   }
 
-  // Check if the update would result in no destination
-  const willHaveCustomer = updateData.customer_id !== undefined ? 
-    (updateData.customer_id !== "" && updateData.customer_id !== null) : 
-    (existingTrip.customer_id !== null && existingTrip.customer_id !== undefined);
+  // Check final state
+  const finalCustomerId = processedData.customer_id !== undefined 
+    ? processedData.customer_id 
+    : existingTrip.customer_id;
   
-  const willHaveCollabOwner = updateData.collab_owner_id !== undefined ? 
-    (updateData.collab_owner_id !== "" && updateData.collab_owner_id !== null) : 
-    (existingTrip.collab_owner_id !== null && existingTrip.collab_owner_id !== undefined);
+  const finalCollabOwnerId = processedData.collab_owner_id !== undefined 
+    ? processedData.collab_owner_id 
+    : existingTrip.collab_owner_id;
 
-  if (!willHaveCustomer && !willHaveCollabOwner) {
+  if (!finalCustomerId && !finalCollabOwnerId) {
     const err = new Error('Either customer or collaborative owner must be specified');
     err.status = 400;
     throw err;
   }
 
-  // Recalculate profit if customer_amount or crusher_amount is updated
-  if (updateData.customer_amount || updateData.crusher_amount) {
-    const newCustomerAmount = updateData.customer_amount || existingTrip.customer_amount;
-    const newCrusherAmount = updateData.crusher_amount || existingTrip.crusher_amount;
-    updateData.profit = newCustomerAmount - newCrusherAmount;
+  // Recalculate profit
+  if (processedData.customer_amount || processedData.crusher_amount) {
+    const newCustomerAmount = processedData.customer_amount || existingTrip.customer_amount;
+    const newCrusherAmount = processedData.crusher_amount || existingTrip.crusher_amount;
+    processedData.profit = newCustomerAmount - newCrusherAmount;
   }
 
   const updatedTrip = await Trip.findOneAndUpdate(
     { _id: id, owner_id },
-    updateData,
+    processedData,  // Use processedData here
     { new: true, runValidators: true }
   )
     .populate('lorry_id', 'registration_number nick_name')
@@ -307,6 +313,7 @@ const updateTrip = async (id, owner_id, updateData) => {
     err.status = 404;
     throw err;
   }
+  
   return updatedTrip;
 };
 

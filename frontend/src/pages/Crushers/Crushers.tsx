@@ -431,7 +431,7 @@ const Crushers = () => {
                     <div className="flex justify-between items-center">
                       <span className="text-gray-700">Average Price</span>
                       <span className="text-green-600 font-semibold">
-                        ${(selectedCrusher.materials.reduce((sum, mat) => sum + mat.price_per_unit, 0) / selectedCrusher.materials.length).toFixed(2)}
+                        Rs. {(selectedCrusher.materials.reduce((sum, mat) => sum + mat.price_per_unit, 0) / selectedCrusher.materials.length).toFixed(2)}
                       </span>
                     </div>
                   )}
@@ -462,7 +462,7 @@ const Crushers = () => {
                         </div>
                       </div>
                       <div className="text-lg font-bold text-green-600">
-                        ${material.price_per_unit}
+                       Rs. {material.price_per_unit}
                       </div>
                     </div>
                   ))}
