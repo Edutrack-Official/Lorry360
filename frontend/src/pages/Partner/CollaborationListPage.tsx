@@ -527,13 +527,13 @@ const RequestsTab = ({ requests, type, onAccept, onReject, onCancel }: any) => {
                       <CheckCircle className="h-4 w-4" />
                       Accept
                     </button>
-                    <button
+                    {/* <button
                       onClick={() => onReject(request._id)}
                       className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
                     >
                       <X className="h-4 w-4" />
                       Reject
-                    </button>
+                    </button> */}
                   </>
                 ) : (
                   <button
@@ -622,6 +622,7 @@ const SendRequestModal = ({ searchTerm, setSearchTerm, owners, loading, onSearch
                   <div className="flex-1 min-w-0">
                     <h4 className="font-bold text-sm text-gray-900 truncate">{owner.name}</h4>
                     <p className="text-xs text-gray-600 truncate">{owner.company_name}</p>
+                    <p className="text-xs text-gray-600 truncate">{owner.email}</p>
                   </div>
                 </div>
                 <button
