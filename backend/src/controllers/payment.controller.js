@@ -623,6 +623,45 @@ const getPaymentStats = async (owner_id, period = 'month') => {
   };
 };
 
+// Add this new function to payment.controller.js
+const getPaymentsAsReceiver = async (collab_owner_id, filterParams = {}) => {
+  const { 
+    payment_mode, 
+    start_date, 
+    end_date,
+    collab_payment_status,
+    owner_id  // Filter by specific partner (optional)
+  } = filterParams;
+  
+  const query = { 
+    collab_owner_id,  // I am the receiver
+    payment_type: 'to_collab_owner',
+    isActive: true
+  };
+  
+  if (payment_mode) query.payment_mode = payment_mode;
+  if (collab_payment_status) query.collab_payment_status = collab_payment_status;
+  if (owner_id) query.owner_id = owner_id;  // Filter by specific partner
+  
+  // Date range filter
+  if (start_date || end_date) {
+    query.payment_date = {};
+    if (start_date) query.payment_date.$gte = new Date(start_date);
+    if (end_date) query.payment_date.$lte = new Date(end_date);
+  }
+
+  const payments = await Payment.find(query)
+    .populate('owner_id', 'name email phone company_name')
+    .populate('collab_owner_id', 'name email phone company_name')
+    .sort({ payment_date: -1, createdAt: -1 });
+
+  return {
+    count: payments.length,
+    payments
+  };
+};
+
+
 // Get payments by crusher (unchanged)
 const getPaymentsByCrusher = async (owner_id, crusher_id) => {
   const payments = await Payment.find({ 
@@ -681,6 +720,51 @@ const getPaymentsByCustomer = async (owner_id, customer_id) => {
   };
 };
 
+const getMyPaymentsToPartner = async (owner_id, partner_id, filterParams = {}) => {
+  console.log('🔍 getMyPaymentsToPartner called');
+  console.log('📍 owner_id (me):', owner_id);
+  console.log('📍 partner_id:', partner_id);
+  
+  const { 
+    payment_mode, 
+    start_date, 
+    end_date,
+    collab_payment_status 
+  } = filterParams;
+  
+  // Build query - I am the owner, partner is the receiver
+  const query = { 
+    owner_id,  // I created these payments
+    collab_owner_id: partner_id,  // Sent TO this specific partner
+    payment_type: 'to_collab_owner',
+    isActive: true
+  };
+  
+  if (payment_mode) query.payment_mode = payment_mode;
+  if (collab_payment_status) query.collab_payment_status = collab_payment_status;
+  
+  // Date range filter
+  if (start_date || end_date) {
+    query.payment_date = {};
+    if (start_date) query.payment_date.$gte = new Date(start_date);
+    if (end_date) query.payment_date.$lte = new Date(end_date);
+  }
+
+  console.log('📍 MongoDB query:', JSON.stringify(query, null, 2));
+
+  const payments = await Payment.find(query)
+    .populate('owner_id', 'name email phone company_name')
+    .populate('collab_owner_id', 'name email phone company_name')
+    .sort({ payment_date: -1, createdAt: -1 });
+
+  console.log('📍 Payments found:', payments.length);
+
+  return {
+    count: payments.length,
+    payments
+  };
+};
+
 module.exports = {
   createPayment,
   getAllPayments,
@@ -690,7 +774,9 @@ module.exports = {
   deletePayment,
   
   getCollabPaymentsForOwner, // New function
+  getMyPaymentsToPartner, 
   getPaymentStats,
   getPaymentsByCrusher,
-  getPaymentsByCustomer
+  getPaymentsByCustomer,
+  getPaymentsAsReceiver    
 };

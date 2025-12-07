@@ -70,103 +70,192 @@ const InvoiceGenerator = () => {
     setLoading(false);
   };
 
-  const downloadPDF = () => {
-    if (!invoiceData) {
-      toast.error('No invoice data available');
-      return;
-    }
+  // const downloadPDF = () => {
+  //   if (!invoiceData) {
+  //     toast.error('No invoice data available');
+  //     return;
+  //   }
 
-    // Create a new window for printing
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      toast.error('Please allow popups to download PDF');
-      return;
-    }
+  //   // Create a new window for printing
+  //   const printWindow = window.open('', '_blank');
+  //   if (!printWindow) {
+  //     toast.error('Please allow popups to download PDF');
+  //     return;
+  //   }
+
+  //   const invoiceContent = `
+  //     <!DOCTYPE html>
+  //     <html>
+  //     <head>
+  //       <title>Invoice ${invoiceData.invoice_details.invoice_number}</title>
+  //       <style>
+  //         body { 
+  //           font-family: Arial, sans-serif; 
+  //           margin: 20px; 
+  //           color: #000;
+  //         }
+  //         .header { 
+  //           text-align: center; 
+  //           margin-bottom: 30px; 
+  //           border-bottom: 2px solid #000;
+  //           padding-bottom: 20px;
+  //         }
+  //         .company-name { 
+  //           font-size: 28px; 
+  //           font-weight: bold; 
+  //           margin-bottom: 10px; 
+  //           color: #000;
+  //         }
+  //         .address { 
+  //           margin-bottom: 5px; 
+  //           color: #333;
+  //         }
+  //         .contact { 
+  //           margin-bottom: 20px; 
+  //           color: #333;
+  //         }
+  //         .info-section { 
+  //           display: flex; 
+  //           justify-content: space-between; 
+  //           margin-bottom: 30px;
+  //           padding: 20px;
+  //           border: 1px solid #000;
+  //         }
+  //         table { 
+  //           width: 100%; 
+  //           border-collapse: collapse; 
+  //           margin-bottom: 30px;
+  //         }
+  //         th, td { 
+  //           border: 1px solid #000; 
+  //           padding: 12px; 
+  //           text-align: left; 
+  //         }
+  //         th { 
+  //           background-color: #f8f9fa; 
+  //           font-weight: bold;
+  //         }
+  //         .summary { 
+  //           float: right; 
+  //           width: 300px; 
+  //           border: 1px solid #000;
+  //           padding: 20px;
+  //           margin-top: 20px;
+  //         }
+  //         .footer { 
+  //           margin-top: 30px; 
+  //           text-align: center; 
+  //           border-top: 1px solid #000;
+  //           padding-top: 20px;
+  //         }
+  //         .balance-row { 
+  //           background-color: #f0f0f0; 
+  //           font-weight: bold; 
+  //         }
+  //         @media print {
+  //           body { margin: 0; }
+  //           .header { margin-bottom: 20px; }
+  //           .info-section { margin-bottom: 20px; }
+  //         }
+  //       </style>
+  //     </head>
+  //     <body>
+  //       <div class="header">
+  //         <div class="company-name">${invoiceData.supplier.name}</div>
+  //         <div class="address">${invoiceData.supplier.full_address}</div>
+  //         <div class="contact">CONTACT: ${invoiceData.supplier.phone}</div>
+  //       </div>
+
+  //       <div class="info-section">
+  //         <div>
+  //           <strong>To:</strong><br>
+  //           ${invoiceData.customer.name}<br>
+  //           ${invoiceData.customer.address}<br>
+  //           <strong>Phone:</strong> ${invoiceData.customer.phone}
+  //         </div>
+  //         <div style="text-align: right;">
+  //           <strong>Invoice No:</strong> ${invoiceData.invoice_details.invoice_number}<br>
+  //           <strong>Period:</strong> ${invoiceData.invoice_details.period}<br>
+  //           <strong>Date:</strong> ${new Date().toLocaleDateString()}
+  //         </div>
+  //       </div>
+
+  //       <table>
+  //         <thead>
+  //           <tr>
+  //             ${invoiceData.table_data.headers.map(header => `<th>${header}</th>`).join('')}
+  //           </tr>
+  //         </thead>
+  //         <tbody>
+  //           ${invoiceData.table_data.rows.map(row => `
+  //             <tr class="${row.is_balance_row ? 'balance-row' : ''}">
+  //               <td>${row.s_no || ''}</td>
+  //               <td>${row.date || ''}</td>
+  //               <td>${row.particular}</td>
+  //               <td>${row.quantity || ''}</td>
+  //               <td>${row.location || ''}</td>
+  //               <td>${row.price || ''}</td>
+  //               <td>${row.no_of_loads || ''}</td>
+  //               <td>${row.total_amount || ''}</td>
+  //               <td>${row.amount_received || ''}</td>
+  //               <td>${row.balance}</td>
+  //             </tr>
+  //           `).join('')}
+  //         </tbody>
+  //       </table>
+
+  //       <div class="summary">
+  //         <p><strong>Opening Balance:</strong> ${invoiceData.table_data.summary.opening_balance}</p>
+  //         <p><strong>Total Sales:</strong> ${invoiceData.table_data.summary.total_sales_amount}</p>
+  //         <p><strong>Total Received:</strong> ${invoiceData.table_data.summary.total_received}</p>
+  //         <p><strong>Closing Balance:</strong> ${invoiceData.table_data.summary.closing_balance}</p>
+  //       </div>
+
+  //       <div class="footer">
+  //         <p>Generated on ${new Date().toLocaleDateString()} | Thank you for your business!</p>
+  //       </div>
+
+  //       <script>
+  //         // Auto-print and close after a short delay
+  //         setTimeout(() => {
+  //           window.print();
+  //           setTimeout(() => {
+  //             window.close();
+  //           }, 500);
+  //         }, 500);
+  //       </script>
+  //     </body>
+  //     </html>
+  //   `;
+
+  //   printWindow.document.write(invoiceContent);
+  //   printWindow.document.close();
+    
+  //   toast.success('PDF generated successfully!');
+  // };
+
+  
+  // Replace the downloadPDF function with this:
+
+const downloadPDF = async () => {
+  if (!invoiceData) {
+    toast.error('No invoice data available');
+    return;
+  }
+
+  try {
+    // Import html2pdf dynamically
+    const html2pdf = (await import('html2pdf.js')).default;
 
     const invoiceContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Invoice ${invoiceData.invoice_details.invoice_number}</title>
-        <style>
-          body { 
-            font-family: Arial, sans-serif; 
-            margin: 20px; 
-            color: #000;
-          }
-          .header { 
-            text-align: center; 
-            margin-bottom: 30px; 
-            border-bottom: 2px solid #000;
-            padding-bottom: 20px;
-          }
-          .company-name { 
-            font-size: 28px; 
-            font-weight: bold; 
-            margin-bottom: 10px; 
-            color: #000;
-          }
-          .address { 
-            margin-bottom: 5px; 
-            color: #333;
-          }
-          .contact { 
-            margin-bottom: 20px; 
-            color: #333;
-          }
-          .info-section { 
-            display: flex; 
-            justify-content: space-between; 
-            margin-bottom: 30px;
-            padding: 20px;
-            border: 1px solid #000;
-          }
-          table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-bottom: 30px;
-          }
-          th, td { 
-            border: 1px solid #000; 
-            padding: 12px; 
-            text-align: left; 
-          }
-          th { 
-            background-color: #f8f9fa; 
-            font-weight: bold;
-          }
-          .summary { 
-            float: right; 
-            width: 300px; 
-            border: 1px solid #000;
-            padding: 20px;
-            margin-top: 20px;
-          }
-          .footer { 
-            margin-top: 30px; 
-            text-align: center; 
-            border-top: 1px solid #000;
-            padding-top: 20px;
-          }
-          .balance-row { 
-            background-color: #f0f0f0; 
-            font-weight: bold; 
-          }
-          @media print {
-            body { margin: 0; }
-            .header { margin-bottom: 20px; }
-            .info-section { margin-bottom: 20px; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <div class="company-name">${invoiceData.supplier.name}</div>
-          <div class="address">${invoiceData.supplier.full_address}</div>
-          <div class="contact">CONTACT: ${invoiceData.supplier.phone}</div>
+      <div style="font-family: Arial, sans-serif; padding: 20px; color: #000;">
+        <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 20px;">
+          <h1 style="font-size: 28px; font-weight: bold; margin-bottom: 10px;">${invoiceData.supplier.name}</h1>
+          <p style="margin-bottom: 5px; color: #333;">${invoiceData.supplier.full_address}</p>
+          <p style="margin-bottom: 20px; color: #333;">CONTACT: ${invoiceData.supplier.phone}</p>
         </div>
 
-        <div class="info-section">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 30px; padding: 20px; border: 1px solid #000;">
           <div>
             <strong>To:</strong><br>
             ${invoiceData.customer.name}<br>
@@ -180,60 +269,65 @@ const InvoiceGenerator = () => {
           </div>
         </div>
 
-        <table>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
           <thead>
-            <tr>
-              ${invoiceData.table_data.headers.map(header => `<th>${header}</th>`).join('')}
+            <tr style="background-color: #f8f9fa;">
+              ${invoiceData.table_data.headers.map(header => `<th style="border: 1px solid #000; padding: 12px; text-align: left; font-weight: bold;">${header}</th>`).join('')}
             </tr>
           </thead>
           <tbody>
             ${invoiceData.table_data.rows.map(row => `
-              <tr class="${row.is_balance_row ? 'balance-row' : ''}">
-                <td>${row.s_no || ''}</td>
-                <td>${row.date || ''}</td>
-                <td>${row.particular}</td>
-                <td>${row.quantity || ''}</td>
-                <td>${row.location || ''}</td>
-                <td>${row.price || ''}</td>
-                <td>${row.no_of_loads || ''}</td>
-                <td>${row.total_amount || ''}</td>
-                <td>${row.amount_received || ''}</td>
-                <td>${row.balance}</td>
+              <tr style="${row.is_balance_row ? 'background-color: #f0f0f0; font-weight: bold;' : ''}">
+                <td style="border: 1px solid #000; padding: 12px;">${row.s_no || ''}</td>
+                <td style="border: 1px solid #000; padding: 12px;">${row.date || ''}</td>
+                <td style="border: 1px solid #000; padding: 12px;">${row.particular}</td>
+                <td style="border: 1px solid #000; padding: 12px;">${row.quantity || ''}</td>
+                <td style="border: 1px solid #000; padding: 12px;">${row.location || ''}</td>
+                <td style="border: 1px solid #000; padding: 12px;">${row.price || ''}</td>
+                <td style="border: 1px solid #000; padding: 12px;">${row.no_of_loads || ''}</td>
+                <td style="border: 1px solid #000; padding: 12px;">${row.total_amount || ''}</td>
+                <td style="border: 1px solid #000; padding: 12px;">${row.amount_received || ''}</td>
+                <td style="border: 1px solid #000; padding: 12px; font-weight: bold;">${row.balance}</td>
               </tr>
             `).join('')}
           </tbody>
         </table>
 
-        <div class="summary">
+        <div style="float: right; width: 300px; border: 1px solid #000; padding: 20px; margin-top: 20px;">
           <p><strong>Opening Balance:</strong> ${invoiceData.table_data.summary.opening_balance}</p>
           <p><strong>Total Sales:</strong> ${invoiceData.table_data.summary.total_sales_amount}</p>
           <p><strong>Total Received:</strong> ${invoiceData.table_data.summary.total_received}</p>
           <p><strong>Closing Balance:</strong> ${invoiceData.table_data.summary.closing_balance}</p>
         </div>
 
-        <div class="footer">
+        <div style="clear: both; margin-top: 100px; text-align: center; border-top: 1px solid #000; padding-top: 20px;">
           <p>Generated on ${new Date().toLocaleDateString()} | Thank you for your business!</p>
         </div>
-
-        <script>
-          // Auto-print and close after a short delay
-          setTimeout(() => {
-            window.print();
-            setTimeout(() => {
-              window.close();
-            }, 500);
-          }, 500);
-        </script>
-      </body>
-      </html>
+      </div>
     `;
 
-    printWindow.document.write(invoiceContent);
-    printWindow.document.close();
-    
-    toast.success('PDF generated successfully!');
-  };
+    // Create a temporary div to hold the content
+    const element = document.createElement('div');
+    element.innerHTML = invoiceContent;
 
+    const opt = {
+      margin: 10,
+      filename: `Invoice_${invoiceData.invoice_details.invoice_number}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+    };
+
+    // Generate and download PDF
+    await html2pdf().set(opt).from(element).save();
+    
+    toast.success('PDF downloaded successfully!');
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    toast.error('Failed to generate PDF. Please try again.');
+  }
+};
+  
   const resetInvoice = () => {
     setInvoiceData(null);
     setSelectedCustomer('');

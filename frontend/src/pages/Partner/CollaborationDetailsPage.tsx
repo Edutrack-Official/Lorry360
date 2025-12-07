@@ -1,4 +1,782 @@
-// src/pages/partners/CollaborationDetailsPage.tsx
+
+// import React, { useState, useEffect } from 'react';
+// import { useParams, useNavigate, useLocation } from 'react-router-dom';
+// import {
+//   ArrowLeft,
+//   Truck,
+//   Calendar,
+//   MapPin,
+//   Package,
+//   IndianRupee,
+//   Search,
+//   RefreshCw,
+//   TrendingUp,
+//   TrendingDown,
+//   Users,
+//   CreditCard,
+//   Plus,
+//   CheckCircle,
+//   XCircle,
+//   Clock,
+//   Filter,
+//   Banknote,
+//   Building2,
+//   Smartphone,
+//   Wallet
+// } from 'lucide-react';
+// import { motion, AnimatePresence } from 'framer-motion';
+// import toast from 'react-hot-toast';
+// import api from '../../api/client';
+// import { useAuth } from '../../contexts/AuthContext';
+
+// interface Partner {
+//   _id: string;
+//   name: string;
+//   phone: string;
+//   email: string;
+//   company_name: string;
+// }
+
+// interface Trip {
+//   _id: string;
+//   trip_number: string;
+//   trip_date: string;
+//   material_name: string;
+//   location: string;
+//   customer_amount: number;
+//   crusher_amount: number;
+//   profit: number;
+//   status: string;
+//   notes?: string;
+//   owner_id: string;
+//   collab_owner_id?: {
+//     _id: string;
+//     name: string;
+//     company_name: string;
+//   };
+// }
+
+// interface Payment {
+//   _id: string;
+//   payment_number: string;
+//   payment_type: string;
+//   amount: number;
+//   payment_date: string;
+//   payment_mode: string;
+//   notes?: string;
+//   collab_payment_status: 'pending' | 'approved' | 'rejected';
+//   owner_id: {
+//     _id: string;
+//     name: string;
+//   };
+//   collab_owner_id?: {
+//     _id: string;
+//     name: string;
+//   };
+//   createdAt: string;
+// }
+
+// const formatCurrency = (amount: number) => {
+//   return new Intl.NumberFormat('en-IN', {
+//     style: 'currency',
+//     currency: 'INR',
+//     minimumFractionDigits: 0,
+//     maximumFractionDigits: 0,
+//   }).format(amount || 0);
+// };
+
+// const formatDate = (dateString: string) => {
+//   return new Date(dateString).toLocaleDateString('en-US', {
+//     year: 'numeric',
+//     month: 'short',
+//     day: 'numeric'
+//   });
+// };
+
+// const CollaborationDetailsPage = () => {
+//   const { partnerId } = useParams<{ partnerId: string }>();
+//   const navigate = useNavigate();
+//   const location = useLocation();
+//   const { user } = useAuth();
+  
+//   const [partner, setPartner] = useState<Partner | null>(null);
+//   const [loading, setLoading] = useState(true);
+//   const [activeMainTab, setActiveMainTab] = useState<'trips' | 'payments'>('trips');
+//   const [activeTripsTab, setActiveTripsTab] = useState<'my-trips' | 'partner-trips'>('my-trips');
+//   const [activePaymentsTab, setActivePaymentsTab] = useState<'my-payments' | 'partner-payments'>('my-payments');
+  
+//   const [myTrips, setMyTrips] = useState<Trip[]>([]);
+//   const [partnerTrips, setPartnerTrips] = useState<Trip[]>([]);
+//   const [myPayments, setMyPayments] = useState<Payment[]>([]);
+//   const [partnerPayments, setPartnerPayments] = useState<Payment[]>([]);
+  
+//   const [searchText, setSearchText] = useState('');
+//   const [dateRange, setDateRange] = useState({ start: '', end: '' });
+//   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('all');
+
+//   useEffect(() => {
+//     console.log('🔄 useEffect triggered');
+//     console.log('📍 Current partnerId:', partnerId);
+//     console.log('📍 Location state partner:', location.state?.partner);
+    
+//     if (location.state?.partner) {
+//       // Clear old state first to prevent showing wrong data
+//       setMyPayments([]);
+//       setPartnerPayments([]);
+//       setMyTrips([]);
+//       setPartnerTrips([]);
+      
+//       setPartner(location.state.partner);
+//       console.log('✅ Partner set, fetching data...');
+//       fetchData();
+//     } else {
+//       console.log('⚠️ No partner in location state, redirecting...');
+//       navigate('/partners');
+//     }
+//   }, [partnerId]);
+
+//   const fetchData = async () => {
+//     try {
+//       setLoading(true);
+//       await Promise.all([fetchTrips(), fetchPayments()]);
+//     } catch (error: any) {
+//       toast.error('Failed to fetch data');
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const fetchTrips = async () => {
+//     try {
+//       const [myTripsRes, partnerTripsRes] = await Promise.all([
+//         api.get('/trips', {
+//           params: {
+//             trip_type: 'collaborative',
+//             collab_owner_id: partnerId,
+//             fetch_mode: 'as_owner'
+//           }
+//         }),
+//         api.get('/trips', {
+//           params: {
+//             trip_type: 'collaborative',
+//             collab_owner_id: partnerId,
+//             fetch_mode: 'as_collaborator'
+//           }
+//         })
+//       ]);
+      
+//       setMyTrips(myTripsRes.data.data?.trips || []);
+//       setPartnerTrips(partnerTripsRes.data.data?.trips || []);
+//     } catch (error: any) {
+//       console.error('Failed to fetch trips:', error);
+//     }
+//   };
+
+//  const fetchPayments = async () => {
+//   try {
+//     console.log('🔍 Fetching payments for partner:', partnerId);
+//     console.log('📍 Partner Name:', partner?.name);
+    
+//     // MY PAYMENTS: Use new dedicated endpoint that filters by partner in URL
+//     const myPaymentsRes = await api.get(`/payments/to-partner/${partnerId}`);
+
+//     console.log('📤 My Payments to this Partner:', myPaymentsRes.data.data?.payments?.length || 0);
+    
+//     // Log each payment's collab_owner_id to verify filtering is correct
+//     myPaymentsRes.data.data?.payments?.forEach((payment: any, index: number) => {
+//       console.log(`  Payment ${index + 1}:`, {
+//         payment_number: payment.payment_number,
+//         amount: payment.amount,
+//         collab_owner_id: payment.collab_owner_id?._id || payment.collab_owner_id,
+//         collab_owner_name: payment.collab_owner_id?.name,
+//         expected_partner_id: partnerId,
+//         match: (payment.collab_owner_id?._id || payment.collab_owner_id) === partnerId ? '✅' : '❌'
+//       });
+//     });
+
+//     // PARTNER PAYMENTS TO ME: Partner created (owner_id = partner), sent TO me (collab_owner_id = me)
+//     const partnerPaymentsRes = await api.get('/payments-received', {
+//       params: {
+//         owner_id: partnerId  // From this specific partner
+//       }
+//     });
+
+//     console.log('📥 Partner Payments to me:', partnerPaymentsRes.data.data?.payments?.length || 0);
+    
+//     // Log each payment's owner_id to verify filtering is correct
+//     partnerPaymentsRes.data.data?.payments?.forEach((payment: any, index: number) => {
+//       console.log(`  Payment ${index + 1}:`, {
+//         payment_number: payment.payment_number,
+//         amount: payment.amount,
+//         owner_id: payment.owner_id?._id || payment.owner_id,
+//         owner_name: payment.owner_id?.name,
+//         expected_partner_id: partnerId,
+//         match: (payment.owner_id?._id || payment.owner_id) === partnerId ? '✅' : '❌'
+//       });
+//     });
+
+//     setMyPayments(myPaymentsRes.data.data?.payments || []);
+//     setPartnerPayments(partnerPaymentsRes.data.data?.payments || []);
+//   } catch (error: any) {
+//     console.error('❌ Failed to fetch payments:', error);
+//     console.error('Error details:', error.response?.data);
+//     toast.error('Failed to fetch payments');
+//   }
+// };
+//   const handleApprovePayment = async (paymentId: string) => {
+//     try {
+//       await api.patch(`/payments/${paymentId}/approve`);
+//       toast.success('Payment approved successfully');
+//       fetchPayments();
+//     } catch (error: any) {
+//       toast.error(error.response?.data?.error || 'Failed to approve payment');
+//     }
+//   };
+
+//   const handleRejectPayment = async (paymentId: string) => {
+//     try {
+//       await api.patch(`/payments/${paymentId}/reject`);
+//       toast.success('Payment rejected');
+//       fetchPayments();
+//     } catch (error: any) {
+//       toast.error(error.response?.data?.error || 'Failed to reject payment');
+//     }
+//   };
+
+//   const calculateTotals = () => {
+//     // Calculate trip amounts
+//     const totalMyTripsAmount = myTrips.reduce((sum, trip) => sum + trip.customer_amount, 0);
+//     const totalPartnerTripsAmount = partnerTrips.reduce((sum, trip) => sum + trip.customer_amount, 0);
+    
+//     // Calculate approved payments only
+//     const totalMyPayments = myPayments
+//       .filter(p => p.collab_payment_status === 'approved')
+//       .reduce((sum, payment) => sum + payment.amount, 0);
+    
+//     const totalPartnerPayments = partnerPayments
+//       .filter(p => p.collab_payment_status === 'approved')
+//       .reduce((sum, payment) => sum + payment.amount, 0);
+    
+//     // CORRECTED LOGIC:
+//     // Partner trips to me - My trips to partner
+//     // Partner did work for me (I received trip revenue but owe partner)
+//     // I did work for partner (partner received trip revenue but owes me)
+//     // Net: How much work value difference
+//     // Positive = Partner did more for me (I owe partner)
+//     // Negative = I did more for partner (partner owes me)
+//     const netTripAmount = totalPartnerTripsAmount - totalMyTripsAmount;
+    
+//     // Total payments made (sum of both directions)
+//     const totalPaymentsMade = totalMyPayments + totalPartnerPayments;
+    
+//     // Final balance = netTripAmount - myPayments + partnerPayments
+//     // Positive = I owe partner, Negative = Partner owes me
+//     const finalBalance = netTripAmount - totalMyPayments + totalPartnerPayments;
+    
+//     return {
+//       totalMyTripsAmount,
+//       totalPartnerTripsAmount,
+//       totalMyPayments,
+//       totalPartnerPayments,
+//       netTripAmount,
+//       totalPaymentsMade,
+//       finalBalance,
+//       myTripCount: myTrips.length,
+//       partnerTripCount: partnerTrips.length,
+//       myPaymentCount: myPayments.length,
+//       partnerPaymentCount: partnerPayments.length
+//     };
+//   };
+
+//   const filteredTrips = () => {
+//     const trips = activeTripsTab === 'my-trips' ? myTrips : partnerTrips;
+    
+//     return trips.filter(trip => {
+//       const matchesSearch = !searchText || 
+//         trip.trip_number.toLowerCase().includes(searchText.toLowerCase()) ||
+//         trip.material_name.toLowerCase().includes(searchText.toLowerCase()) ||
+//         trip.location.toLowerCase().includes(searchText.toLowerCase());
+      
+//       const tripDate = new Date(trip.trip_date);
+//       const matchesDateRange =
+//         (!dateRange.start || tripDate >= new Date(dateRange.start)) &&
+//         (!dateRange.end || tripDate <= new Date(dateRange.end));
+      
+//       return matchesSearch && matchesDateRange;
+//     });
+//   };
+
+//   const filteredPayments = () => {
+//     const payments = activePaymentsTab === 'my-payments' ? myPayments : partnerPayments;
+    
+//     return payments.filter(payment => {
+//       const matchesSearch = !searchText ||
+//         payment.payment_number.toLowerCase().includes(searchText.toLowerCase()) ||
+//         payment.payment_mode.toLowerCase().includes(searchText.toLowerCase()) ||
+//         payment.notes?.toLowerCase().includes(searchText.toLowerCase());
+      
+//       const matchesStatus = paymentStatusFilter === 'all' || 
+//         payment.collab_payment_status === paymentStatusFilter;
+      
+//       const paymentDate = new Date(payment.payment_date);
+//       const matchesDateRange =
+//         (!dateRange.start || paymentDate >= new Date(dateRange.start)) &&
+//         (!dateRange.end || paymentDate <= new Date(dateRange.end));
+      
+//       return matchesSearch && matchesStatus && matchesDateRange;
+//     });
+//   };
+
+//   const getPaymentModeConfig = (mode: string) => {
+//     const configs = {
+//       cash: { color: 'bg-green-100 text-green-700 border-green-200', icon: Banknote, label: 'Cash' },
+//       bank_transfer: { color: 'bg-blue-100 text-blue-700 border-blue-200', icon: Building2, label: 'Bank Transfer' },
+//       cheque: { color: 'bg-purple-100 text-purple-700 border-purple-200', icon: CreditCard, label: 'Cheque' },
+//       upi: { color: 'bg-orange-100 text-orange-700 border-orange-200', icon: Smartphone, label: 'UPI' },
+//       other: { color: 'bg-gray-100 text-gray-700 border-gray-200', icon: Wallet, label: 'Other' }
+//     };
+//     return configs[mode as keyof typeof configs] || configs.other;
+//   };
+
+//   const getStatusConfig = (status: string) => {
+//     const configs = {
+//       pending: { color: 'bg-yellow-100 text-yellow-700 border-yellow-200', label: 'Pending', icon: Clock },
+//       approved: { color: 'bg-green-100 text-green-700 border-green-200', label: 'Approved', icon: CheckCircle },
+//       rejected: { color: 'bg-red-100 text-red-700 border-red-200', label: 'Rejected', icon: XCircle }
+//     };
+//     return configs[status as keyof typeof configs] || configs.pending;
+//   };
+
+//   const TripCard = ({ trip, type }: { trip: Trip; type: 'my' | 'partner' }) => (
+//     <motion.div
+//       initial={{ opacity: 0, y: 10 }}
+//       animate={{ opacity: 1, y: 0 }}
+//       className="bg-white rounded-lg border border-gray-200 p-3 hover:shadow-md transition-shadow"
+//     >
+//       <div className="flex items-start justify-between mb-2">
+//         <div className="flex items-center gap-2">
+//           <div className={`p-1.5 rounded-lg ${
+//             type === 'my' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'
+//           }`}>
+//             <Truck className="h-4 w-4" />
+//           </div>
+//           <div>
+//             <h4 className="font-bold text-gray-900 text-sm">{trip.trip_number}</h4>
+//             <p className="text-xs text-gray-500">{formatDate(trip.trip_date)}</p>
+//           </div>
+//         </div>
+//         <div className="text-right">
+//           <p className="font-bold text-gray-900 text-sm">{formatCurrency(trip.customer_amount)}</p>
+//           <p className="text-xs text-gray-500 capitalize">{trip.status}</p>
+//         </div>
+//       </div>
+
+//       <div className="grid grid-cols-2 gap-2 text-xs">
+//         <div className="flex items-center gap-1">
+//           <Package className="h-3 w-3 text-gray-400" />
+//           <span className="truncate">{trip.material_name}</span>
+//         </div>
+//         <div className="flex items-center gap-1">
+//           <MapPin className="h-3 w-3 text-gray-400" />
+//           <span className="truncate">{trip.location}</span>
+//         </div>
+//       </div>
+
+//       {trip.notes && (
+//         <p className="text-xs text-gray-600 italic border-t pt-2 mt-2">{trip.notes}</p>
+//       )}
+//     </motion.div>
+//   );
+
+//   const PaymentCard = ({ payment, canApproveReject }: { payment: Payment; canApproveReject: boolean }) => {
+//     const modeConfig = getPaymentModeConfig(payment.payment_mode);
+//     const statusConfig = getStatusConfig(payment.collab_payment_status);
+//     const ModeIcon = modeConfig.icon;
+//     const StatusIcon = statusConfig.icon;
+
+//     return (
+//       <motion.div
+//         initial={{ opacity: 0, y: 10 }}
+//         animate={{ opacity: 1, y: 0 }}
+//         className="bg-white rounded-lg border border-gray-200 p-3 hover:shadow-md transition-shadow"
+//       >
+//         <div className="flex items-start justify-between mb-3">
+//           <div>
+//             <h4 className="font-bold text-gray-900 text-sm mb-1">{payment.payment_number}</h4>
+//             <div className="flex items-center gap-2">
+//               <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border ${modeConfig.color}`}>
+//                 <ModeIcon className="h-3 w-3" />
+//                 {modeConfig.label}
+//               </span>
+//               <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border ${statusConfig.color}`}>
+//                 <StatusIcon className="h-3 w-3" />
+//                 {statusConfig.label}
+//               </span>
+//             </div>
+//           </div>
+//           <div className="text-right">
+//             <p className="font-bold text-green-600 text-lg">{formatCurrency(payment.amount)}</p>
+//           </div>
+//         </div>
+
+//         <div className="flex items-center gap-1 text-xs text-gray-500 mb-3">
+//           <Calendar className="h-3 w-3" />
+//           <span>{formatDate(payment.payment_date)}</span>
+//         </div>
+
+//         {payment.notes && (
+//           <p className="text-xs text-gray-600 mb-3">{payment.notes}</p>
+//         )}
+
+//         {canApproveReject && payment.collab_payment_status === 'pending' && (
+//           <div className="flex gap-2 pt-3 border-t">
+//             <button
+//               onClick={() => handleApprovePayment(payment._id)}
+//               className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-xs font-medium"
+//             >
+//               <CheckCircle className="h-3 w-3" />
+//               Approve
+//             </button>
+//             <button
+//               onClick={() => handleRejectPayment(payment._id)}
+//               className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-xs font-medium"
+//             >
+//               <XCircle className="h-3 w-3" />
+//               Reject
+//             </button>
+//           </div>
+//         )}
+//       </motion.div>
+//     );
+//   };
+
+//   const totals = calculateTotals();
+
+//   if (loading) {
+//     return (
+//       <div className="flex justify-center items-center min-h-screen">
+//         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+//       </div>
+//     );
+//   }
+
+//   if (!partner) {
+//     return (
+//       <div className="flex flex-col items-center justify-center min-h-screen">
+//         <h2 className="text-xl font-bold text-gray-900 mb-4">Partner Not Found</h2>
+//         <button
+//           onClick={() => navigate('/partners')}
+//           className="text-blue-600 hover:text-blue-700"
+//         >
+//           ← Back to Collaborations
+//         </button>
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <div className="min-h-screen bg-gray-50">
+//       {/* Header */}
+//       <div className="bg-white border-b shadow-sm">
+//         <div className="max-w-6xl mx-auto px-4 py-4">
+//           <div className="flex items-center justify-between mb-4">
+//             <div className="flex items-center gap-3">
+//               <button
+//                 onClick={() => navigate('/partners')}
+//                 className="p-2 hover:bg-gray-100 rounded-lg"
+//               >
+//                 <ArrowLeft className="h-5 w-5" />
+//               </button>
+//               <div className="flex items-center gap-2">
+//                 <div className="p-2 bg-blue-100 rounded-lg">
+//                   <Users className="h-5 w-5 text-blue-600" />
+//                 </div>
+//                 <div>
+//                   <h1 className="text-lg font-bold text-gray-900">{partner.name}</h1>
+//                   <p className="text-sm text-gray-600">{partner.company_name}</p>
+//                 </div>
+//               </div>
+//             </div>
+//             <button
+//               onClick={fetchData}
+//               className="p-2 hover:bg-gray-100 rounded-lg"
+//               title="Refresh"
+//             >
+//               <RefreshCw className="h-4 w-4" />
+//             </button>
+//           </div>
+
+//           {/* Stats */}
+//           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+//             <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-3 rounded-lg border border-blue-200">
+//               <p className="text-xs text-blue-700 mb-1">Total Trips Value</p>
+//               <p className="text-lg font-bold text-blue-900">{formatCurrency(totals.netTripAmount)}</p>
+//               <p className="text-xs text-blue-600">
+//                 Partner: {formatCurrency(totals.totalPartnerTripsAmount)} • Mine: {formatCurrency(totals.totalMyTripsAmount)}
+//               </p>
+//             </div>
+//             <div className="bg-gradient-to-br from-green-50 to-green-100 p-3 rounded-lg border border-green-200">
+//               <p className="text-xs text-green-700 mb-1">Total Payments (Approved)</p>
+//               <p className="text-lg font-bold text-green-900">{formatCurrency(totals.totalPaymentsMade)}</p>
+//               <p className="text-xs text-green-600">
+//                 Mine: {formatCurrency(totals.totalMyPayments)} • Partner: {formatCurrency(totals.totalPartnerPayments)}
+//               </p>
+//             </div>
+//             <div className={`p-3 rounded-lg border ${
+//               totals.finalBalance > 0 
+//                 ? 'bg-gradient-to-br from-green-50 to-green-100 border-green-200'
+//                 : totals.finalBalance < 0
+//                 ? 'bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200'
+//                 : 'bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200'
+//             }`}>
+//               <div className="flex items-center gap-1 mb-1">
+//                 {totals.finalBalance > 0 ? (
+//                   <TrendingDown className="h-3 w-3 text-green-600" />
+//                 ) : totals.finalBalance < 0 ? (
+//                   <TrendingUp className="h-3 w-3 text-orange-600" />
+//                 ) : null}
+//                 <p className={`text-xs ${
+//                   totals.finalBalance > 0 ? 'text-green-700' : 
+//                   totals.finalBalance < 0 ? 'text-orange-700' : 'text-gray-700'
+//                 }`}>
+//                   {totals.finalBalance > 0 ? `You need to pay ${partner.name}` : 
+//                    totals.finalBalance < 0 ? `${partner.name} needs to pay you` : 'All settled'}
+//                 </p>
+//               </div>
+//               <p className={`text-lg font-bold ${
+//                 totals.finalBalance > 0 ? 'text-green-900' : 
+//                 totals.finalBalance < 0 ? 'text-orange-900' : 'text-gray-900'
+//               }`}>
+//                 {formatCurrency(Math.abs(totals.finalBalance))}
+//               </p>
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* Main Content */}
+//       <div className="max-w-6xl mx-auto px-4 py-4">
+//         {/* Main Tab Navigation */}
+//         <div className="bg-white rounded-lg p-1.5 border border-gray-200 shadow-sm mb-4 inline-flex gap-1">
+//           <button
+//             onClick={() => setActiveMainTab('trips')}
+//             className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium text-sm transition-all ${
+//               activeMainTab === 'trips'
+//                 ? 'bg-blue-600 text-white shadow-sm'
+//                 : 'text-gray-700 hover:bg-gray-100'
+//             }`}
+//           >
+//             <Truck className="h-4 w-4" />
+//             <span>Trips</span>
+//             <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-bold ${
+//               activeMainTab === 'trips'
+//                 ? 'bg-white/20 text-white'
+//                 : 'bg-gray-200 text-gray-700'
+//             }`}>
+//               {myTrips.length + partnerTrips.length}
+//             </span>
+//           </button>
+//           <button
+//             onClick={() => setActiveMainTab('payments')}
+//             className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium text-sm transition-all ${
+//               activeMainTab === 'payments'
+//                 ? 'bg-green-600 text-white shadow-sm'
+//                 : 'text-gray-700 hover:bg-gray-100'
+//             }`}
+//           >
+//             <CreditCard className="h-4 w-4" />
+//             <span>Payments</span>
+//             <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-bold ${
+//               activeMainTab === 'payments'
+//                 ? 'bg-white/20 text-white'
+//                 : 'bg-gray-200 text-gray-700'
+//             }`}>
+//               {myPayments.length + partnerPayments.length}
+//             </span>
+//           </button>
+//         </div>
+
+//         {/* Sub-tabs and Filters */}
+//         <div className="bg-white rounded-lg border shadow-sm p-3 mb-4">
+//           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+//             {/* Sub-tabs */}
+//             <div className="flex border-b md:border-b-0">
+//               {activeMainTab === 'trips' ? (
+//                 <>
+//                   <button
+//                     onClick={() => setActiveTripsTab('my-trips')}
+//                     className={`px-4 py-2 font-medium text-sm border-b-2 ${
+//                       activeTripsTab === 'my-trips'
+//                         ? 'border-blue-500 text-blue-600'
+//                         : 'border-transparent text-gray-500 hover:text-gray-700'
+//                     }`}
+//                   >
+//                     My Trips
+//                     <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+//                       {myTrips.length}
+//                     </span>
+//                   </button>
+//                   <button
+//                     onClick={() => setActiveTripsTab('partner-trips')}
+//                     className={`px-4 py-2 font-medium text-sm border-b-2 ${
+//                       activeTripsTab === 'partner-trips'
+//                         ? 'border-blue-500 text-blue-600'
+//                         : 'border-transparent text-gray-500 hover:text-gray-700'
+//                     }`}
+//                   >
+//                     Partner Trips
+//                     <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+//                       {partnerTrips.length}
+//                     </span>
+//                   </button>
+//                 </>
+//               ) : (
+//                 <>
+//                   <button
+//                     onClick={() => setActivePaymentsTab('my-payments')}
+//                     className={`px-4 py-2 font-medium text-sm border-b-2 ${
+//                       activePaymentsTab === 'my-payments'
+//                         ? 'border-green-500 text-green-600'
+//                         : 'border-transparent text-gray-500 hover:text-gray-700'
+//                     }`}
+//                   >
+//                     My Payments
+//                     <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+//                       {myPayments.length}
+//                     </span>
+//                   </button>
+//                   <button
+//                     onClick={() => setActivePaymentsTab('partner-payments')}
+//                     className={`px-4 py-2 font-medium text-sm border-b-2 ${
+//                       activePaymentsTab === 'partner-payments'
+//                         ? 'border-green-500 text-green-600'
+//                         : 'border-transparent text-gray-500 hover:text-gray-700'
+//                     }`}
+//                   >
+//                     Partner Payments
+//                     <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+//                       {partnerPayments.length}
+//                     </span>
+//                   </button>
+//                 </>
+//               )}
+//             </div>
+            
+//             {/* Filters */}
+//             <div className="flex items-center gap-2">
+//               {activeMainTab === 'payments' && (
+//                 <select
+//                   value={paymentStatusFilter}
+//                   onChange={(e) => setPaymentStatusFilter(e.target.value)}
+//                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+//                 >
+//                   <option value="all">All Status</option>
+//                   <option value="pending">Pending</option>
+//                   <option value="approved">Approved</option>
+//                   <option value="rejected">Rejected</option>
+//                 </select>
+//               )}
+              
+//               <div className="flex gap-2">
+//                 <input
+//                   type="date"
+//                   value={dateRange.start}
+//                   onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+//                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+//                 />
+//                 <input
+//                   type="date"
+//                   value={dateRange.end}
+//                   onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+//                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+//                 />
+//               </div>
+              
+//               <div className="relative">
+//                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+//                 <input
+//                   type="text"
+//                   placeholder="Search..."
+//                   value={searchText}
+//                   onChange={(e) => setSearchText(e.target.value)}
+//                   className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+//                 />
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* Add Payment Button - Only show when on 'payments' tab AND 'my-payments' sub-tab */}
+//         {activeMainTab === 'payments' && activePaymentsTab === 'my-payments' && (
+//           <div className="mb-4">
+//             <button
+//               onClick={() => navigate(`/partners/${partnerId}/payments/create`)}
+//               className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+//             >
+//               <Plus className="h-4 w-4" />
+//               Add Payment
+//             </button>
+//           </div>
+//         )}
+
+//         {/* Content */}
+//         <div className="bg-white rounded-lg border shadow-sm p-4">
+//           <h3 className="text-base font-semibold text-gray-900 mb-4">
+//             {activeMainTab === 'trips' 
+//               ? (activeTripsTab === 'my-trips' 
+//                   ? `My Trips to ${partner.name}` 
+//                   : `${partner.name}'s Trips to Me`)
+//               : (activePaymentsTab === 'my-payments'
+//                   ? `My Payments to ${partner.name}`
+//                   : `${partner.name}'s Payments to Me`)}
+//             <span className="text-gray-500 font-normal ml-2">
+//               ({activeMainTab === 'trips' ? filteredTrips().length : filteredPayments().length} items)
+//             </span>
+//           </h3>
+          
+//           {activeMainTab === 'trips' ? (
+//             filteredTrips().length === 0 ? (
+//               <div className="text-center py-12">
+//                 <Truck className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+//                 <h4 className="text-base font-semibold text-gray-900 mb-2">No trips found</h4>
+//               </div>
+//             ) : (
+//               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+//                 {filteredTrips().map((trip) => (
+//                   <TripCard 
+//                     key={trip._id} 
+//                     trip={trip} 
+//                     type={activeTripsTab === 'my-trips' ? 'my' : 'partner'} 
+//                   />
+//                 ))}
+//               </div>
+//             )
+//           ) : (
+//             filteredPayments().length === 0 ? (
+//               <div className="text-center py-12">
+//                 <CreditCard className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+//                 <h4 className="text-base font-semibold text-gray-900 mb-2">No payments found</h4>
+//               </div>
+//             ) : (
+//               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+//                 {filteredPayments().map((payment) => (
+//                   <PaymentCard 
+//                     key={payment._id} 
+//                     payment={payment}
+//                     canApproveReject={activePaymentsTab === 'partner-payments'}
+//                   />
+//                 ))}
+//               </div>
+//             )
+//           )}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default CollaborationDetailsPage;
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
@@ -8,15 +786,23 @@ import {
   MapPin,
   Package,
   IndianRupee,
-  Filter,
   Search,
   RefreshCw,
-  ChevronDown,
   TrendingUp,
   TrendingDown,
-  Users
+  Users,
+  CreditCard,
+  Plus,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Filter,
+  Banknote,
+  Building2,
+  Smartphone,
+  Wallet
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import api from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
@@ -46,14 +832,26 @@ interface Trip {
     name: string;
     company_name: string;
   };
-  customer_id?: {
+}
+
+interface Payment {
+  _id: string;
+  payment_number: string;
+  payment_type: string;
+  amount: number;
+  payment_date: string;
+  payment_mode: string;
+  notes?: string;
+  collab_payment_status: 'pending' | 'approved' | 'rejected';
+  owner_id: {
     _id: string;
     name: string;
   };
-  crusher_id?: {
+  collab_owner_id?: {
     _id: string;
     name: string;
   };
+  createdAt: string;
 }
 
 const formatCurrency = (amount: number) => {
@@ -81,118 +879,211 @@ const CollaborationDetailsPage = () => {
   
   const [partner, setPartner] = useState<Partner | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'my-trips' | 'partner-trips'>('my-trips');
+  const [activeMainTab, setActiveMainTab] = useState<'trips' | 'payments'>('trips');
+  const [activeTripsTab, setActiveTripsTab] = useState<'my-trips' | 'partner-trips'>('my-trips');
+  const [activePaymentsTab, setActivePaymentsTab] = useState<'my-payments' | 'partner-payments'>('my-payments');
   
   const [myTrips, setMyTrips] = useState<Trip[]>([]);
   const [partnerTrips, setPartnerTrips] = useState<Trip[]>([]);
+  const [myPayments, setMyPayments] = useState<Payment[]>([]);
+  const [partnerPayments, setPartnerPayments] = useState<Payment[]>([]);
+  
   const [searchText, setSearchText] = useState('');
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('all');
 
   useEffect(() => {
     if (location.state?.partner) {
+      setMyPayments([]);
+      setPartnerPayments([]);
+      setMyTrips([]);
+      setPartnerTrips([]);
+      
       setPartner(location.state.partner);
-      fetchTrips();
+      fetchData();
     } else {
-      // If no state, go back to list
       navigate('/partners');
     }
   }, [partnerId]);
 
-  const fetchTrips = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      
-      // Fetch MY trips where I'm owner and partner is collaborator
-      const myTripsParams: any = {
-        collab_owner_id: partnerId,
-        trip_type: 'collaborative'
-      };
-      
-      if (dateRange.start) myTripsParams.start_date = dateRange.start;
-      if (dateRange.end) myTripsParams.end_date = dateRange.end;
-      
-const myTripsRes = await api.get('/trips', {
-  params: {
-    trip_type: 'collaborative',
-    collab_owner_id: partnerId,  // Partner is the collaborator
-    fetch_mode: 'as_owner' // Default, can be omitted
-  }
-});  
-    if (myTripsRes.data.success) {
-        setMyTrips(myTripsRes.data.data?.trips || []);
-      }
-      
-      // Fetch PARTNER'S trips where partner is owner and I'm collaborator
-      // We'll need to use the same endpoint but with owner_id filter
-      // This might require backend changes or we can filter client-side
-      // For now, let's assume we can get all trips and filter
-         const partnerTripsRes = await api.get('/trips', {
-            params: {
-                trip_type: 'collaborative',
-                collab_owner_id: partnerId,  // Partner is the owner (parameter name is confusing)
-                fetch_mode: 'as_collaborator' // This changes the logic
-            }
-            });
-      
-      if (partnerTripsRes.data.success) {
-        setPartnerTrips(partnerTripsRes.data.data?.trips || []);
-      }
-      
+      await Promise.all([fetchTrips(), fetchPayments()]);
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to fetch trips');
+      toast.error('Failed to fetch data');
     } finally {
       setLoading(false);
     }
   };
 
-const calculateTotals = () => {
-  const totalMyTripsAmount = myTrips.reduce((sum, trip) => sum + trip.customer_amount, 0);
-  const totalPartnerTripsAmount = partnerTrips.reduce((sum, trip) => sum + trip.customer_amount, 0);
-  
-  // Partner owes me for my trips, I owe partner for partner's trips
-  const partnerOwesMe = totalMyTripsAmount;
-  const iOwePartner = totalPartnerTripsAmount;
-  
-  const netAmount = totalMyTripsAmount - totalPartnerTripsAmount;
-  
-  return {
-    totalMyTripsAmount,
-    totalPartnerTripsAmount,
-    partnerOwesMe,
-    iOwePartner,
-    netAmount,
-    myTripCount: myTrips.length,
-    partnerTripCount: partnerTrips.length
+  const fetchTrips = async () => {
+    try {
+      const [myTripsRes, partnerTripsRes] = await Promise.all([
+        api.get('/trips', {
+          params: {
+            trip_type: 'collaborative',
+            collab_owner_id: partnerId,
+            fetch_mode: 'as_owner'
+          }
+        }),
+        api.get('/trips', {
+          params: {
+            trip_type: 'collaborative',
+            collab_owner_id: partnerId,
+            fetch_mode: 'as_collaborator'
+          }
+        })
+      ]);
+      
+      setMyTrips(myTripsRes.data.data?.trips || []);
+      setPartnerTrips(partnerTripsRes.data.data?.trips || []);
+    } catch (error: any) {
+      console.error('Failed to fetch trips:', error);
+    }
   };
-};
 
+  const fetchPayments = async () => {
+    try {
+      const myPaymentsRes = await api.get(`/payments/to-partner/${partnerId}`);
+      const partnerPaymentsRes = await api.get('/payments-received', {
+        params: { owner_id: partnerId }
+      });
+
+      setMyPayments(myPaymentsRes.data.data?.payments || []);
+      setPartnerPayments(partnerPaymentsRes.data.data?.payments || []);
+    } catch (error: any) {
+      console.error('Failed to fetch payments:', error);
+      toast.error('Failed to fetch payments');
+    }
+  };
+
+  const handleApprovePayment = async (paymentId: string, ownerId: string) => {
+    try {
+      await api.put(`/payments/collab/${paymentId}/status`, {
+        status: 'approved',
+        owner_id: ownerId
+      });
+      toast.success('Payment approved successfully');
+      fetchPayments();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to approve payment');
+    }
+  };
+
+  const handleRejectPayment = async (paymentId: string, ownerId: string) => {
+    try {
+      await api.put(`/payments/collab/${paymentId}/status`, {
+        status: 'rejected',
+        owner_id: ownerId
+      });
+      toast.success('Payment rejected');
+      fetchPayments();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || 'Failed to reject payment');
+    }
+  };
+
+  const calculateTotals = () => {
+    const totalMyTripsAmount = myTrips.reduce((sum, trip) => sum + trip.customer_amount, 0);
+    const totalPartnerTripsAmount = partnerTrips.reduce((sum, trip) => sum + trip.customer_amount, 0);
+    
+    const totalMyPayments = myPayments
+      .filter(p => p.collab_payment_status === 'approved')
+      .reduce((sum, payment) => sum + payment.amount, 0);
+    
+    const totalPartnerPayments = partnerPayments
+      .filter(p => p.collab_payment_status === 'approved')
+      .reduce((sum, payment) => sum + payment.amount, 0);
+    
+    const netTripAmount = totalPartnerTripsAmount - totalMyTripsAmount;
+    const totalPaymentsMade = totalMyPayments + totalPartnerPayments;
+    const finalBalance = netTripAmount - totalMyPayments + totalPartnerPayments;
+    
+    return {
+      totalMyTripsAmount,
+      totalPartnerTripsAmount,
+      totalMyPayments,
+      totalPartnerPayments,
+      netTripAmount,
+      totalPaymentsMade,
+      finalBalance,
+      myTripCount: myTrips.length,
+      partnerTripCount: partnerTrips.length,
+      myPaymentCount: myPayments.length,
+      partnerPaymentCount: partnerPayments.length
+    };
+  };
 
   const filteredTrips = () => {
-    const trips = activeTab === 'my-trips' ? myTrips : partnerTrips;
+    const trips = activeTripsTab === 'my-trips' ? myTrips : partnerTrips;
     
     return trips.filter(trip => {
-      const searchLower = searchText.toLowerCase();
-      return (
-        trip.trip_number.toLowerCase().includes(searchLower) ||
-        trip.material_name.toLowerCase().includes(searchLower) ||
-        trip.location.toLowerCase().includes(searchLower) ||
-        (trip.notes && trip.notes.toLowerCase().includes(searchLower))
-      );
+      const matchesSearch = !searchText || 
+        trip.trip_number.toLowerCase().includes(searchText.toLowerCase()) ||
+        trip.material_name.toLowerCase().includes(searchText.toLowerCase()) ||
+        trip.location.toLowerCase().includes(searchText.toLowerCase());
+      
+      const tripDate = new Date(trip.trip_date);
+      const matchesDateRange =
+        (!dateRange.start || tripDate >= new Date(dateRange.start)) &&
+        (!dateRange.end || tripDate <= new Date(dateRange.end));
+      
+      return matchesSearch && matchesDateRange;
     });
+  };
+
+  const filteredPayments = () => {
+    const payments = activePaymentsTab === 'my-payments' ? myPayments : partnerPayments;
+    
+    return payments.filter(payment => {
+      const matchesSearch = !searchText ||
+        payment.payment_number.toLowerCase().includes(searchText.toLowerCase()) ||
+        payment.payment_mode.toLowerCase().includes(searchText.toLowerCase()) ||
+        payment.notes?.toLowerCase().includes(searchText.toLowerCase());
+      
+      const matchesStatus = paymentStatusFilter === 'all' || 
+        payment.collab_payment_status === paymentStatusFilter;
+      
+      const paymentDate = new Date(payment.payment_date);
+      const matchesDateRange =
+        (!dateRange.start || paymentDate >= new Date(dateRange.start)) &&
+        (!dateRange.end || paymentDate <= new Date(dateRange.end));
+      
+      return matchesSearch && matchesStatus && matchesDateRange;
+    });
+  };
+
+  const getPaymentModeConfig = (mode: string) => {
+    const configs = {
+      cash: { color: 'bg-green-100 text-green-700 border-green-200', icon: Banknote, label: 'Cash' },
+      bank_transfer: { color: 'bg-blue-100 text-blue-700 border-blue-200', icon: Building2, label: 'Bank Transfer' },
+      cheque: { color: 'bg-purple-100 text-purple-700 border-purple-200', icon: CreditCard, label: 'Cheque' },
+      upi: { color: 'bg-orange-100 text-orange-700 border-orange-200', icon: Smartphone, label: 'UPI' },
+      other: { color: 'bg-gray-100 text-gray-700 border-gray-200', icon: Wallet, label: 'Other' }
+    };
+    return configs[mode as keyof typeof configs] || configs.other;
+  };
+
+  const getStatusConfig = (status: string) => {
+    const configs = {
+      pending: { color: 'bg-yellow-100 text-yellow-700 border-yellow-200', label: 'Pending', icon: Clock },
+      approved: { color: 'bg-green-100 text-green-700 border-green-200', label: 'Approved', icon: CheckCircle },
+      rejected: { color: 'bg-red-100 text-red-700 border-red-200', label: 'Rejected', icon: XCircle }
+    };
+    return configs[status as keyof typeof configs] || configs.pending;
   };
 
   const TripCard = ({ trip, type }: { trip: Trip; type: 'my' | 'partner' }) => (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow"
+      className="bg-white rounded-lg border border-gray-200 p-3 hover:shadow-md transition-shadow"
     >
-      <div className="flex items-start justify-between mb-3">
+      <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2">
-          <div className={`p-2 rounded-lg ${
-            type === 'my' 
-              ? 'bg-green-100 text-green-600' 
-              : 'bg-blue-100 text-blue-600'
+          <div className={`p-1.5 rounded-lg ${
+            type === 'my' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'
           }`}>
             <Truck className="h-4 w-4" />
           </div>
@@ -202,12 +1093,12 @@ const calculateTotals = () => {
           </div>
         </div>
         <div className="text-right">
-          <p className="font-bold text-gray-900">{formatCurrency(trip.customer_amount)}</p>
+          <p className="font-bold text-gray-900 text-sm">{formatCurrency(trip.customer_amount)}</p>
           <p className="text-xs text-gray-500 capitalize">{trip.status}</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 text-xs mb-2">
+      <div className="grid grid-cols-2 gap-2 text-xs">
         <div className="flex items-center gap-1">
           <Package className="h-3 w-3 text-gray-400" />
           <span className="truncate">{trip.material_name}</span>
@@ -219,17 +1110,79 @@ const calculateTotals = () => {
       </div>
 
       {trip.notes && (
-        <p className="text-xs text-gray-600 italic border-t pt-2">{trip.notes}</p>
+        <p className="text-xs text-gray-600 italic border-t pt-2 mt-2">{trip.notes}</p>
       )}
     </motion.div>
   );
+
+  const PaymentCard = ({ payment, canApproveReject }: { payment: Payment; canApproveReject: boolean }) => {
+    const modeConfig = getPaymentModeConfig(payment.payment_mode);
+    const statusConfig = getStatusConfig(payment.collab_payment_status);
+    const ModeIcon = modeConfig.icon;
+    const StatusIcon = statusConfig.icon;
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white rounded-lg border border-gray-200 p-3 hover:shadow-md transition-shadow"
+      >
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <h4 className="font-bold text-gray-900 text-sm mb-1">{payment.payment_number}</h4>
+            <div className="flex items-center gap-2">
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border ${modeConfig.color}`}>
+                <ModeIcon className="h-3 w-3" />
+                {modeConfig.label}
+              </span>
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border ${statusConfig.color}`}>
+                <StatusIcon className="h-3 w-3" />
+                {statusConfig.label}
+              </span>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="font-bold text-green-600 text-lg">{formatCurrency(payment.amount)}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1 text-xs text-gray-500 mb-3">
+          <Calendar className="h-3 w-3" />
+          <span>{formatDate(payment.payment_date)}</span>
+        </div>
+
+        {payment.notes && (
+          <p className="text-xs text-gray-600 mb-3">{payment.notes}</p>
+        )}
+
+        {canApproveReject && payment.collab_payment_status === 'pending' && (
+          <div className="flex gap-2 pt-3 border-t">
+            <button
+              onClick={() => handleApprovePayment(payment._id, payment.owner_id._id || payment.owner_id)}
+              className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-xs font-medium"
+            >
+              <CheckCircle className="h-3 w-3" />
+              Approve
+            </button>
+            <button
+              onClick={() => handleRejectPayment(payment._id, payment.owner_id._id || payment.owner_id)}
+              className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-xs font-medium"
+            >
+              <XCircle className="h-3 w-3" />
+              Reject
+            </button>
+          </div>
+        )}
+      </motion.div>
+    );
+  };
 
   const totals = calculateTotals();
 
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -237,7 +1190,7 @@ const calculateTotals = () => {
   if (!partner) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Partner Not Found</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Partner Not Found</h2>
         <button
           onClick={() => navigate('/partners')}
           className="text-blue-600 hover:text-blue-700"
@@ -250,187 +1203,289 @@ const calculateTotals = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white border-b shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
+        <div className="max-w-6xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => navigate('/partners')}
                 className="p-2 hover:bg-gray-100 rounded-lg"
               >
                 <ArrowLeft className="h-5 w-5" />
               </button>
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-blue-100 rounded-lg">
-                  <Users className="h-6 w-6 text-blue-600" />
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Users className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900">{partner.name}</h1>
-                  <p className="text-gray-600">{partner.company_name}</p>
+                  <h1 className="text-lg font-bold text-gray-900">{partner.name}</h1>
+                  <p className="text-sm text-gray-600">{partner.company_name}</p>
                 </div>
               </div>
             </div>
             <button
-              onClick={fetchTrips}
+              onClick={fetchData}
               className="p-2 hover:bg-gray-100 rounded-lg"
               title="Refresh"
             >
-              <RefreshCw className="h-5 w-5" />
+              <RefreshCw className="h-4 w-4" />
             </button>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-xl border border-green-200">
-              <p className="text-sm text-green-700 mb-1">My Trips Amount</p>
-              <p className="text-xl font-bold text-green-900">{formatCurrency(totals.totalMyTripsAmount)}</p>
-              <p className="text-xs text-green-600">{totals.myTripCount} trips</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-3 rounded-lg border border-blue-200">
+              <p className="text-xs text-blue-700 mb-1">Total Trips Value</p>
+              <p className="text-lg font-bold text-blue-900">{formatCurrency(totals.netTripAmount)}</p>
+              <p className="text-xs text-blue-600">
+                Partner: {formatCurrency(totals.totalPartnerTripsAmount)} • Mine: {formatCurrency(totals.totalMyTripsAmount)}
+              </p>
             </div>
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
-              <p className="text-sm text-blue-700 mb-1">Partner Trips Amount</p>
-              <p className="text-xl font-bold text-blue-900">{formatCurrency(totals.totalPartnerTripsAmount)}</p>
-              <p className="text-xs text-blue-600">{totals.partnerTripCount} trips</p>
+            <div className="bg-gradient-to-br from-green-50 to-green-100 p-3 rounded-lg border border-green-200">
+              <p className="text-xs text-green-700 mb-1">Total Payments (Approved)</p>
+              <p className="text-lg font-bold text-green-900">{formatCurrency(totals.totalPaymentsMade)}</p>
+              <p className="text-xs text-green-600">
+                Mine: {formatCurrency(totals.totalMyPayments)} • Partner: {formatCurrency(totals.totalPartnerPayments)}
+              </p>
             </div>
-<div className={`p-4 rounded-xl border ${
-  totals.netAmount > 0 
-    ? 'bg-gradient-to-br from-green-50 to-green-100 border-green-200'
-    : totals.netAmount < 0
-    ? 'bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200'
-    : 'bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200'
-}`}>
-  <div className="flex items-center gap-2 mb-1">
-    {totals.netAmount > 0 ? (
-      <TrendingUp className="h-4 w-4 text-green-600" />
-    ) : totals.netAmount < 0 ? (
-      <TrendingDown className="h-4 w-4 text-orange-600" />
-    ) : null}
-    <p className="text-sm">
-      {totals.netAmount > 0 ? 'Partner needs to pay me' : 
-       totals.netAmount < 0 ? 'I need to pay partner' : 'All settled'}
-    </p>
-  </div>
-  <p className={`text-xl font-bold ${
-    totals.netAmount > 0 
-      ? 'text-green-900' 
-      : totals.netAmount < 0
-      ? 'text-orange-900'
-      : 'text-gray-900'
-  }`}>
-    {formatCurrency(Math.abs(totals.netAmount))}
-  </p>
-</div>
+            <div className={`p-3 rounded-lg border ${
+              totals.finalBalance > 0 
+                ? 'bg-gradient-to-br from-green-50 to-green-100 border-green-200'
+                : totals.finalBalance < 0
+                ? 'bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200'
+                : 'bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200'
+            }`}>
+              <div className="flex items-center gap-1 mb-1">
+                {totals.finalBalance > 0 ? (
+                  <TrendingDown className="h-3 w-3 text-green-600" />
+                ) : totals.finalBalance < 0 ? (
+                  <TrendingUp className="h-3 w-3 text-orange-600" />
+                ) : null}
+                <p className={`text-xs ${
+                  totals.finalBalance > 0 ? 'text-green-700' : 
+                  totals.finalBalance < 0 ? 'text-orange-700' : 'text-gray-700'
+                }`}>
+                  {totals.finalBalance > 0 ? `You need to pay ${partner.name}` : 
+                   totals.finalBalance < 0 ? `${partner.name} needs to pay you` : 'All settled'}
+                </p>
+              </div>
+              <p className={`text-lg font-bold ${
+                totals.finalBalance > 0 ? 'text-green-900' : 
+                totals.finalBalance < 0 ? 'text-orange-900' : 'text-gray-900'
+              }`}>
+                {formatCurrency(Math.abs(totals.finalBalance))}
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 py-6">
-        {/* Tabs and Search */}
-        <div className="bg-white rounded-xl border shadow-sm p-4 mb-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="max-w-6xl mx-auto px-4 py-4">
+        <div className="bg-white rounded-lg p-1.5 border border-gray-200 shadow-sm mb-4 inline-flex gap-1">
+          <button
+            onClick={() => setActiveMainTab('trips')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium text-sm transition-all ${
+              activeMainTab === 'trips'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            <Truck className="h-4 w-4" />
+            <span>Trips</span>
+            <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-bold ${
+              activeMainTab === 'trips'
+                ? 'bg-white/20 text-white'
+                : 'bg-gray-200 text-gray-700'
+            }`}>
+              {myTrips.length + partnerTrips.length}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveMainTab('payments')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md font-medium text-sm transition-all ${
+              activeMainTab === 'payments'
+                ? 'bg-green-600 text-white shadow-sm'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            <CreditCard className="h-4 w-4" />
+            <span>Payments</span>
+            <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-bold ${
+              activeMainTab === 'payments'
+                ? 'bg-white/20 text-white'
+                : 'bg-gray-200 text-gray-700'
+            }`}>
+              {myPayments.length + partnerPayments.length}
+            </span>
+          </button>
+        </div>
+
+        <div className="bg-white rounded-lg border shadow-sm p-3 mb-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div className="flex border-b md:border-b-0">
-              <button
-                onClick={() => setActiveTab('my-trips')}
-                className={`px-4 py-2 font-medium text-sm border-b-2 ${
-                  activeTab === 'my-trips'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                My Trips to Partner
-                <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
-                  {myTrips.length}
-                </span>
-              </button>
-              <button
-                onClick={() => setActiveTab('partner-trips')}
-                className={`px-4 py-2 font-medium text-sm border-b-2 ${
-                  activeTab === 'partner-trips'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Partner Trips to Me
-                <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
-                  {partnerTrips.length}
-                </span>
-              </button>
+              {activeMainTab === 'trips' ? (
+                <>
+                  <button
+                    onClick={() => setActiveTripsTab('my-trips')}
+                    className={`px-4 py-2 font-medium text-sm border-b-2 ${
+                      activeTripsTab === 'my-trips'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    My Trips
+                    <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+                      {myTrips.length}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTripsTab('partner-trips')}
+                    className={`px-4 py-2 font-medium text-sm border-b-2 ${
+                      activeTripsTab === 'partner-trips'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    Partner Trips
+                    <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+                      {partnerTrips.length}
+                    </span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setActivePaymentsTab('my-payments')}
+                    className={`px-4 py-2 font-medium text-sm border-b-2 ${
+                      activePaymentsTab === 'my-payments'
+                        ? 'border-green-500 text-green-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    My Payments
+                    <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+                      {myPayments.length}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setActivePaymentsTab('partner-payments')}
+                    className={`px-4 py-2 font-medium text-sm border-b-2 ${
+                      activePaymentsTab === 'partner-payments'
+                        ? 'border-green-500 text-green-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    Partner Payments
+                    <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+                      {partnerPayments.length}
+                    </span>
+                  </button>
+                </>
+              )}
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              {activeMainTab === 'payments' && (
+                <select
+                  value={paymentStatusFilter}
+                  onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                >
+                  <option value="all">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              )}
+              
               <div className="flex gap-2">
                 <input
                   type="date"
                   value={dateRange.start}
                   onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                  placeholder="Start date"
                 />
                 <input
                   type="date"
                   value={dateRange.end}
                   onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                  placeholder="End date"
                 />
-                {(dateRange.start || dateRange.end) && (
-                  <button
-                    onClick={() => setDateRange({ start: '', end: '' })}
-                    className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800"
-                  >
-                    Clear
-                  </button>
-                )}
               </div>
               
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search trips..."
+                  placeholder="Search..."
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Trips List */}
-        <div className="bg-white rounded-xl border shadow-sm p-4">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            {activeTab === 'my-trips' 
-              ? `My Trips to ${partner.name}` 
-              : `${partner.name}'s Trips to Me`}
+        {activeMainTab === 'payments' && activePaymentsTab === 'my-payments' && (
+          <div className="mb-4">
+            <button
+              onClick={() => navigate(`/partners/${partnerId}/payments/create`)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+            >
+              <Plus className="h-4 w-4" />
+              Add Payment
+            </button>
+          </div>
+        )}
+
+        <div className="bg-white rounded-lg border shadow-sm p-4">
+          <h3 className="text-base font-semibold text-gray-900 mb-4">
+            {activeMainTab === 'trips' 
+              ? (activeTripsTab === 'my-trips' 
+                  ? `My Trips to ${partner.name}` 
+                  : `${partner.name}'s Trips to Me`)
+              : (activePaymentsTab === 'my-payments'
+                  ? `My Payments to ${partner.name}`
+                  : `${partner.name}'s Payments to Me`)}
             <span className="text-gray-500 font-normal ml-2">
-              ({filteredTrips().length} trips)
+              ({activeMainTab === 'trips' ? filteredTrips().length : filteredPayments().length} items)
             </span>
           </h3>
           
-          {filteredTrips().length === 0 ? (
-            <div className="text-center py-12">
-              <Truck className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-              <h4 className="text-lg font-semibold text-gray-900 mb-2">No trips found</h4>
-              <p className="text-gray-600">
-                {searchText || dateRange.start || dateRange.end
-                  ? 'Try adjusting your search filters'
-                  : activeTab === 'my-trips'
-                    ? `You haven't delivered any trips to ${partner.name} yet`
-                    : `${partner.name} hasn't delivered any trips to you yet`}
-              </p>
-            </div>
+          {activeMainTab === 'trips' ? (
+            filteredTrips().length === 0 ? (
+              <div className="text-center py-12">
+                <Truck className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                <h4 className="text-base font-semibold text-gray-900 mb-2">No trips found</h4>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {filteredTrips().map((trip) => (
+                  <TripCard 
+                    key={trip._id} 
+                    trip={trip} 
+                    type={activeTripsTab === 'my-trips' ? 'my' : 'partner'} 
+                  />
+                ))}
+              </div>
+            )
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredTrips().map((trip) => (
-                <TripCard 
-                  key={trip._id} 
-                  trip={trip} 
-                  type={activeTab === 'my-trips' ? 'my' : 'partner'} 
-                />
-              ))}
-            </div>
+            filteredPayments().length === 0 ? (
+              <div className="text-center py-12">
+                <CreditCard className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                <h4 className="text-base font-semibold text-gray-900 mb-2">No payments found</h4>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {filteredPayments().map((payment) => (
+                  <PaymentCard 
+                    key={payment._id} 
+                    payment={payment}
+                    canApproveReject={activePaymentsTab === 'partner-payments'}
+                  />
+                ))}
+              </div>
+            )
           )}
         </div>
       </div>

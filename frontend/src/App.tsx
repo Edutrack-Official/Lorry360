@@ -50,6 +50,8 @@ import ReminderDetails from './pages/Reminders/ReminderDetails';
 import ForgotPassword from './pages/ForgotPassword';
 import CollaborationListPage from './pages/Partner/CollaborationListPage';
 import CollaborationDetailsPage from './pages/Partner/CollaborationDetailsPage';
+import PartnerPaymentForm from './pages/Partner/PartnerPaymentForm';
+import PartnerPayments from './pages/Partner/PartnerPayments';
 
 
 
@@ -112,7 +114,12 @@ function App() {
 
                       <Route path="/partners" element={<OwnerRoute><CollaborationListPage /></OwnerRoute>} />
                       <Route path="/partners/collaboration/:partnerId" element={<OwnerRoute><CollaborationDetailsPage /></OwnerRoute>} />
- 
+                
+                       <Route path="/partners/:partnerId/payments/create" element={<OwnerRoute><PartnerPaymentForm /></OwnerRoute>} />
+
+                  
+                                  <Route path="/partners/:partnerId/payments/edit/:paymentId" element={<PartnerPaymentForm />} />
+                                                          
                       {/* Lorry Details with nested routes - OWNER ONLY */}
                       <Route path="/lorries/:lorryId" element={<OwnerRoute><LorryDetails /></OwnerRoute>}>
                         <Route path="trips" element={<LorryTrips />} />
