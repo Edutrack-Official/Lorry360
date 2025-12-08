@@ -245,11 +245,6 @@ const ManageDriverForm: React.FC = () => {
                 />
                 <IndianRupee className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
               </div>
-              {formData.salary_per_duty > 0 && (
-                <p className="mt-1 text-xs text-gray-500">
-                  Formatted: {formatSalary(formData.salary_per_duty)}
-                </p>
-              )}
             </div>
 
             {/* Salary per Trip */}
@@ -268,11 +263,6 @@ const ManageDriverForm: React.FC = () => {
                 />
                 <IndianRupee className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
               </div>
-              {formData.salary_per_trip > 0 && (
-                <p className="mt-1 text-xs text-gray-500">
-                  Formatted: {formatSalary(formData.salary_per_trip)}
-                </p>
-              )}
             </div>
 
             {/* Salary Validation Error */}
@@ -291,7 +281,7 @@ const ManageDriverForm: React.FC = () => {
                   <h4 className="font-medium text-blue-800 mb-2">Salary Summary</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     {formData.salary_per_duty > 0 && (
-                      <div className="flex justify-between items-center">
+                      <div className="flex gap-2 items-center">
                         <span className="text-blue-700">Per Duty:</span>
                         <span className="font-semibold text-blue-800">
                           {formatSalary(formData.salary_per_duty)}
@@ -299,7 +289,7 @@ const ManageDriverForm: React.FC = () => {
                       </div>
                     )}
                     {formData.salary_per_trip > 0 && (
-                      <div className="flex justify-between items-center">
+                      <div className="flex gap-2 items-center">
                         <span className="text-blue-700">Per Trip:</span>
                         <span className="font-semibold text-blue-800">
                           {formatSalary(formData.salary_per_trip)}
