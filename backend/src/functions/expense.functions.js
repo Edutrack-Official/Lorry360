@@ -297,3 +297,45 @@ app.http('getExpensesByLorry', {
     }
   },
 });
+
+/**
+ * ✅ Get Expenses by Bunk
+ */
+
+app.http('getExpensesByBunk', {
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  route: 'expenses/bunk/{bunkId}',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      // Only owners can view their expenses
+      if (user.role !== 'owner') {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
+        };
+      }
+
+      const { bunkId } = request.params;
+      const filterParams = request.query;
+      
+      const result = await getExpensesByBunk(user.userId, bunkId, filterParams);
+
+      const response = { status: 200, jsonBody: { success: true, data: result } };
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { success: false, error: err.message },
+      };
+    }
+  },
+});

@@ -51,6 +51,12 @@ import ForgotPassword from './pages/ForgotPassword';
 import CollaborationListPage from './pages/Partner/CollaborationListPage';
 import CollaborationDetailsPage from './pages/Partner/CollaborationDetailsPage';
 import PartnerPaymentForm from './pages/Partner/PartnerPaymentForm';
+import Bunks from './pages/Bunks/Bunks';
+import ManageBunkForm from './pages/Bunks/ManageBunkForm';
+import BunkDetails from './pages/Bunks/BunkDetails';
+import BunkExpenses from './pages/Bunks/BunkExpenses';
+import BunkPayments from './pages/Bunks/BunkPayments';
+import BunkPaymentForm from './pages/Bunks/BunkPaymentForm';
 
 
 
@@ -113,12 +119,12 @@ function App() {
 
                       <Route path="/partners" element={<OwnerRoute><CollaborationListPage /></OwnerRoute>} />
                       <Route path="/partners/collaboration/:partnerId" element={<OwnerRoute><CollaborationDetailsPage /></OwnerRoute>} />
-                
-                       <Route path="/partners/:partnerId/payments/create" element={<OwnerRoute><PartnerPaymentForm /></OwnerRoute>} />
 
-                  
-                                  <Route path="/partners/:partnerId/payments/edit/:paymentId" element={<PartnerPaymentForm />} />
-                                                          
+                      <Route path="/partners/:partnerId/payments/create" element={<OwnerRoute><PartnerPaymentForm /></OwnerRoute>} />
+
+
+                      <Route path="/partners/:partnerId/payments/edit/:paymentId" element={<PartnerPaymentForm />} />
+
                       {/* Lorry Details with nested routes - OWNER ONLY */}
                       <Route path="/lorries/:lorryId" element={<OwnerRoute><LorryDetails /></OwnerRoute>}>
                         <Route path="trips" element={<LorryTrips />} />
@@ -156,6 +162,19 @@ function App() {
                       </Route>
                       <Route path="trips/create" element={<OwnerRoute><CrusherTripForm /></OwnerRoute>} />
                       <Route path="/crushers/:crusherId/payments/create" element={<OwnerRoute><CrusherPaymentForm /></OwnerRoute>} />
+
+                      {/* Fuel Bunks Management - OWNER ONLY */}
+                      <Route path="/bunks" element={<OwnerRoute><Bunks /></OwnerRoute>} />
+                      <Route path="/bunks/create" element={<OwnerRoute><ManageBunkForm /></OwnerRoute>} />
+                      <Route path="/bunks/edit/:id" element={<OwnerRoute><ManageBunkForm /></OwnerRoute>} />
+                      <Route path="/bunks/:bunkId" element={<OwnerRoute><BunkDetails /></OwnerRoute>}>
+                        <Route index element={<Navigate to="expenses" replace />} />
+                        <Route path="expenses" element={<BunkExpenses />} />
+                        <Route path="payments" element={<BunkPayments />} />
+                      </Route>
+                      <Route path="/bunks/:bunkId/payments/create" element={<OwnerRoute><BunkPaymentForm /></OwnerRoute>} />
+                      <Route path="/bunks/:bunkId/payments/edit/:paymentId" element={<OwnerRoute><BunkPaymentForm /></OwnerRoute>} />
+
 
                       {/* Collaboration Management - OWNER ONLY */}
                       <Route path="/collaborations" element={<OwnerRoute><CollaborationDashboard /></OwnerRoute>} />

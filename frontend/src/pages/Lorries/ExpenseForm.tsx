@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import api from '../../api/client';
-import { Save, X, Truck, Calendar, FileText, Loader2 } from 'lucide-react';
+import { Save, X, Truck, Calendar, FileText, Loader2, Building2, Fuel } from 'lucide-react';
 import toast from 'react-hot-toast';
 import BackButton from '../../components/BackButton';
 
@@ -12,6 +12,7 @@ interface ExpenseFormData {
   amount: number;
   description: string;
   payment_mode: 'cash' | 'bank' | 'upi';
+  bunk_id?: string;
 }
 
 interface FormErrors {
@@ -20,6 +21,7 @@ interface FormErrors {
   category?: string;
   amount?: string;
   payment_mode?: string;
+  bunk_id?: string;
 }
 
 interface Lorry {
@@ -28,27 +30,37 @@ interface Lorry {
   nick_name?: string;
 }
 
+interface Bunk {
+  _id: string;
+  bunk_name: string;
+  address?: string;
+}
+
 const ExpenseForm = () => {
   const navigate = useNavigate();
   const { expenseId } = useParams();
   const [searchParams] = useSearchParams();
   const lorryId = searchParams.get('lorry');
+  const bunkId = searchParams.get('bunk');
 
   const [formData, setFormData] = useState<ExpenseFormData>({
     lorry_id: lorryId || '',
     date: new Date().toISOString().split('T')[0],
-    category: 'fuel',
+    category: bunkId ? 'fuel' : 'fuel',
     amount: 0,
     description: '',
-    payment_mode: 'cash'
+    payment_mode: 'cash',
+    bunk_id: bunkId || '',
   });
   
   const [lorries, setLorries] = useState<Lorry[]>([]);
+  const [bunks, setBunks] = useState<Bunk[]>([]);
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [lorryName, setLorryName] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
+  const [showFuelDetails, setShowFuelDetails] = useState(false);
 
   // Get today's date in YYYY-MM-DD format for max date
   const today = new Date().toISOString().split('T')[0];
@@ -74,6 +86,11 @@ const ExpenseForm = () => {
     }
   }, [lorryId]);
 
+  // Show/hide fuel details based on category
+  useEffect(() => {
+    setShowFuelDetails(formData.category === 'fuel');
+  }, [formData.category]);
+
   useEffect(() => {
     const fetchData = async () => {
       setPageLoading(true);
@@ -82,6 +99,9 @@ const ExpenseForm = () => {
         if (!lorryId) {
           await fetchLorries();
         }
+
+        // Always fetch bunks for fuel category
+        await fetchBunks();
 
         // If editing, fetch expense details
         if (expenseId) {
@@ -107,6 +127,15 @@ const ExpenseForm = () => {
     }
   };
 
+  const fetchBunks = async () => {
+    try {
+      const res = await api.get('/petrol-bunks');
+      setBunks(res.data.data?.petrolBunks || []);
+    } catch (error: any) {
+      toast.error('Failed to fetch bunks');
+    }
+  };
+
   const fetchExpense = async () => {
     try {
       const res = await api.get(`/expenses/${expenseId}`);
@@ -117,7 +146,8 @@ const ExpenseForm = () => {
         category: expense.category,
         amount: expense.amount,
         description: expense.description || '',
-        payment_mode: expense.payment_mode
+        payment_mode: expense.payment_mode,
+        bunk_id: expense.bunk_id?._id || expense.bunk_id || '',
       });
 
       // If editing and no lorryName set, use the expense's lorry info
@@ -155,6 +185,13 @@ const ExpenseForm = () => {
       newErrors.payment_mode = "Payment mode is required";
     }
 
+    // Fuel-specific validations
+    if (formData.category === 'fuel') {
+      if (!formData.bunk_id) {
+        newErrors.bunk_id = "Please select a bunk for fuel expense";
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -169,16 +206,25 @@ const ExpenseForm = () => {
     setLoading(true);
 
     try {
+      const submitData = { ...formData };
+      
+      // Clear bunk_id if category is not fuel
+      if (submitData.category !== 'fuel') {
+        submitData.bunk_id = undefined;
+      }
+
       if (isEditing) {
-        await api.put(`/expenses/update/${expenseId}`, formData);
+        await api.put(`/expenses/update/${expenseId}`, submitData);
         toast.success('Expense updated successfully');
       } else {
-        await api.post('/expenses/create', formData);
+        await api.post('/expenses/create', submitData);
         toast.success('Expense created successfully');
       }
       
-      // Navigate back to lorry expenses page
-      if (formData.lorry_id) {
+      // Navigate back based on where we came from
+      if (formData.bunk_id) {
+        navigate(`/bunks/${formData.bunk_id}/expenses`);
+      } else if (formData.lorry_id) {
         navigate(`/lorries/${formData.lorry_id}/expenses`);
       } else {
         navigate('/expenses');
@@ -192,9 +238,13 @@ const ExpenseForm = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    
+    // Handle number inputs
+    const numericFields = ['amount'];
+    
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'amount' ? parseFloat(value) || 0 : value
+      [name]: numericFields.includes(name) ? parseFloat(value) || 0 : value
     }));
 
     // Clear error for this field when user starts typing
@@ -299,57 +349,96 @@ const ExpenseForm = () => {
               )}
             </div>
 
-            {/* Category and Amount */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category *
-                </label>
-                <select
-                  name="category"
-                  value={formData.category}
-                  onChange={handleChange}
-                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                    errors.category ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                >
-                  <option value="fuel">Fuel</option>
-                  <option value="maintenance">Maintenance</option>
-                  <option value="repair">Repair</option>
-                  <option value="toll">Toll</option>
-                  <option value="fine">Fine</option>
-                  <option value="other">Other</option>
-                </select>
-                {errors.category && (
-                  <p className="mt-2 text-sm text-red-600 flex items-start gap-1">
-                    <span className="text-red-500 font-bold">•</span>
-                    {errors.category}
-                  </p>
-                )}
-              </div>
+            {/* Category */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Category *
+              </label>
+              <select
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                  errors.category ? 'border-red-500' : 'border-gray-300'
+                }`}
+              >
+                <option value="fuel">Fuel</option>
+                <option value="maintenance">Maintenance</option>
+                <option value="repair">Repair</option>
+                <option value="toll">Toll</option>
+                <option value="fine">Fine</option>
+                <option value="other">Other</option>
+              </select>
+              {errors.category && (
+                <p className="mt-2 text-sm text-red-600 flex items-start gap-1">
+                  <span className="text-red-500 font-bold">•</span>
+                  {errors.category}
+                </p>
+              )}
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Amount (₹) *
-                </label>
-                <input
-                  type="number"
-                  name="amount"
-                  value={formData.amount || ''}
-                  onChange={handleChange}
-                  min="0"
-                  step="0.01"
-                  className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                    errors.amount ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="0.00"
-                />
-                {errors.amount && (
-                  <p className="mt-2 text-sm text-red-600 flex items-start gap-1">
-                    {errors.amount}
-                  </p>
-                )}
+            {/* Fuel Details Section - Only shown when category is fuel */}
+            {showFuelDetails && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Fuel className="h-5 w-5 text-blue-600" />
+                  <h3 className="font-semibold text-blue-900">Fuel Details</h3>
+                </div>
+
+                {/* Bunk Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Building2 className="h-4 w-4 inline mr-2" />
+                    Fuel Bunk *
+                  </label>
+                  <select
+                    name="bunk_id"
+                    value={formData.bunk_id || ''}
+                    onChange={handleChange}
+                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      errors.bunk_id ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="">Select Fuel Bunk</option>
+                    {bunks.map(bunk => (
+                      <option key={bunk._id} value={bunk._id}>
+                        {bunk.bunk_name}
+                        {bunk.address && ` - ${bunk.address.substring(0, 30)}${bunk.address.length > 30 ? '...' : ''}`}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.bunk_id && (
+                    <p className="mt-2 text-sm text-red-600 flex items-start gap-1">
+                      <span className="text-red-500 font-bold">•</span>
+                      {errors.bunk_id}
+                    </p>
+                  )}
+                </div>
               </div>
+            )}
+
+            {/* Amount */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Amount (₹) *
+              </label>
+              <input
+                type="number"
+                name="amount"
+                value={formData.amount || ''}
+                onChange={handleChange}
+                min="0"
+                step="0.01"
+                className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                  errors.amount ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="0.00"
+              />
+              {errors.amount && (
+                <p className="mt-2 text-sm text-red-600 flex items-start gap-1">
+                  {errors.amount}
+                </p>
+              )}
             </div>
 
             {/* Payment Mode */}
