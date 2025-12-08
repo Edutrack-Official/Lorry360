@@ -5,7 +5,6 @@ const Crusher = require('../models/crusher.model');
 const Lorry = require('../models/lorry.model');
 const User = require('../models/user.model');
 const Payment = require('../models/payment.model');
-const Settlement = require('../models/settlement.model');
 
 const createTrip = async (tripData) => {
   const {
@@ -42,7 +41,8 @@ const createTrip = async (tripData) => {
     customer_amount,
     trip_date: trip_date || new Date(),
     dc_number,
-    notes
+    notes,
+    isActive: true // Added: New trips are always active
   };
 
   // Only include customer_id if it's not empty
@@ -75,8 +75,9 @@ const createTrip = async (tripData) => {
   const now = new Date();
   const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
   
-  // Count trips for current month
+  // Count ACTIVE trips for current month
   const count = await Trip.countDocuments({
+    isActive: true, // Added: Only count active trips
     createdAt: {
       $gte: new Date(now.getFullYear(), now.getMonth(), 1),
       $lt: new Date(now.getFullYear(), now.getMonth() + 1, 1)
@@ -108,7 +109,8 @@ const getAllTrips = async (current_user_id, filterParams = {}) => {
     collab_owner_id, 
     trip_type, 
     crusher_id,
-    fetch_mode = 'as_owner'
+    fetch_mode = 'as_owner',
+    include_inactive = false // Added: Optional parameter to include inactive trips
   } = filterParams;
   
   let query = {};
@@ -134,6 +136,11 @@ const getAllTrips = async (current_user_id, filterParams = {}) => {
     if (collab_owner_id) {
       query.collab_owner_id = collab_owner_id; // Specific partner
     }
+  }
+  
+  // Only show ACTIVE trips by default (unless include_inactive is true)
+  if (!include_inactive) {
+    query.isActive = true; // Added: Filter by active trips
   }
   
   // Additional filters
@@ -181,8 +188,11 @@ const getAllTrips = async (current_user_id, filterParams = {}) => {
 
 // Get trips where I am the collaborative owner (trips delivered to me)
 const getCollaborativeTripsForMe = async (collab_owner_id, filterParams = {}) => {
-  const { status, start_date, end_date, owner_id } = filterParams;
-  const query = { collab_owner_id };
+  const { status, start_date, end_date, owner_id, include_inactive = false } = filterParams;
+  const query = { 
+    collab_owner_id,
+    isActive: !include_inactive ? true : { $exists: true } // Added: Filter by active trips
+  };
   
   if (status) query.status = status;
   if (owner_id) query.owner_id = owner_id;
@@ -207,8 +217,18 @@ const getCollaborativeTripsForMe = async (collab_owner_id, filterParams = {}) =>
   };
 };
 
-const getTripById = async (id, owner_id) => {
-  const trip = await Trip.findOne({ _id: id, owner_id })
+const getTripById = async (id, owner_id, include_inactive = false) => {
+  const query = { 
+    _id: id, 
+    owner_id 
+  };
+  
+  // Only show ACTIVE trips by default (unless include_inactive is true)
+  if (!include_inactive) {
+    query.isActive = true; // Added: Filter by active trips
+  }
+  
+  const trip = await Trip.findOne(query)
     .populate('lorry_id', 'registration_number nick_name')
     .populate('driver_id', 'name phone')
     .populate('crusher_id', 'name')
@@ -224,8 +244,18 @@ const getTripById = async (id, owner_id) => {
 };
 
 // Get trip by ID for collaborative owner (when I'm the destination)
-const getCollaborativeTripById = async (id, collab_owner_id) => {
-  const trip = await Trip.findOne({ _id: id, collab_owner_id })
+const getCollaborativeTripById = async (id, collab_owner_id, include_inactive = false) => {
+  const query = { 
+    _id: id, 
+    collab_owner_id 
+  };
+  
+  // Only show ACTIVE trips by default (unless include_inactive is true)
+  if (!include_inactive) {
+    query.isActive = true; // Added: Filter by active trips
+  }
+  
+  const trip = await Trip.findOne(query)
     .populate('lorry_id', 'registration_number nick_name')
     .populate('driver_id', 'name phone')
     .populate('crusher_id', 'name')
@@ -267,10 +297,15 @@ const updateTrip = async (id, owner_id, updateData) => {
   
   console.log("processedData:", processedData);
   
-  // Rest of your code using processedData instead of updateData...
-  const existingTrip = await Trip.findOne({ _id: id, owner_id });
+  // Check if trip exists and is ACTIVE
+  const existingTrip = await Trip.findOne({ 
+    _id: id, 
+    owner_id,
+    isActive: true // Added: Only update active trips
+  });
+  
   if (!existingTrip) {
-    const err = new Error('Trip not found');
+    const err = new Error('Trip not found or is inactive');
     err.status = 404;
     throw err;
   }
@@ -298,8 +333,12 @@ const updateTrip = async (id, owner_id, updateData) => {
   }
 
   const updatedTrip = await Trip.findOneAndUpdate(
-    { _id: id, owner_id },
-    processedData,  // Use processedData here
+    { 
+      _id: id, 
+      owner_id,
+      isActive: true // Added: Only update active trips
+    },
+    processedData,
     { new: true, runValidators: true }
   )
     .populate('lorry_id', 'registration_number nick_name')
@@ -318,26 +357,30 @@ const updateTrip = async (id, owner_id, updateData) => {
 };
 
 const deleteTrip = async (id, owner_id) => {
-  // Step 1: Check if trip exists
-  const trip = await Trip.findOne({ _id: id, owner_id });
+  // Step 1: Check if trip exists and is ACTIVE
+  const trip = await Trip.findOne({ 
+    _id: id, 
+    owner_id,
+    isActive: true // Added: Only delete active trips
+  });
+  
   if (!trip) {
-    const err = new Error('Trip not found or delete failed');
+    const err = new Error('Trip not found, is inactive, or delete failed');
     err.status = 404;
     throw err;
   }
 
-  // Step 2: Check if trip is used in any Settlement
-  const isReferenced = await Settlement.exists({ trip_ids: id });
-  if (isReferenced) {
-    const err = new Error('Cannot delete trip: It is referenced in a Settlement');
-    err.status = 400;
-    throw err;
-  }
+  // Step 2: SOFT DELETE - Set isActive to false
+  await Trip.findOneAndUpdate(
+    { _id: id, owner_id },
+    { $set: { isActive: false } }
+  );
 
-  // Step 3: Safe to delete
-  await Trip.deleteOne({ _id: id });
-
-  return { message: 'Trip deleted successfully' };
+  return { 
+    message: 'Trip soft deleted successfully',
+    trip_id: id,
+    trip_number: trip.trip_number
+  };
 };
 
 const updateTripStatus = async (id, owner_id, status) => {
@@ -361,7 +404,11 @@ const updateTripStatus = async (id, owner_id, status) => {
   }
 
   const updatedTrip = await Trip.findOneAndUpdate(
-    { _id: id, owner_id },
+    { 
+      _id: id, 
+      owner_id,
+      isActive: true // Added: Only update status of active trips
+    },
     updateData,
     { new: true, runValidators: true }
   )
@@ -372,13 +419,12 @@ const updateTripStatus = async (id, owner_id, status) => {
     .populate('collab_owner_id', 'name company_name phone');
 
   if (!updatedTrip) {
-    const err = new Error('Trip not found or status update failed');
+    const err = new Error('Trip not found, is inactive, or status update failed');
     err.status = 404;
     throw err;
   }
   return updatedTrip;
 };
-
 // Get trip statistics with collaborative support
 const getTripStats = async (owner_id, period = 'month') => {
   const now = new Date();
@@ -402,14 +448,15 @@ const getTripStats = async (owner_id, period = 'month') => {
       startDate = new Date(now.getFullYear(), now.getMonth(), 1);
   }
 
-const trips = await Trip.find({
-  owner_id,
-  trip_date: { $gte: startDate },
-  $or: [
-    { status: "completed" },
-    { status: "delivered" }
-  ]
-});
+  const trips = await Trip.find({
+    owner_id,
+    isActive: true, // Added: Only count active trips
+    trip_date: { $gte: startDate },
+    $or: [
+      { status: "completed" },
+      { status: "delivered" }
+    ]
+  });
 
   const customerTrips = trips.filter(trip => trip.customer_id);
   const collaborativeTrips = trips.filter(trip => trip.collab_owner_id);
@@ -439,9 +486,10 @@ const trips = await Trip.find({
 };
 
 // Get trips analytics with collaborative support
-const getTripsAnalytics = async (owner_id, start_date, end_date) => {
+const getTripsAnalytics = async (owner_id, start_date, end_date, include_inactive = false) => {
   const query = { 
     owner_id,
+    isActive: !include_inactive ? true : { $exists: true }, // Added: Filter by active trips
     trip_date: {
       $gte: new Date(start_date),
       $lte: new Date(end_date)
@@ -465,7 +513,8 @@ const getTripsAnalytics = async (owner_id, start_date, end_date) => {
       total_cost: trips.reduce((sum, trip) => sum + trip.crusher_amount, 0),
       total_profit: trips.reduce((sum, trip) => sum + trip.profit, 0),
       total_crusher_units: trips.reduce((sum, trip) => sum + trip.no_of_unit_crusher, 0),
-      total_customer_units: trips.reduce((sum, trip) => sum + trip.no_of_unit_customer, 0)
+      total_customer_units: trips.reduce((sum, trip) => sum + trip.no_of_unit_customer, 0),
+      active_trips_only: !include_inactive // Added: Indicate if only active trips are included
     },
     by_lorry: {},
     by_driver: {},
@@ -554,7 +603,7 @@ const getTripFormData = async (owner_id) => {
       .sort({ name: 1 }),
     
     // Crushers with name and materials
-    Crusher.find({ owner_id })
+    Crusher.find({ owner_id, isActive: true }) // Added: isActive filter
       .select('name materials')
       .sort({ name: 1 }),
     
@@ -608,10 +657,11 @@ const getTripFormData = async (owner_id) => {
 
 // Get all trips for a specific customer (with owner security)
 const getTripsByCustomerId = async (owner_id, customer_id, filterParams = {}) => {
-  const { status, start_date, end_date } = filterParams;
+  const { status, start_date, end_date, include_inactive = false } = filterParams;
   const query = { 
     owner_id, // Security: Only show trips belonging to this owner
-    customer_id 
+    customer_id,
+    isActive: !include_inactive ? true : { $exists: true } // Added: Filter by active trips
   };
   
   if (status) query.status = status;
@@ -639,10 +689,11 @@ const getTripsByCustomerId = async (owner_id, customer_id, filterParams = {}) =>
 
 // Get all trips for a specific crusher (with owner security)
 const getTripsByCrusherId = async (owner_id, crusher_id, filterParams = {}) => {
-  const { status, start_date, end_date } = filterParams;
+  const { status, start_date, end_date, include_inactive = false } = filterParams;
   const query = { 
     owner_id, // Security: Only show trips belonging to this owner
-    crusher_id 
+    crusher_id,
+    isActive: !include_inactive ? true : { $exists: true } // Added: Filter by active trips
   };
   
   if (status) query.status = status;
@@ -669,9 +720,7 @@ const getTripsByCrusherId = async (owner_id, crusher_id, filterParams = {}) => {
   };
 };
 
-// Updated function in trip.controller.js
-
-const getInvoiceData = async (owner_id, customer_id, from_date, to_date) => {
+const getInvoiceData = async (owner_id, customer_id, from_date, to_date, include_inactive = false) => {
   try {
     // 1. Get current user (owner) details for company header
     const owner = await User.findById(owner_id).select('name company_name address city state pincode phone');
@@ -685,29 +734,33 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date) => {
     // 2. Get customer details
     const customer = await Customer.findOne({ 
       _id: customer_id, 
-      owner_id 
+      owner_id,
+      isActive: true // Added: Only active customers
     }).select('name phone address site_addresses');
 
     if (!customer) {
-      const err = new Error('Customer not found');
+      const err = new Error('Customer not found or is inactive');
       err.status = 404;
       throw err;
     }
 
     // 3. Get trips for the customer in the date range
-    const trips = await Trip.find({
+    const tripsQuery = {
       owner_id,
       customer_id,
+      isActive: !include_inactive ? true : { $exists: true }, // Added: Filter by active trips
       trip_date: { 
         $gte: new Date(from_date), 
         $lte: new Date(to_date) 
       },
       status: { $in: ['delivered', 'completed'] }
-    })
-    .populate('lorry_id', 'registration_number nick_name')
-    .populate('driver_id', 'name phone')
-    .populate('crusher_id', 'name')
-    .sort({ trip_date: 1 });
+    };
+
+    const trips = await Trip.find(tripsQuery)
+      .populate('lorry_id', 'registration_number nick_name')
+      .populate('driver_id', 'name phone')
+      .populate('crusher_id', 'name')
+      .sort({ trip_date: 1 });
 
     if (trips.length === 0) {
       const err = new Error('No trips found for the selected customer in the specified date range');
@@ -720,11 +773,11 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date) => {
       owner_id,
       customer_id,
       payment_type: 'from_customer',
+      isActive: true, // Added: Only active payments
       payment_date: { 
         $gte: new Date(from_date), 
         $lte: new Date(to_date) 
-      },
-      isActive: true
+      }
     }).sort({ payment_date: 1 });
 
     // 5. Group trips by material, quantity, location, price AND customer_amount (exact match)
@@ -765,19 +818,22 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date) => {
     );
 
     // 6. Get running balance (sum of all customer_amount from previous trips minus payments)
-    const previousTrips = await Trip.find({
+    const previousTripsQuery = {
       owner_id,
       customer_id,
+      isActive: !include_inactive ? true : { $exists: true }, // Added: Filter by active trips
       trip_date: { $lt: new Date(from_date) },
       status: { $in: ['delivered', 'completed'] }
-    });
+    };
+
+    const previousTrips = await Trip.find(previousTripsQuery);
 
     const previousPayments = await Payment.find({
       owner_id,
       customer_id,
       payment_type: 'from_customer',
-      payment_date: { $lt: new Date(from_date) },
-      isActive: true
+      isActive: true, // Added: Only active payments
+      payment_date: { $lt: new Date(from_date) }
     });
 
     const previousTripsAmount = previousTrips.reduce((sum, trip) => sum + trip.customer_amount, 0);
@@ -805,7 +861,8 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date) => {
       amount_received: '',
       balance: `₹${runningBalance.toLocaleString('en-IN')}`,
       is_balance_row: true,
-      is_opening_balance: true
+      is_opening_balance: true,
+      note: include_inactive ? 'Includes inactive trips' : 'Active trips only'
     };
     tableRows.push(openingBalanceRow);
 
@@ -849,7 +906,8 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date) => {
             amount: trip.customer_amount,
             lorry: trip.lorry_id?.registration_number,
             driver: trip.driver_id?.name,
-            date: trip.trip_date
+            date: trip.trip_date,
+            is_active: trip.isActive
           }))
         };
 
@@ -917,7 +975,8 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date) => {
         name: customer.name,
         address: customer.address,
         phone: customer.phone,
-        site_addresses: customer.site_addresses || []
+        site_addresses: customer.site_addresses || [],
+        is_active: customer.isActive
       },
       
       // Invoice Details
@@ -928,7 +987,9 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date) => {
         to_date: to_date,
         period: `${new Date(from_date).toLocaleDateString('en-IN')} to ${new Date(to_date).toLocaleDateString('en-IN')}`,
         opening_balance_date: previousDay.toISOString().split('T')[0],
-        closing_balance_date: to_date
+        closing_balance_date: to_date,
+        include_inactive_trips: include_inactive,
+        note: include_inactive ? 'Invoice includes inactive trips' : 'Invoice includes active trips only'
       },
       
       // Table Data (formatted like your example)
@@ -946,7 +1007,8 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date) => {
           total_payments: payments.length,
           total_sales_amount: `₹${totalTripsAmount.toLocaleString('en-IN')}`,
           total_received: `₹${totalPaymentsAmount.toLocaleString('en-IN')}`,
-          closing_balance: `₹${currentBalance.toLocaleString('en-IN')}`
+          closing_balance: `₹${currentBalance.toLocaleString('en-IN')}`,
+          active_trips_only: !include_inactive
         }
       },
       
@@ -962,7 +1024,8 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date) => {
       // Additional Information
       additional_info: {
         notes: 'All amounts in Indian Rupees',
-        terms: 'Payment terms : weekly payment (7 days credit)'
+        terms: 'Payment terms : weekly payment (7 days credit)',
+        data_status: include_inactive ? 'Includes all trips (active and inactive)' : 'Active trips only'
       },
       
       // Raw data for reference
@@ -976,7 +1039,8 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date) => {
           rate: trip.rate_per_unit,
           amount: trip.customer_amount,
           location: trip.location,
-          editable: true
+          is_active: trip.isActive,
+          editable: trip.isActive
         })),
         payments: payments.map(payment => ({
           id: payment._id,
@@ -984,7 +1048,8 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date) => {
           date: payment.payment_date,
           amount: payment.amount,
           mode: payment.payment_mode,
-          editable: true
+          is_active: payment.isActive,
+          editable: payment.isActive
         })),
         grouped_trips: groupedTripArray
       }
@@ -997,7 +1062,6 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date) => {
     throw error;
   }
 };
-
 
 
 const cloneTrips = async (tripIds, owner_id, times = 1, options = {}) => {
@@ -1249,6 +1313,42 @@ const processBatch = async (batchTripIds, owner_id, times, options) => {
   }
 };
 
+
+const bulkSoftDeleteTrips = async (tripIds, owner_id) => {
+  try {
+    // Validate input
+    if (!tripIds || !Array.isArray(tripIds) || tripIds.length === 0) {
+      throw new Error('tripIds must be a non-empty array');
+    }
+
+    // Update trips where: 
+    // - ID is in the list
+    // - Owner is current user
+    // - isActive is true
+    // - status is NOT "approved"
+    const result = await Trip.updateMany(
+      {
+        _id: { $in: tripIds },
+        owner_id,
+        isActive: true,
+        status: { $ne: 'approved' }
+      },
+      { $set: { isActive: false } }
+    );
+
+    return {
+      success: true,
+      message: `Soft deleted ${result.modifiedCount} trip(s)`,
+      modifiedCount: result.modifiedCount
+    };
+
+  } catch (error) {
+    console.error('Error in bulk soft delete trips:', error);
+    throw error;
+  }
+};
+
+
 module.exports = {
   createTrip,
   getAllTrips,
@@ -1264,5 +1364,6 @@ module.exports = {
   getTripsByCrusherId,
   getTripsByCustomerId,
   getInvoiceData,
-  cloneTrips
+  cloneTrips,
+  bulkSoftDeleteTrips
 };

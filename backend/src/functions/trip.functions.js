@@ -14,7 +14,8 @@
     getTripFormData,
     getTripsByCrusherId,
     getTripsByCustomerId,
-    cloneTrips
+    cloneTrips,
+    bulkSoftDeleteTrips
   } = require('../controllers/trip.controller');
   const { verifyToken } = require('../middleware/auth.middleware');
   const { log } = require('console');
@@ -724,6 +725,73 @@ app.http('cloneTrips', {
       return {
         status: err.status || 500,
         jsonBody: { success: false, error: err.message },
+      };
+    }
+  },
+});
+
+/**
+ * ✅ Bulk Soft Delete Trips (Simple)
+ */
+app.http('bulkSoftDeleteTrips', {
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  route: 'trips/bulk-soft-delete',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      // Only owners can delete trips
+      if (user.role !== 'owner') {
+        return {
+          status: 403,
+          jsonBody: { 
+            success: false, 
+            error: 'Access denied. Owner role required.' 
+          },
+        };
+      }
+
+      const body = await request.json();
+      const { tripIds } = body;
+
+      // Validate input
+      if (!tripIds || !Array.isArray(tripIds) || tripIds.length === 0) {
+        return {
+          status: 400,
+          jsonBody: { 
+            success: false, 
+            error: 'tripIds must be a non-empty array' 
+          },
+        };
+      }
+
+      // Call the simple bulk soft delete function
+      const result = await bulkSoftDeleteTrips(tripIds, user.userId);
+
+      const response = { 
+        status: 200, 
+        jsonBody: { 
+          success: true,
+          data: result
+        } 
+      };
+      
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { 
+          success: false, 
+          error: err.message 
+        },
       };
     }
   },

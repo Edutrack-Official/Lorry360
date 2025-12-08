@@ -140,6 +140,10 @@ const tripSchema = new mongoose.Schema({
     type: String,
     trim: true,
     maxlength: 500
+  },
+  isActive: {
+    type: Boolean,
+    default: true
   }
 }, {
   timestamps: true
