@@ -14,7 +14,7 @@
     getTripFormData,
     getTripsByCrusherId,
     getTripsByCustomerId,
-    cloneTrip
+    cloneTrips
   } = require('../controllers/trip.controller');
   const { verifyToken } = require('../middleware/auth.middleware');
   const { log } = require('console');
