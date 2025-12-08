@@ -245,11 +245,6 @@ const ManageDriverForm: React.FC = () => {
                 />
                 <IndianRupee className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
               </div>
-              {formData.salary_per_duty > 0 && (
-                <p className="mt-1 text-xs text-gray-500">
-                  Formatted: {formatSalary(formData.salary_per_duty)}
-                </p>
-              )}
             </div>
 
             {/* Salary per Trip */}
@@ -268,11 +263,6 @@ const ManageDriverForm: React.FC = () => {
                 />
                 <IndianRupee className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
               </div>
-              {formData.salary_per_trip > 0 && (
-                <p className="mt-1 text-xs text-gray-500">
-                  Formatted: {formatSalary(formData.salary_per_trip)}
-                </p>
-              )}
             </div>
 
             {/* Salary Validation Error */}
