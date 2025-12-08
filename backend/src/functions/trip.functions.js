@@ -13,7 +13,8 @@
     getTripsAnalytics,
     getTripFormData,
     getTripsByCrusherId,
-    getTripsByCustomerId
+    getTripsByCustomerId,
+    cloneTrip
   } = require('../controllers/trip.controller');
   const { verifyToken } = require('../middleware/auth.middleware');
   const { log } = require('console');
@@ -620,6 +621,64 @@ app.http('getInvoiceData', {
           success: false, 
           error: err.message 
         },
+      };
+    }
+  },
+});
+
+
+/**
+ * ✅ Clone Trip (Create multiple copies of a trip)
+ */
+app.http('cloneTrip', {
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  route: 'trips/clone/{tripId}',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      // Only owners can clone trips
+      if (user.role !== 'owner') {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
+        };
+      }
+
+      const { tripId } = request.params;
+      const body = await request.json();
+      const { times = 1 } = body; // Default to 1 clone if not specified
+
+      if (!times || typeof times !== 'number' || times < 1 || times > 100) {
+        return {
+          status: 400,
+          jsonBody: { success: false, error: 'Number of clones must be a number between 1 and 100' },
+        };
+      }
+
+      const result = await cloneTrip(tripId, user.userId, times);
+
+      const response = { 
+        status: 201, 
+        jsonBody: { 
+          success: true, 
+          message: `Successfully cloned ${times} trip(s)`,
+          data: result 
+        } 
+      };
+      
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { success: false, error: err.message },
       };
     }
   },

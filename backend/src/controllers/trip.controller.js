@@ -998,6 +998,104 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date) => {
   }
 };
 
+
+// Add this function in trip.controller.js, before the module.exports
+
+const cloneTrip = async (tripId, owner_id, times = 1) => {
+  try {
+    // Get the original trip
+    const originalTrip = await Trip.findOne({ _id: tripId, owner_id })
+      .populate('lorry_id', 'registration_number nick_name')
+      .populate('driver_id', 'name phone')
+      .populate('crusher_id', 'name')
+      .populate('customer_id', 'name phone address')
+      .populate('collab_owner_id', 'name company_name phone email');
+
+    if (!originalTrip) {
+      const err = new Error('Original trip not found or access denied');
+      err.status = 404;
+      throw err;
+    }
+
+    // Validate number of times
+    if (!times || times < 1 || times > 100) {
+      const err = new Error('Number of clones must be between 1 and 100');
+      err.status = 400;
+      throw err;
+    }
+
+    const clonedTrips = [];
+    
+    // Convert mongoose document to plain object and remove _id, __v, and other auto-generated fields
+    const tripData = originalTrip.toObject();
+    delete tripData._id;
+    delete tripData.__v;
+    delete tripData.trip_number;
+    delete tripData.createdAt;
+    delete tripData.updatedAt;
+    delete tripData.dispatched_at;
+    delete tripData.loaded_at;
+    delete tripData.delivered_at;
+    delete tripData.completed_at;
+    
+    // Reset status for cloned trips
+    tripData.status = 'scheduled';
+    
+    // Create multiple clones
+    for (let i = 0; i < times; i++) {
+      // Generate new trip number with monthly reset
+      const now = new Date();
+      const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
+      
+      // Count trips for current month
+      const count = await Trip.countDocuments({
+        createdAt: {
+          $gte: new Date(now.getFullYear(), now.getMonth(), 1),
+          $lt: new Date(now.getFullYear(), now.getMonth() + 1, 1)
+        }
+      });
+      
+      const trip_number = `TR${yearMonth}${String(count + 1 + i).padStart(4, '0')}`;
+      
+      // Set trip date to today for cloned trips
+      const tripDate = new Date();
+      
+      // Create new trip object with cloned data
+      const newTripData = {
+        ...tripData,
+        trip_number,
+        trip_date: tripDate,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      const newTrip = new Trip(newTripData);
+      await newTrip.save();
+      
+      // Populate the new trip for response
+      const populatedTrip = await Trip.findById(newTrip._id)
+        .populate('lorry_id', 'registration_number nick_name')
+        .populate('driver_id', 'name phone')
+        .populate('crusher_id', 'name')
+        .populate('customer_id', 'name phone')
+        .populate('collab_owner_id', 'name company_name phone')
+        .populate('owner_id', 'name company_name phone');
+      
+      clonedTrips.push(populatedTrip);
+    }
+
+    return {
+      original_trip_id: tripId,
+      original_trip_number: originalTrip.trip_number,
+      number_of_clones: times,
+      cloned_trips: clonedTrips
+    };
+  } catch (error) {
+    console.error('Error cloning trip:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   createTrip,
   getAllTrips,
@@ -1012,5 +1110,6 @@ module.exports = {
   getTripFormData,
   getTripsByCrusherId,
   getTripsByCustomerId,
-  getInvoiceData
+  getInvoiceData,
+  cloneTrip 
 };
