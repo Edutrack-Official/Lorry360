@@ -1001,97 +1001,213 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date) => {
 
 // Add this function in trip.controller.js, before the module.exports
 
-const cloneTrip = async (tripId, owner_id, times = 1) => {
+const cloneTrips = async (tripIds, owner_id, times = 1, options = {}) => {
   try {
-    // Get the original trip
-    const originalTrip = await Trip.findOne({ _id: tripId, owner_id })
-      .populate('lorry_id', 'registration_number nick_name')
-      .populate('driver_id', 'name phone')
-      .populate('crusher_id', 'name')
-      .populate('customer_id', 'name phone address')
-      .populate('collab_owner_id', 'name company_name phone email');
-
-    if (!originalTrip) {
-      const err = new Error('Original trip not found or access denied');
-      err.status = 404;
-      throw err;
+    // Validate input
+    if (!tripIds || !Array.isArray(tripIds) || tripIds.length === 0) {
+      throw new Error('tripIds must be a non-empty array');
     }
 
-    // Validate number of times
     if (!times || times < 1 || times > 100) {
-      const err = new Error('Number of clones must be between 1 and 100');
-      err.status = 400;
-      throw err;
+      throw new Error('Number of clones must be between 1 and 100');
     }
 
-    const clonedTrips = [];
+    // Validate resetDate option
+    if (options.resetDate === true && !options.newTripDate) {
+      throw new Error('newTripDate is required when resetDate is true');
+    }
+
+    // Fetch all original trips in parallel
+    const originalTrips = await Promise.all(
+      tripIds.map(tripId =>
+        Trip.findOne({ _id: tripId, owner_id })
+          .populate('lorry_id', 'registration_number nick_name')
+          .populate('driver_id', 'name phone')
+          .populate('crusher_id', 'name')
+          .populate('customer_id', 'name phone address')
+          .populate('collab_owner_id', 'name company_name phone email')
+      )
+    );
+
+    // Check for trips not found
+    const notFoundTrips = [];
+    const validTrips = [];
     
-    // Convert mongoose document to plain object and remove _id, __v, and other auto-generated fields
-    const tripData = originalTrip.toObject();
-    delete tripData._id;
-    delete tripData.__v;
-    delete tripData.trip_number;
-    delete tripData.createdAt;
-    delete tripData.updatedAt;
-    delete tripData.dispatched_at;
-    delete tripData.loaded_at;
-    delete tripData.delivered_at;
-    delete tripData.completed_at;
-    
-    // Reset status for cloned trips
-    tripData.status = 'scheduled';
-    
-    // Create multiple clones
-    for (let i = 0; i < times; i++) {
-      // Generate new trip number with monthly reset
-      const now = new Date();
-      const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
-      
-      // Count trips for current month
-      const count = await Trip.countDocuments({
-        createdAt: {
-          $gte: new Date(now.getFullYear(), now.getMonth(), 1),
-          $lt: new Date(now.getFullYear(), now.getMonth() + 1, 1)
+    originalTrips.forEach((trip, index) => {
+      if (!trip) {
+        notFoundTrips.push(tripIds[index]);
+      } else {
+        validTrips.push({
+          tripId: tripIds[index],
+          tripData: trip
+        });
+      }
+    });
+
+    if (notFoundTrips.length > 0) {
+      console.warn(`Some trips not found or access denied: ${notFoundTrips.join(', ')}`);
+    }
+
+    // Process cloning in parallel for each valid trip
+    const cloningPromises = validTrips.map(async ({ tripId, tripData }) => {
+      try {
+        const clonedTrips = [];
+        
+        // Convert mongoose document to plain object and remove auto-generated fields
+        const tripDataObj = tripData.toObject();
+        delete tripDataObj._id;
+        delete tripDataObj.__v;
+        delete tripDataObj.trip_number;
+        delete tripDataObj.createdAt;
+        delete tripDataObj.updatedAt;
+        
+        // Handle status based on resetStatus flag
+        if (options.resetStatus) {
+          // Reset to scheduled and clear all timestamps
+          tripDataObj.status = 'scheduled';
+          delete tripDataObj.dispatched_at;
+          delete tripDataObj.loaded_at;
+          delete tripDataObj.delivered_at;
+          delete tripDataObj.completed_at;
+        } else {
+          // Keep original status and set timestamps appropriately
+          // Clear timestamps since we'll set new ones based on status
+          delete tripDataObj.dispatched_at;
+          delete tripDataObj.loaded_at;
+          delete tripDataObj.delivered_at;
+          delete tripDataObj.completed_at;
+          
+          // Set new timestamps based on current time for the status
+          switch (tripDataObj.status) {
+            case 'dispatched':
+              tripDataObj.dispatched_at = new Date();
+              break;
+            case 'loaded':
+              tripDataObj.loaded_at = new Date();
+              break;
+            case 'delivered':
+              tripDataObj.delivered_at = new Date();
+              break;
+            case 'completed':
+              tripDataObj.completed_at = new Date();
+              break;
+            // For 'scheduled' and other statuses, no timestamp needed
+          }
         }
-      });
-      
-      const trip_number = `TR${yearMonth}${String(count + 1 + i).padStart(4, '0')}`;
-      
-      // Set trip date to today for cloned trips
-      const tripDate = new Date();
-      
-      // Create new trip object with cloned data
-      const newTripData = {
-        ...tripData,
-        trip_number,
-        trip_date: tripDate,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
+        
+        // Get count once for all clones of this trip
+        const now = new Date();
+        const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
+        
+        // Get current count
+        const baseCount = await Trip.countDocuments({
+          createdAt: {
+            $gte: new Date(now.getFullYear(), now.getMonth(), 1),
+            $lt: new Date(now.getFullYear(), now.getMonth() + 1, 1)
+          }
+        });
 
-      const newTrip = new Trip(newTripData);
-      await newTrip.save();
-      
-      // Populate the new trip for response
-      const populatedTrip = await Trip.findById(newTrip._id)
-        .populate('lorry_id', 'registration_number nick_name')
-        .populate('driver_id', 'name phone')
-        .populate('crusher_id', 'name')
-        .populate('customer_id', 'name phone')
-        .populate('collab_owner_id', 'name company_name phone')
-        .populate('owner_id', 'name company_name phone');
-      
-      clonedTrips.push(populatedTrip);
-    }
+        // Create all clones in parallel for this trip
+        const clonePromises = Array.from({ length: times }, (_, i) => {
+          const trip_number = `TR${yearMonth}${String(baseCount + 1 + i).padStart(4, '0')}`;
+          
+          // Determine trip date based on resetDate flag
+          let tripDate;
+          if (options.resetDate === true) {
+            // Use the new date from options
+            tripDate = new Date(options.newTripDate);
+          } else {
+            // Keep original trip date
+            tripDate = tripDataObj.trip_date;
+          }
+          
+          const newTripData = {
+            ...tripDataObj,
+            trip_number,
+            trip_date: tripDate,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+
+          return new Trip(newTripData).save();
+        });
+
+        // Wait for all clones of this trip to be saved
+        const savedTrips = await Promise.all(clonePromises);
+
+        // Populate all cloned trips in parallel
+        const populatedTrips = await Promise.all(
+          savedTrips.map(trip =>
+            Trip.findById(trip._id)
+              .populate('lorry_id', 'registration_number nick_name')
+              .populate('driver_id', 'name phone')
+              .populate('crusher_id', 'name')
+              .populate('customer_id', 'name phone')
+              .populate('collab_owner_id', 'name company_name phone')
+              .populate('owner_id', 'name company_name phone')
+          )
+        );
+
+        return {
+          tripId,
+          success: true,
+          original_trip_number: tripData.trip_number,
+          original_status: tripData.status,
+          original_trip_date: tripData.trip_date,
+          cloned_status: tripDataObj.status,
+          cloned_trip_date: options.resetDate ? options.newTripDate : tripData.trip_date,
+          reset_status_applied: options.resetStatus || false,
+          reset_date_applied: options.resetDate || false,
+          number_of_clones: times,
+          cloned_trips: populatedTrips
+        };
+      } catch (error) {
+        console.error(`Error cloning trip ${tripId}:`, error);
+        return {
+          tripId,
+          success: false,
+          error: error.message,
+          cloned_trips: []
+        };
+      }
+    });
+
+    // Execute all cloning operations in parallel
+    const results = await Promise.all(cloningPromises);
+
+    // Add not found trips to results
+    notFoundTrips.forEach(tripId => {
+      results.push({
+        tripId,
+        success: false,
+        error: 'Trip not found or access denied',
+        cloned_trips: []
+      });
+    });
+
+    // Calculate summary statistics
+    const successfulResults = results.filter(r => r.success);
+    const failedResults = results.filter(r => !r.success);
+    
+    const totalClonesCreated = successfulResults.reduce((sum, result) => 
+      sum + (result.cloned_trips ? result.cloned_trips.length : 0), 0);
 
     return {
-      original_trip_id: tripId,
-      original_trip_number: originalTrip.trip_number,
-      number_of_clones: times,
-      cloned_trips: clonedTrips
+      summary: {
+        total_trips_requested: tripIds.length,
+        total_clones_created: totalClonesCreated,
+        successful_clones: successfulResults.length,
+        failed_clones: failedResults.length,
+        number_of_copies_per_trip: times,
+        reset_status_applied: options.resetStatus || false,
+        reset_date_applied: options.resetDate || false,
+        new_trip_date: options.resetDate ? options.newTripDate : null
+      },
+      details: results,
+      success_rate: `${((successfulResults.length / tripIds.length) * 100).toFixed(2)}%`
     };
   } catch (error) {
-    console.error('Error cloning trip:', error);
+    console.error('Error cloning trips:', error);
     throw error;
   }
 };
@@ -1111,5 +1227,5 @@ module.exports = {
   getTripsByCrusherId,
   getTripsByCustomerId,
   getInvoiceData,
-  cloneTrip 
+  cloneTrips
 };

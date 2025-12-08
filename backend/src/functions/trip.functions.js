@@ -630,10 +630,10 @@ app.http('getInvoiceData', {
 /**
  * ✅ Clone Trip (Create multiple copies of a trip)
  */
-app.http('cloneTrip', {
+app.http('cloneTrips', {
   methods: ['POST'],
   authLevel: 'anonymous',
-  route: 'trips/clone/{tripId}',
+  route: 'trips/clone',
   handler: async (request) => {
     try {
       await connectDB();
@@ -648,9 +648,22 @@ app.http('cloneTrip', {
         };
       }
 
-      const { tripId } = request.params;
       const body = await request.json();
-      const { times = 1 } = body; // Default to 1 clone if not specified
+      const { 
+        tripIds, 
+        times = 1, 
+        resetStatus = false,
+        resetDate = false,
+        newTripDate = null
+      } = body;
+
+      // Validate input
+      if (!tripIds || !Array.isArray(tripIds) || tripIds.length === 0) {
+        return {
+          status: 400,
+          jsonBody: { success: false, error: 'tripIds must be a non-empty array' },
+        };
+      }
 
       if (!times || typeof times !== 'number' || times < 1 || times > 100) {
         return {
@@ -659,14 +672,46 @@ app.http('cloneTrip', {
         };
       }
 
-      const result = await cloneTrip(tripId, user.userId, times);
+      // Validate resetDate and newTripDate
+      if (resetDate === true && !newTripDate) {
+        return {
+          status: 400,
+          jsonBody: { 
+            success: false, 
+            error: 'newTripDate is required when resetDate is true' 
+          },
+        };
+      }
+
+      // Validate newTripDate format if provided
+      if (newTripDate) {
+        const dateObj = new Date(newTripDate);
+        if (isNaN(dateObj.getTime())) {
+          return {
+            status: 400,
+            jsonBody: { 
+              success: false, 
+              error: 'newTripDate must be a valid date string' 
+            },
+          };
+        }
+      }
+
+      // Prepare options object
+      const options = {
+        resetStatus,
+        resetDate,
+        newTripDate: newTripDate ? new Date(newTripDate) : null
+      };
+
+      // Pass the array to controller
+      const result = await cloneTrips(tripIds, user.userId, times, options);
 
       const response = { 
         status: 201, 
         jsonBody: { 
-          success: true, 
-          message: `Successfully cloned ${times} trip(s)`,
-          data: result 
+          success: true,
+          data: result
         } 
       };
       
