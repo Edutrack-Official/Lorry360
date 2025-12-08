@@ -13,6 +13,12 @@ const expenseSchema = new mongoose.Schema({
     required: true
   },
   
+  bunk_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'PetrolBunk',
+    default: null
+  },
+  
   date: {
     type: Date,
     required: true,
@@ -40,9 +46,19 @@ const expenseSchema = new mongoose.Schema({
     required: true,
     enum: ['cash', 'bank', 'upi'],
     default: 'cash'
+  },
+  
+  isActive: {
+    type: Boolean,
+    default: true
   }
 }, {
   timestamps: true
 });
+
+// Add index for better query performance
+expenseSchema.index({ owner_id: 1, lorry_id: 1, date: -1 });
+expenseSchema.index({ bunk_id: 1 });
+expenseSchema.index({ category: 1 });
 
 module.exports = mongoose.model('Expense', expenseSchema);

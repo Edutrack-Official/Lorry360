@@ -1,32 +1,29 @@
 const { app } = require('@azure/functions');
 const connectDB = require('../utils/db');
 const {
-  createExpense,
-  getAllExpenses,
-  getExpenseById,
-  updateExpense,
-  deleteExpense,
-  getExpenseStats,
-  getExpensesByLorry,
-  getExpensesByBunk,
-  getFuelExpensesSummary
-} = require('../controllers/expense.controller');
+  createPetrolBunk,
+  getAllPetrolBunks,
+  getPetrolBunkById,
+  updatePetrolBunk,
+  deletePetrolBunk,
+  bulkSoftDeletePetrolBunks
+} = require('../controllers/petrolBunk.controller');
 const { verifyToken } = require('../middleware/auth.middleware');
 
 /**
- * ✅ Create Expense
+ * ✅ Create Petrol Bunk
  */
-app.http('createExpense', {
+app.http('createPetrolBunk', {
   methods: ['POST'],
   authLevel: 'anonymous',
-  route: 'expenses/create',
+  route: 'petrol-bunks/create',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can create expenses
+      // Only owners can create petrol bunks
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -37,7 +34,7 @@ app.http('createExpense', {
       const body = await request.json();
       body.owner_id = user.userId; // Set owner from token
 
-      const result = await createExpense(body);
+      const result = await createPetrolBunk(body);
       
       const response = { status: 201, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -55,19 +52,19 @@ app.http('createExpense', {
 });
 
 /**
- * ✅ Get All Expenses for Owner
+ * ✅ Get All Petrol Bunks for Owner
  */
-app.http('getAllExpenses', {
+app.http('getAllPetrolBunks', {
   methods: ['GET'],
   authLevel: 'anonymous',
-  route: 'expenses',
+  route: 'petrol-bunks',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can view their expenses
+      // Only owners can view their petrol bunks
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -75,8 +72,12 @@ app.http('getAllExpenses', {
         };
       }
 
-      const filterParams = request.query;
-      const result = await getAllExpenses(user.userId, filterParams);
+      const { include_inactive } = request.query;
+      
+      const result = await getAllPetrolBunks(
+        user.userId, 
+        include_inactive === 'true'
+      );
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -94,19 +95,19 @@ app.http('getAllExpenses', {
 });
 
 /**
- * ✅ Get Expense by ID
+ * ✅ Get Petrol Bunk by ID
  */
-app.http('getExpenseById', {
+app.http('getPetrolBunkById', {
   methods: ['GET'],
   authLevel: 'anonymous',
-  route: 'expenses/{expenseId}',
+  route: 'petrol-bunks/{bunkId}',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can view their expenses
+      // Only owners can view their petrol bunks
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -114,11 +115,11 @@ app.http('getExpenseById', {
         };
       }
 
-      const { expenseId } = request.params;
+      const { bunkId } = request.params;
       const { include_inactive } = request.query;
       
-      const result = await getExpenseById(
-        expenseId, 
+      const result = await getPetrolBunkById(
+        bunkId, 
         user.userId,
         include_inactive === 'true'
       );
@@ -139,19 +140,19 @@ app.http('getExpenseById', {
 });
 
 /**
- * ✅ Update Expense
+ * ✅ Update Petrol Bunk
  */
-app.http('updateExpense', {
+app.http('updatePetrolBunk', {
   methods: ['PUT'],
   authLevel: 'anonymous',
-  route: 'expenses/update/{expenseId}',
+  route: 'petrol-bunks/update/{bunkId}',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can update their expenses
+      // Only owners can update their petrol bunks
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -159,10 +160,10 @@ app.http('updateExpense', {
         };
       }
 
-      const { expenseId } = request.params;
+      const { bunkId } = request.params;
       const body = await request.json();
 
-      const result = await updateExpense(expenseId, user.userId, body);
+      const result = await updatePetrolBunk(bunkId, user.userId, body);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -180,19 +181,19 @@ app.http('updateExpense', {
 });
 
 /**
- * ✅ Delete Expense
+ * ✅ Delete Petrol Bunk (Soft Delete)
  */
-app.http('deleteExpense', {
+app.http('deletePetrolBunk', {
   methods: ['DELETE'],
   authLevel: 'anonymous',
-  route: 'expenses/delete/{expenseId}',
+  route: 'petrol-bunks/delete/{bunkId}',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can delete their expenses
+      // Only owners can delete their petrol bunks
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -200,8 +201,8 @@ app.http('deleteExpense', {
         };
       }
 
-      const { expenseId } = request.params;
-      const result = await deleteExpense(expenseId, user.userId);
+      const { bunkId } = request.params;
+      const result = await deletePetrolBunk(bunkId, user.userId);
 
       const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
@@ -219,19 +220,19 @@ app.http('deleteExpense', {
 });
 
 /**
- * ✅ Get Expense Statistics
+ * ✅ Bulk Soft Delete Petrol Bunks
  */
-app.http('getExpenseStats', {
-  methods: ['GET'],
+app.http('bulkSoftDeletePetrolBunks', {
+  methods: ['POST'],
   authLevel: 'anonymous',
-  route: 'expenses/stats/{period}',
+  route: 'petrol-bunks/bulk-delete',
   handler: async (request) => {
     try {
       await connectDB();
       
       const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      // Only owners can view stats
+      // Only owners can delete their petrol bunks
       if (user.role !== 'owner') {
         return {
           status: 403,
@@ -239,51 +240,27 @@ app.http('getExpenseStats', {
         };
       }
 
-      const { period } = request.params;
-      const result = await getExpenseStats(user.userId, period);
+      const body = await request.json();
+      const { bunkIds } = body;
 
-      const response = { status: 200, jsonBody: { success: true, data: result } };
-      if (newAccessToken) {
-        response.jsonBody.newAccessToken = newAccessToken;
+      // Validate input
+      if (!bunkIds || !Array.isArray(bunkIds) || bunkIds.length === 0) {
+        return {
+          status: 400,
+          jsonBody: { success: false, error: 'bunkIds must be a non-empty array' },
+        };
       }
-      
-      return response;
-    } catch (err) {
-      return {
-        status: err.status || 500,
-        jsonBody: { success: false, error: err.message },
+
+      const result = await bulkSoftDeletePetrolBunks(bunkIds, user.userId);
+
+      const response = { 
+        status: 200, 
+        jsonBody: { 
+          success: true,
+          data: result
+        } 
       };
-    }
-  },
-});
-
-/**
- * ✅ Get Expenses by Lorry
- */
-app.http('getExpensesByLorry', {
-  methods: ['GET'],
-  authLevel: 'anonymous',
-  route: 'expenses/lorry/{lorryId}',
-  handler: async (request) => {
-    try {
-      await connectDB();
       
-      const { decoded: user, newAccessToken } = await verifyToken(request);
-
-      // Only owners can view their expenses
-      if (user.role !== 'owner') {
-        return {
-          status: 403,
-          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
-        };
-      }
-
-      const { lorryId } = request.params;
-      const filterParams = request.query;
-      
-      const result = await getExpensesByLorry(user.userId, lorryId, filterParams);
-
-      const response = { status: 200, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
         response.jsonBody.newAccessToken = newAccessToken;
       }
