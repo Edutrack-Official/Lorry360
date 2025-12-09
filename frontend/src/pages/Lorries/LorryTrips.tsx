@@ -107,7 +107,7 @@
 
 //   const handleClone = async () => {
 //     const count = parseInt(cloneCount);
-    
+
 //     if (isNaN(count) || count < 1 || count > 100) {
 //       toast.error('Please enter a valid number between 1 and 100');
 //       return;
@@ -146,13 +146,13 @@
 
 //   const handleCloneCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 //     const value = e.target.value;
-    
+
 //     // Allow empty string (so user can erase completely)
 //     if (value === "") {
 //       setCloneCount("");
 //       return;
 //     }
-    
+
 //     // Only allow numbers
 //     if (/^\d*$/.test(value)) {
 //       const num = parseInt(value);
@@ -183,7 +183,7 @@
 //     <div className="fixed inset-0 z-50 overflow-y-auto">
 //       {/* Backdrop */}
 //       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      
+
 //       {/* Modal */}
 //       <div className="flex min-h-full items-center justify-center p-4">
 //         <div className="relative w-full max-w-md bg-white rounded-xl shadow-2xl">
@@ -231,7 +231,7 @@
 //                       >
 //                         <span className="text-lg">−</span>
 //                       </button>
-                      
+
 //                       <input
 //                         type="text"
 //                         value={cloneCount}
@@ -245,7 +245,7 @@
 //                         className="flex-1 w-full px-2 py-3 text-center border-0 focus:ring-0 focus:outline-none"
 //                         placeholder="Enter number"
 //                       />
-                      
+
 //                        <button
 //                         type="button"
 //                         onClick={handleIncrement}
@@ -430,7 +430,7 @@
 //       const response = await api.post('/trips/bulk-soft-delete', {
 //         tripIds: [selectedTrip.id]a
 //       });
-      
+
 //       toast.success("Deleted successfully");
 //       setDeleteModalOpen(false);
 //       setSelectedTrip(null);
@@ -461,7 +461,7 @@
 //       const response = await api.post('/trips/bulk-soft-delete', {
 //         tripIds
 //       });
-      
+
 //       toast.success(`Deleted successfully`);
 //       setSelectedTrips([]);
 //       setBulkDeleteModalOpen(false);
@@ -545,7 +545,7 @@
 //   }) => {
 //     try {
 //       const tripIds = selectedTrips.map(t => t.id);
-      
+
 //       const requestBody: any = {
 //         tripIds,
 //         times: data.times,
@@ -558,15 +558,15 @@
 //       }
 
 //       const res = await api.post('/trips/clone', requestBody);
-      
+
 //       toast.success(`Cloned successfully`);
 //       // Reset selection state
 //       setSelectedTrips([]);
 //       setShowBulkActions(false);
-      
+
 //       // Refresh trips
 //       fetchTrips();
-      
+
 //       return res.data;
 //     } catch (error: any) {
 //       toast.error(error.response?.data?.error || 'Failed to clone trips');
@@ -634,7 +634,7 @@
 //         setShowBulkActions(false);
 //       }
 //     };
-    
+
 //     document.addEventListener('click', handleClickOutside);
 //     return () => document.removeEventListener('click', handleClickOutside);
 //   }, [showBulkActions]);
@@ -867,7 +867,7 @@
 //                             className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
 //                           />
 //                         </div>
-                        
+
 //                         <div className="flex-1 min-w-0">
 //                           <div className="flex items-center gap-2">
 //                             <h3 className="font-bold text-base text-gray-900">{trip.trip_number}</h3>
@@ -1261,13 +1261,13 @@ const CloneTripModal: React.FC<CloneTripModalProps> = ({
 
   const handleCloneCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    
+
     // Allow empty string (so user can erase completely)
     if (value === "") {
       setCloneCount("");
       return;
     }
-    
+
     if (/^\d*$/.test(value)) {
       const num = parseInt(value);
       if (!isNaN(num) && num >= 1 && num <= 100) {
@@ -1295,7 +1295,7 @@ const CloneTripModal: React.FC<CloneTripModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      
+
       <div className="flex min-h-full items-center justify-center p-4">
         <div className="relative w-full max-w-md bg-white rounded-xl shadow-2xl">
           <div className="px-6 py-4 border-b border-gray-200">
@@ -1352,7 +1352,7 @@ const CloneTripModal: React.FC<CloneTripModalProps> = ({
                         className="flex-1 w-full px-2 py-3 text-center border-0 focus:ring-0 focus:outline-none"
                         placeholder="Enter number"
                       />
-                      
+
                       <button
                         type="button"
                         onClick={handleIncrement}
@@ -1486,7 +1486,7 @@ const PriceChangeModal: React.FC<PriceChangeModalProps> = ({
       return { earliest: null, latest: null };
     }
 
-    const selectedTripsData = tripsData.filter(trip => 
+    const selectedTripsData = tripsData.filter(trip =>
       selectedTrips.some(selected => selected.id === trip._id)
     );
 
@@ -1505,7 +1505,7 @@ const PriceChangeModal: React.FC<PriceChangeModalProps> = ({
       return [];
     }
 
-    const selectedTripsData = tripsData.filter(trip => 
+    const selectedTripsData = tripsData.filter(trip =>
       selectedTrips.some(selected => selected.id === trip._id)
     );
 
@@ -1525,7 +1525,7 @@ const PriceChangeModal: React.FC<PriceChangeModalProps> = ({
           crushers: new Set()
         };
       }
-      
+
       materialMap[trip.material_name].count += 1;
       materialMap[trip.material_name].totalUnits += trip.no_of_unit_crusher;
       materialMap[trip.material_name].totalCrusherAmount += trip.crusher_amount;
@@ -1571,13 +1571,13 @@ const PriceChangeModal: React.FC<PriceChangeModalProps> = ({
 
   const handleExtraAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    
+
     // Allow empty string
     if (value === "") {
       setExtraAmount("");
       return;
     }
-    
+
     // Allow numbers and decimal point
     if (/^\d*\.?\d*$/.test(value)) {
       setExtraAmount(value);
@@ -1609,7 +1609,7 @@ const PriceChangeModal: React.FC<PriceChangeModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      
+
       <div className="flex min-h-full items-center justify-center p-4">
         <div className="relative w-full max-w-2xl bg-white rounded-xl shadow-2xl">
           {/* Header */}
@@ -1646,32 +1646,32 @@ const PriceChangeModal: React.FC<PriceChangeModalProps> = ({
                   <Package className="h-5 w-5 text-blue-600" />
                   <h4 className="font-semibold text-blue-900">Selected Trips Summary</h4>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-xs text-blue-600 mb-1">Total Trips</p>
                     <p className="font-bold text-lg text-blue-900">{selectedTrips.length}</p>
                   </div>
-                  
+
                   {earliest && latest && (
                     <div>
                       <p className="text-xs text-blue-600 mb-1">Date Range</p>
                       <p className="font-medium text-blue-900">
-                        {earliest.getTime() === latest.getTime() 
+                        {earliest.getTime() === latest.getTime()
                           ? formatDate(earliest)
                           : `${formatDate(earliest)} - ${formatDate(latest)}`
                         }
                       </p>
                     </div>
                   )}
-                  
+
                   <div>
                     <p className="text-xs text-blue-600 mb-1">Total Crusher Amount</p>
                     <p className="font-bold text-lg text-blue-900">
                       {formatCurrency(totalCrusherAmount)}
                     </p>
                   </div>
-                  
+
                   <div>
                     <p className="text-xs text-blue-600 mb-1">Materials</p>
                     <p className="font-medium text-blue-900">
@@ -1759,7 +1759,7 @@ const PriceChangeModal: React.FC<PriceChangeModalProps> = ({
                     </div>
                     <span className="text-xs text-gray-500">Per trip</span>
                   </div>
-                  
+
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₹</span>
                     <input
@@ -1775,7 +1775,7 @@ const PriceChangeModal: React.FC<PriceChangeModalProps> = ({
                       placeholder="0.00"
                     />
                   </div>
-                  
+
                   <p className="text-xs text-gray-500 mt-2">
                     This amount will be added to customer amount for each selected trip.
                     Total extra amount: ₹{(parseFloat(extraAmount) * selectedTrips.length).toLocaleString('en-IN')}
@@ -1868,8 +1868,8 @@ const LorryTrips = () => {
       const res = await api.get(`/trips`);
       const allTrips = res.data.data?.trips || [];
       // Filter by lorry AND only active trips
-      const lorryTrips = allTrips.filter((trip: Trip) => 
-        trip.lorry_id?._id === lorryId && 
+      const lorryTrips = allTrips.filter((trip: Trip) =>
+        trip.lorry_id?._id === lorryId &&
         (trip.isActive === undefined || trip.isActive === true) // Only show active trips
       );
       setTrips(lorryTrips);
@@ -1950,7 +1950,7 @@ const LorryTrips = () => {
   }) => {
     try {
       const tripIds = selectedTrips.map(t => t.id);
-      
+
       const requestBody: any = {
         tripIds,
         update_customer_amount: data.update_customer_amount,
@@ -1958,16 +1958,16 @@ const LorryTrips = () => {
       };
 
       const res = await api.put('/trips/update-prices', requestBody);
-      
+
       toast.success(`Price change applied to ${selectedTrips.length} trip${selectedTrips.length > 1 ? 's' : ''}`);
-      
+
       // Reset selection state
       setSelectedTrips([]);
       setShowBulkActions(false);
-      
+
       // Refresh trips
       fetchTrips();
-      
+
       return res.data;
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Failed to apply price change');
@@ -2071,7 +2071,7 @@ const LorryTrips = () => {
       toast.success(`Cloned successfully`);
       setSelectedTrips([]);
       setShowBulkActions(false);
-      
+
       // Refresh trips
       fetchTrips();
 
@@ -2130,11 +2130,9 @@ const LorryTrips = () => {
       throw new Error('Invalid response from server');
     }
 
-    // Find the detail entry for our specific trip
-    const tripDetail = response.data.data.details.find(
-      (detail: any) => detail.tripId === tripId || detail.original_trip_number
-    );
-
+    // Find the detail entry for our specific trip - use the first one since we're cloning only one trip
+    const tripDetail = response.data.data.details[0];
+    
     if (!tripDetail) {
       console.error('No detail found for trip:', tripId);
       throw new Error('No clone information returned');
@@ -2158,7 +2156,7 @@ const LorryTrips = () => {
       throw new Error('Cloned trip missing ID');
     }
 
-    toast.success(`Trip cloned successfully! New trip: ${clonedTrip.trip_number}`);
+    toast.success(`Trip cloned successfully!`);
     return clonedTrip._id;
     
   } catch (error: any) {
@@ -2176,33 +2174,33 @@ const LorryTrips = () => {
   }
 };
 
-const handleCloneAndEdit = async (tripId: string) => {
-  try {
-    // Show loading toast
-    const loadingToast = toast.loading('Cloning trip...');
-    
-    // Close the action menu immediately for better UX
-    setShowActionMenu(null);
-    
-    // Clone the trip
-    const clonedTripId = await cloneSingleTrip(tripId);
-    
-    // Dismiss loading toast
-    toast.dismiss(loadingToast);
-    
-    // Show success and redirect
-    toast.success('Redirecting to edit page...', { duration: 2000 });
-    
-    // Navigate to edit page after a short delay
-    setTimeout(() => {
-      navigate(`/trips/edit/${clonedTripId}`);
-    }, 500);
-    
-  } catch (error) {
-    console.error('Clone and edit failed:', error);
-    // Error is already handled in cloneSingleTrip, so we don't need to show another toast here
-  }
-};
+  const handleCloneAndEdit = async (tripId: string) => {
+    try {
+      // Show loading toast
+      const loadingToast = toast.loading('Cloning trip...');
+
+      // Close the action menu immediately for better UX
+      setShowActionMenu(null);
+
+      // Clone the trip
+      const clonedTripId = await cloneSingleTrip(tripId);
+
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
+
+      // Show success and redirect
+      toast.success('Redirecting to edit page...', { duration: 2000 });
+
+      // Navigate to edit page after a short delay
+      setTimeout(() => {
+        navigate(`/trips/edit/${clonedTripId}`);
+      }, 500);
+
+    } catch (error) {
+      console.error('Clone and edit failed:', error);
+      // Error is already handled in cloneSingleTrip, so we don't need to show another toast here
+    }
+  };
 
 
   const formatDate = (dateString: string) => {
@@ -2593,6 +2591,18 @@ const handleCloneAndEdit = async (tripId: string) => {
                                   >
                                     <Copy className="h-4 w-4 flex-shrink-0" />
                                     <span>Clone This Trip</span>
+                                  </button>
+
+                                  {/* ADD THIS NEW BUTTON - Clone and Edit */}
+                                  <button
+                                    onClick={() => handleCloneAndEdit(trip._id)}
+                                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-purple-600 hover:bg-purple-50"
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <Copy className="h-3 w-3" />
+                                      <Edit className="h-3 w-3" />
+                                    </div>
+                                    <span>Clone and Edit</span>
                                   </button>
 
                                   <button
