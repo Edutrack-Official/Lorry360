@@ -107,7 +107,7 @@ const CloneTripModal: React.FC<CloneTripModalProps> = ({
 
   const handleClone = async () => {
     const count = parseInt(cloneCount);
-    
+
     if (isNaN(count) || count < 1 || count > 100) {
       toast.error('Please enter a valid number between 1 and 100');
       return;
@@ -146,13 +146,13 @@ const CloneTripModal: React.FC<CloneTripModalProps> = ({
 
   const handleCloneCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    
+
     // Allow empty string (so user can erase completely)
     if (value === "") {
       setCloneCount("");
       return;
     }
-    
+
     // Only allow numbers
     if (/^\d*$/.test(value)) {
       const num = parseInt(value);
@@ -183,7 +183,7 @@ const CloneTripModal: React.FC<CloneTripModalProps> = ({
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      
+
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
         <div className="relative w-full max-w-md bg-white rounded-xl shadow-2xl">
@@ -223,7 +223,7 @@ const CloneTripModal: React.FC<CloneTripModalProps> = ({
                 <div className="flex items-center gap-2">
                   <div className="relative flex-1">
                     <div className="flex items-center border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
-                       <button
+                      <button
                         type="button"
                         onClick={handleDecrement}
                         disabled={parseInt(cloneCount) <= 1}
@@ -231,7 +231,7 @@ const CloneTripModal: React.FC<CloneTripModalProps> = ({
                       >
                         <span className="text-lg">−</span>
                       </button>
-                      
+
                       <input
                         type="text"
                         value={cloneCount}
@@ -245,8 +245,8 @@ const CloneTripModal: React.FC<CloneTripModalProps> = ({
                         className="flex-1 w-full px-2 py-3 text-center border-0 focus:ring-0 focus:outline-none"
                         placeholder="Enter number"
                       />
-                      
-                       <button
+
+                      <button
                         type="button"
                         onClick={handleIncrement}
                         disabled={parseInt(cloneCount) >= 100}
@@ -396,8 +396,8 @@ const LorryTrips = () => {
       const res = await api.get(`/trips`);
       const allTrips = res.data.data?.trips || [];
       // Filter by lorry AND only active trips
-      const lorryTrips = allTrips.filter((trip: Trip) => 
-        trip.lorry_id?._id === lorryId && 
+      const lorryTrips = allTrips.filter((trip: Trip) =>
+        trip.lorry_id?._id === lorryId &&
         (trip.isActive === undefined || trip.isActive === true) // Only show active trips
       );
       setTrips(lorryTrips);
@@ -430,7 +430,7 @@ const LorryTrips = () => {
       const response = await api.post('/trips/bulk-soft-delete', {
         tripIds: [selectedTrip.id]
       });
-      
+
       toast.success("Deleted successfully");
       setDeleteModalOpen(false);
       setSelectedTrip(null);
@@ -461,7 +461,7 @@ const LorryTrips = () => {
       const response = await api.post('/trips/bulk-soft-delete', {
         tripIds
       });
-      
+
       toast.success(`Deleted successfully`);
       setSelectedTrips([]);
       setBulkDeleteModalOpen(false);
@@ -545,7 +545,7 @@ const LorryTrips = () => {
   }) => {
     try {
       const tripIds = selectedTrips.map(t => t.id);
-      
+
       const requestBody: any = {
         tripIds,
         times: data.times,
@@ -558,15 +558,15 @@ const LorryTrips = () => {
       }
 
       const res = await api.post('/trips/clone', requestBody);
-      
+
       toast.success(`Cloned successfully`);
       // Reset selection state
       setSelectedTrips([]);
       setShowBulkActions(false);
-      
+
       // Refresh trips
       fetchTrips();
-      
+
       return res.data;
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Failed to clone trips');
@@ -606,6 +606,98 @@ const LorryTrips = () => {
     setCloneModalOpen(true);
   };
 
+  const cloneSingleTrip = async (tripId: string) => {
+  try {
+    const response = await api.post('/trips/clone', {
+      tripIds: [tripId],
+      times: 1,
+      resetStatus: true,
+      resetDate: false
+    });
+
+    console.log('Clone API Response:', response.data);
+
+    // Check if response has the expected structure
+    if (!response.data || !response.data.data || !response.data.data.details) {
+      console.error('Invalid response structure:', response.data);
+      throw new Error('Invalid response from server');
+    }
+
+    // Find the detail entry for our specific trip
+    const tripDetail = response.data.data.details.find(
+      (detail: any) => detail.tripId === tripId || detail.original_trip_number
+    );
+
+    if (!tripDetail) {
+      console.error('No detail found for trip:', tripId);
+      throw new Error('No clone information returned');
+    }
+
+    if (!tripDetail.success) {
+      console.error('Clone failed in API:', tripDetail);
+      throw new Error('Clone operation failed on server');
+    }
+
+    if (!tripDetail.cloned_trips || !Array.isArray(tripDetail.cloned_trips) || tripDetail.cloned_trips.length === 0) {
+      console.error('No cloned trips in response:', tripDetail);
+      throw new Error('No cloned trip data returned');
+    }
+
+    // Get the first cloned trip (since we cloned only once)
+    const clonedTrip = tripDetail.cloned_trips[0];
+    
+    if (!clonedTrip._id) {
+      console.error('Cloned trip missing _id:', clonedTrip);
+      throw new Error('Cloned trip missing ID');
+    }
+
+    toast.success(`Trip cloned successfully! New trip: ${clonedTrip.trip_number}`);
+    return clonedTrip._id;
+    
+  } catch (error: any) {
+    console.error('Clone API Error:', error);
+    
+    // Show user-friendly error message
+    const errorMessage = 
+      error.response?.data?.error || 
+      error.response?.data?.message || 
+      error.message || 
+      'Failed to clone trip';
+    
+    toast.error(errorMessage);
+    throw error;
+  }
+};
+
+const handleCloneAndEdit = async (tripId: string) => {
+  try {
+    // Show loading toast
+    const loadingToast = toast.loading('Cloning trip...');
+    
+    // Close the action menu immediately for better UX
+    setShowActionMenu(null);
+    
+    // Clone the trip
+    const clonedTripId = await cloneSingleTrip(tripId);
+    
+    // Dismiss loading toast
+    toast.dismiss(loadingToast);
+    
+    // Show success and redirect
+    toast.success('Redirecting to edit page...', { duration: 2000 });
+    
+    // Navigate to edit page after a short delay
+    setTimeout(() => {
+      navigate(`/trips/edit/${clonedTripId}`);
+    }, 500);
+    
+  } catch (error) {
+    console.error('Clone and edit failed:', error);
+    // Error is already handled in cloneSingleTrip, so we don't need to show another toast here
+  }
+};
+
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
@@ -634,7 +726,7 @@ const LorryTrips = () => {
         setShowBulkActions(false);
       }
     };
-    
+
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, [showBulkActions]);
@@ -822,8 +914,8 @@ const LorryTrips = () => {
                 key={status}
                 onClick={() => setFilterStatus(status)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${filterStatus === status
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
               >
                 {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
@@ -867,7 +959,7 @@ const LorryTrips = () => {
                             className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                           />
                         </div>
-                        
+
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <h3 className="font-bold text-base text-gray-900">{trip.trip_number}</h3>
@@ -939,8 +1031,8 @@ const LorryTrips = () => {
                                       onClick={() => handleStatusUpdate(trip._id, status)}
                                       disabled={isCurrentStatus}
                                       className={`flex items-center gap-3 w-full px-4 py-2.5 text-sm transition-colors ${isCurrentStatus
-                                          ? 'bg-gray-50 text-gray-400 cursor-not-allowed'
-                                          : 'text-gray-700 hover:bg-gray-50'
+                                        ? 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                                        : 'text-gray-700 hover:bg-gray-50'
                                         }`}
                                     >
                                       <StatusIconItem className="h-4 w-4 flex-shrink-0" />
@@ -954,6 +1046,7 @@ const LorryTrips = () => {
                                   );
                                 })}
 
+                                {/* Actions Section */}
                                 {/* Actions Section */}
                                 <div className="border-t border-gray-200 mt-2 pt-2">
                                   <div className="px-3 py-2">
@@ -982,6 +1075,18 @@ const LorryTrips = () => {
                                   >
                                     <Copy className="h-4 w-4 flex-shrink-0" />
                                     <span>Clone This Trip</span>
+                                  </button>
+
+                                  {/* New Clone and Edit Option */}
+                                  <button
+                                    onClick={() => handleCloneAndEdit(trip._id)}
+                                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-purple-600 hover:bg-purple-50"
+                                  >
+                                    <div className="relative flex items-center justify-center w-4 h-4">
+                                      <Copy className="absolute h-3 w-3" />
+                                      <Edit className="absolute h-2 w-2 -bottom-1 -right-1" />
+                                    </div>
+                                    <span>Clone and Edit</span>
                                   </button>
 
                                   <button
