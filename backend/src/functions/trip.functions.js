@@ -15,7 +15,8 @@
     getTripsByCrusherId,
     getTripsByCustomerId,
     cloneTrips,
-    bulkSoftDeleteTrips
+    bulkSoftDeleteTrips,
+    updateTripPricesForMultipleTrips
   } = require('../controllers/trip.controller');
   const { verifyToken } = require('../middleware/auth.middleware');
   const { log } = require('console');
@@ -792,6 +793,48 @@ app.http('bulkSoftDeleteTrips', {
           success: false, 
           error: err.message 
         },
+      };
+    }
+  },
+});
+
+
+app.http('updateTripPrices', {
+  methods: ['PUT'],
+  authLevel: 'anonymous',
+  route: 'trips/update-prices',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      if (user.role !== 'owner') {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
+        };
+      }
+
+      const body = await request.json();
+      const { tripIds, update_customer_amount = false, extra_amount = 0 } = body;
+
+      const result = await updateTripPricesForMultipleTrips(user.userId, {
+        tripIds,
+        update_customer_amount,
+        extra_amount
+      });
+
+      const response = { status: 200, jsonBody: { success: true, data: result } };
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { success: false, error: err.message },
       };
     }
   },

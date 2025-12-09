@@ -1348,6 +1348,328 @@ const bulkSoftDeleteTrips = async (tripIds, owner_id) => {
   }
 };
 
+const updateTripPricesForMultipleTrips = async (owner_id, tripData) => {
+  try {
+    const { tripIds, update_customer_amount, extra_amount = 0 } = tripData;
+
+    // Validate inputs
+    if (!owner_id || !tripIds || !Array.isArray(tripIds) || tripIds.length === 0) {
+      throw new Error('owner_id and tripIds array are required');
+    }
+
+    if (typeof update_customer_amount !== 'boolean') {
+      throw new Error('update_customer_amount must be boolean');
+    }
+
+    if (extra_amount && typeof extra_amount !== 'number') {
+      throw new Error('extra_amount must be a number');
+    }
+
+    // Fetch trips in a single query
+    const trips = await Trip.find({
+      _id: { $in: tripIds },
+      owner_id,
+      isActive: true
+    })
+    .populate('crusher_id', 'materials');
+
+    if (trips.length === 0) {
+      return {
+        success: false,
+        message: 'No active trips found for the provided IDs',
+        updated_count: 0
+      };
+    }
+
+    // Process trips
+    const updatedTrips = [];
+    const failedTrips = [];
+    const summary = {
+      total_trips_processed: trips.length,
+      total_trips_updated: 0,
+      total_crusher_amount_change: 0,
+      total_customer_amount_change: 0,
+      total_extra_amount_added: 0,
+      trips_by_status: {}
+    };
+
+    // Group trips by crusher_id for batch processing
+    const tripsByCrusher = {};
+    
+    trips.forEach(trip => {
+      if (!trip.crusher_id) {
+        failedTrips.push({
+          trip_id: trip._id,
+          trip_number: trip.trip_number,
+          error: 'Crusher information missing',
+          reason: 'CRUSHER_NOT_FOUND'
+        });
+        return;
+      }
+
+      if (!trip.crusher_id.materials || trip.crusher_id.materials.length === 0) {
+        failedTrips.push({
+          trip_id: trip._id,
+          trip_number: trip.trip_number,
+          error: 'No materials defined for crusher',
+          reason: 'NO_MATERIALS_DEFINED'
+        });
+        return;
+      }
+
+      const crusherId = trip.crusher_id._id.toString();
+      if (!tripsByCrusher[crusherId]) {
+        tripsByCrusher[crusherId] = {
+          crusher: trip.crusher_id,
+          trips: []
+        };
+      }
+      tripsByCrusher[crusherId].trips.push(trip);
+    });
+
+    // Process each crusher group
+    for (const [crusherId, crusherGroup] of Object.entries(tripsByCrusher)) {
+      const { crusher, trips: crusherTrips } = crusherGroup;
+
+      // Create a map of material name to current price
+      const materialPriceMap = {};
+      crusher.materials.forEach(material => {
+        materialPriceMap[material.material_name.toLowerCase()] = material.price_per_unit;
+      });
+
+      // Process each trip in this crusher group
+      for (const trip of crusherTrips) {
+        try {
+          const materialNameLower = trip.material_name.toLowerCase();
+          const currentMaterialPrice = materialPriceMap[materialNameLower];
+
+          if (!currentMaterialPrice) {
+            failedTrips.push({
+              trip_id: trip._id,
+              trip_number: trip.trip_number,
+              error: `Material "${trip.material_name}" not found in crusher's materials`,
+              reason: 'MATERIAL_NOT_FOUND'
+            });
+            continue;
+          }
+
+          // Skip if price is already the same
+          if (trip.rate_per_unit === currentMaterialPrice) {
+            updatedTrips.push({
+              trip_id: trip._id,
+              trip_number: trip.trip_number,
+              material_name: trip.material_name,
+              old_rate_per_unit: trip.rate_per_unit,
+              new_rate_per_unit: currentMaterialPrice,
+              status: 'NO_CHANGE',
+              message: 'Rate per unit already matches current price'
+            });
+            summary.total_trips_processed++; // Still counts as processed
+            continue;
+          }
+
+          // Calculate new crusher amount
+          const oldCrusherAmount = trip.crusher_amount;
+          const newCrusherAmount = trip.no_of_unit_crusher * currentMaterialPrice;
+          const crusherAmountDiff = newCrusherAmount - oldCrusherAmount;
+
+          // Calculate new customer amount based on configuration
+          let newCustomerAmount = trip.customer_amount;
+          let customerAmountDiff = 0;
+          let newProfit = trip.profit;
+
+          if (update_customer_amount) {
+            // Add BOTH the price difference AND extra amount to customer
+            customerAmountDiff = crusherAmountDiff + extra_amount;
+            newCustomerAmount = trip.customer_amount + customerAmountDiff;
+            newProfit = newCustomerAmount - newCrusherAmount;
+          } else {
+            // Only update profit based on new crusher amount
+            newProfit = trip.customer_amount - newCrusherAmount;
+          }
+
+          // Prepare update object
+          const updateData = {
+            rate_per_unit: currentMaterialPrice,
+            crusher_amount: newCrusherAmount,
+            profit: newProfit
+          };
+
+          if (update_customer_amount) {
+            updateData.customer_amount = newCustomerAmount;
+          }
+
+          // Update the trip
+          const updatedTrip = await Trip.findByIdAndUpdate(
+            trip._id,
+            updateData,
+            { new: true, runValidators: true }
+          )
+          .populate('crusher_id', 'name materials')
+          .populate('customer_id', 'name phone')
+          .populate('collab_owner_id', 'name company_name');
+
+          updatedTrips.push({
+            trip_id: trip._id,
+            trip_number: trip.trip_number,
+            material_name: trip.material_name,
+            old_rate_per_unit: trip.rate_per_unit,
+            new_rate_per_unit: currentMaterialPrice,
+            old_crusher_amount: oldCrusherAmount,
+            new_crusher_amount: newCrusherAmount,
+            crusher_amount_diff: crusherAmountDiff,
+            old_customer_amount: trip.customer_amount,
+            new_customer_amount: newCustomerAmount,
+            customer_amount_diff: customerAmountDiff,
+            breakdown: {
+              price_change_diff: crusherAmountDiff,
+              extra_amount_added: update_customer_amount ? extra_amount : 0,
+              total_added_to_customer: update_customer_amount ? crusherAmountDiff + extra_amount : 0
+            },
+            old_profit: trip.profit,
+            new_profit: newProfit,
+            units: trip.no_of_unit_crusher,
+            status: trip.status,
+            update_customer_amount: update_customer_amount,
+            extra_amount_applied: update_customer_amount ? extra_amount : 0,
+            updated_at: new Date().toISOString()
+          });
+
+          // Update summary
+          summary.total_trips_updated++;
+          summary.total_crusher_amount_change += crusherAmountDiff;
+          summary.total_customer_amount_change += customerAmountDiff;
+          if (update_customer_amount) {
+            summary.total_extra_amount_added += extra_amount;
+          }
+
+          // Track by status
+          const statusKey = trip.status;
+          if (!summary.trips_by_status[statusKey]) {
+            summary.trips_by_status[statusKey] = 0;
+          }
+          summary.trips_by_status[statusKey]++;
+
+        } catch (error) {
+          failedTrips.push({
+            trip_id: trip._id,
+            trip_number: trip.trip_number,
+            error: error.message,
+            reason: 'UPDATE_ERROR'
+          });
+        }
+      }
+    }
+
+    // Calculate averages
+    if (summary.total_trips_updated > 0) {
+      summary.average_crusher_amount_change = summary.total_crusher_amount_change / summary.total_trips_updated;
+      summary.average_customer_amount_change = summary.total_customer_amount_change / summary.total_trips_updated;
+      summary.average_extra_amount_per_trip = summary.total_extra_amount_added / summary.total_trips_updated;
+    } else {
+      summary.average_crusher_amount_change = 0;
+      summary.average_customer_amount_change = 0;
+      summary.average_extra_amount_per_trip = 0;
+    }
+
+    // Prepare final response
+    const response = {
+      success: true,
+      summary: {
+        ...summary,
+        trips_updated_successfully: updatedTrips.length,
+        trips_failed: failedTrips.length,
+        success_rate: summary.total_trips_updated / trips.length * 100,
+        configuration: {
+          update_customer_amount: update_customer_amount,
+          extra_amount_per_trip: extra_amount,
+          total_extra_amount: update_customer_amount ? extra_amount * summary.total_trips_updated : 0
+        }
+      },
+      updated_trips: updatedTrips,
+      failed_trips: failedTrips
+    };
+
+    // Additional grouping for easier analysis
+    response.breakdown = {
+      by_material: {},
+      by_crusher: {},
+      price_changes: {
+        increased: [],
+        decreased: [],
+        unchanged: []
+      }
+    };
+
+    // Group updated trips by material
+    updatedTrips.forEach(trip => {
+      // By material
+      const materialKey = trip.material_name;
+      if (!response.breakdown.by_material[materialKey]) {
+        response.breakdown.by_material[materialKey] = {
+          trips_count: 0,
+          total_crusher_amount_change: 0,
+          total_customer_amount_change: 0,
+          total_extra_amount_added: 0,
+          average_rate_change: 0,
+          trips: []
+        };
+      }
+      response.breakdown.by_material[materialKey].trips_count++;
+      response.breakdown.by_material[materialKey].total_crusher_amount_change += trip.crusher_amount_diff;
+      response.breakdown.by_material[materialKey].total_customer_amount_change += trip.customer_amount_diff;
+      response.breakdown.by_material[materialKey].total_extra_amount_added += trip.extra_amount_applied;
+      response.breakdown.by_material[materialKey].trips.push(trip.trip_number);
+
+      // Track price changes
+      if (trip.crusher_amount_diff > 0) {
+        response.breakdown.price_changes.increased.push({
+          trip_number: trip.trip_number,
+          material: trip.material_name,
+          old_rate: trip.old_rate_per_unit,
+          new_rate: trip.new_rate_per_unit,
+          price_increase: trip.crusher_amount_diff,
+          extra_amount: trip.extra_amount_applied,
+          total_customer_increase: trip.customer_amount_diff
+        });
+      } else if (trip.crusher_amount_diff < 0) {
+        response.breakdown.price_changes.decreased.push({
+          trip_number: trip.trip_number,
+          material: trip.material_name,
+          old_rate: trip.old_rate_per_unit,
+          new_rate: trip.new_rate_per_unit,
+          price_decrease: Math.abs(trip.crusher_amount_diff),
+          extra_amount: trip.extra_amount_applied,
+          total_customer_increase: trip.customer_amount_diff
+        });
+      } else {
+        response.breakdown.price_changes.unchanged.push({
+          trip_number: trip.trip_number,
+          extra_amount: trip.extra_amount_applied,
+          customer_increase: trip.customer_amount_diff
+        });
+      }
+    });
+
+    // Calculate average rate change per material
+    Object.keys(response.breakdown.by_material).forEach(material => {
+      const materialData = response.breakdown.by_material[material];
+      materialData.average_rate_change = materialData.total_crusher_amount_change / materialData.trips_count;
+      materialData.average_customer_change = materialData.total_customer_amount_change / materialData.trips_count;
+      materialData.average_extra_amount = materialData.total_extra_amount_added / materialData.trips_count;
+    });
+
+    return response;
+
+  } catch (error) {
+    console.error('Error in updateTripPricesForMultipleTrips:', error);
+    throw error;
+  }
+};
+
+
+
+
 
 module.exports = {
   createTrip,
@@ -1365,5 +1687,6 @@ module.exports = {
   getTripsByCustomerId,
   getInvoiceData,
   cloneTrips,
-  bulkSoftDeleteTrips
+  bulkSoftDeleteTrips,
+  updateTripPricesForMultipleTrips
 };
