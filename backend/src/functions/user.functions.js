@@ -1,4 +1,5 @@
 const { app } = require('@azure/functions');
+const Busboy = require('busboy');
 const connectDB = require('../utils/db');
 const {
   createUser,
@@ -7,13 +8,16 @@ const {
   updateUser,
   forgotPassword,
   resetPassword,
-  deactivateUser
+  deactivateUser,
+  deleteUserLogo,
+  getAllOwners
 } = require('../controllers/user.controller');
 const { verifyToken } = require('../middleware/auth.middleware');
 const { loginUser } = require('../controllers/auth.controller');
 
-
-
+/**
+ * ✅ Login User
+ */
 app.http('loginUser', {
   methods: ['POST'],
   authLevel: 'anonymous',
@@ -37,18 +41,18 @@ app.http('loginUser', {
 });
 
 /**
- * ✅ Create User
+ * ✅ Create User with Logo Upload
  */
 app.http('createUser', {
   methods: ['POST'],
   authLevel: 'anonymous',
   route: 'users/create',
-  handler: async (request) => {
+  handler: async (req, context) => {
     try {
       await connectDB();
       
       // ✅ Verify token for admin access
-      const { decoded: user, newAccessToken } = await verifyToken(request);
+      const { decoded: user, newAccessToken } = await verifyToken(req);
 
       // Only admin can create users
       if (user.role !== 'admin') {
@@ -58,17 +62,57 @@ app.http('createUser', {
         };
       }
 
-      const body = await request.json();
-      const result = await createUser(body);
+      const headers = Object.fromEntries(req.headers);
+      const busboy = Busboy({ headers });
+
+      const fields = {};
+      let logoFile = null;
+
+      const fileParsePromise = new Promise((resolve, reject) => {
+        busboy.on('file', (fieldname, file, { filename, encoding, mimeType }) => {
+          const chunks = [];
+
+          file.on('data', (chunk) => chunks.push(chunk));
+          
+          file.on('end', () => {
+            if (fieldname === 'logo') {
+              logoFile = {
+                fieldname,
+                originalname: filename,
+                mimetype: mimeType,
+                buffer: Buffer.concat(chunks),
+                size: chunks.reduce((acc, chunk) => acc + chunk.length, 0)
+              };
+            }
+          });
+        });
+
+        busboy.on('field', (fieldname, value) => {
+          fields[fieldname] = value;
+        });
+
+        busboy.on('finish', resolve);
+        busboy.on('error', reject);
+      });
+
+      // Feed Busboy with raw buffer
+      const buffer = Buffer.from(await req.arrayBuffer());
+      busboy.end(buffer);
+
+      await fileParsePromise;
+
+      // Call controller with fields and logo file
+      const result = await createUser(fields, logoFile);
       
       // ✅ Include new access token if generated
-      const response = { status: 201, jsonBody: result };
+      const response = { status: 201, jsonBody: { success: true, data: result } };
       if (newAccessToken) {
         response.jsonBody.newAccessToken = newAccessToken;
       }
       
       return response;
     } catch (err) {
+      context.log('Create user error:', err.message);
       return {
         status: err.status || 500,
         jsonBody: { success: false, error: err.message },
@@ -161,21 +205,20 @@ app.http('getUserById', {
 });
 
 /**
- * ✅ Update User
+ * ✅ Update User with Logo Upload
  */
 app.http('updateUser', {
   methods: ['PUT'],
   authLevel: 'anonymous',
   route: 'users/update/{userId}',
-  handler: async (request) => {
+  handler: async (req, context) => {
     try {
       await connectDB();
       
       // ✅ Verify token
-      const { decoded: user, newAccessToken } = await verifyToken(request);
+      const { decoded: user, newAccessToken } = await verifyToken(req);
 
-      const { userId } = request.params;
-      const body = await request.json();
+      const { userId } = req.params;
 
       // Users can only update their own data, admin can update any
       if (user.role !== 'admin' && user.userId !== userId) {
@@ -185,7 +228,90 @@ app.http('updateUser', {
         };
       }
 
-      const result = await updateUser(userId, body);
+      const headers = Object.fromEntries(req.headers);
+      const busboy = Busboy({ headers });
+
+      const fields = {};
+      let logoFile = null;
+
+      const fileParsePromise = new Promise((resolve, reject) => {
+        busboy.on('file', (fieldname, file, { filename, encoding, mimeType }) => {
+          const chunks = [];
+
+          file.on('data', (chunk) => chunks.push(chunk));
+          
+          file.on('end', () => {
+            if (fieldname === 'logo') {
+              logoFile = {
+                fieldname,
+                originalname: filename,
+                mimetype: mimeType,
+                buffer: Buffer.concat(chunks),
+                size: chunks.reduce((acc, chunk) => acc + chunk.length, 0)
+              };
+            }
+          });
+        });
+
+        busboy.on('field', (fieldname, value) => {
+          fields[fieldname] = value;
+        });
+
+        busboy.on('finish', resolve);
+        busboy.on('error', reject);
+      });
+
+      // Feed Busboy with raw buffer
+      const buffer = Buffer.from(await req.arrayBuffer());
+      busboy.end(buffer);
+
+      await fileParsePromise;
+
+      // Call controller with fields and logo file
+      const result = await updateUser(userId, fields, logoFile);
+
+      // ✅ Include new access token if generated
+      const response = { status: 200, jsonBody: { success: true, data: result } };
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      context.log('Update user error:', err.message);
+      return {
+        status: err.status || 500,
+        jsonBody: { success: false, error: err.message },
+      };
+    }
+  },
+});
+
+/**
+ * ✅ Delete User Logo
+ */
+app.http('deleteUserLogo', {
+  methods: ['DELETE'],
+  authLevel: 'anonymous',
+  route: 'users/{userId}/logo',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      // ✅ Verify token
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      const { userId } = request.params;
+
+      // Users can only delete their own logo, admin can delete any
+      if (user.role !== 'admin' && user.userId !== userId) {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied.' },
+        };
+      }
+
+      const result = await deleteUserLogo(userId);
 
       // ✅ Include new access token if generated
       const response = { status: 200, jsonBody: { success: true, data: result } };
@@ -315,7 +441,6 @@ app.http('deactivateUser', {
     }
   },
 });
-
 
 /**
  * ✅ Get All Owners

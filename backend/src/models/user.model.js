@@ -36,6 +36,11 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Role is required']
   },
   
+  logo: {
+    type: String,
+    default: null,
+    trim: true,
+  },
   // Fields for lorry owners only (optional for admin)
   company_name: {
     type: String,
