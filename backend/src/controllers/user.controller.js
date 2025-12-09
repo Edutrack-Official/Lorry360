@@ -204,48 +204,13 @@ const getUserById = async (id) => {
   return user;
 };
 
-const updateUser = async (id, updateData, logoFile = null) => {
+const updateUser = async (id, updateData) => {
   // Find existing user
   const existingUser = await User.findById(id);
   if (!existingUser) {
     const err = new Error('User not found');
     err.status = 404;
     throw err;
-  }
-
-  // Handle logo update
-  let logoUrl = existingUser.logo;
-  if (logoFile) {
-    // Validate file type
-    const validMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    if (!validMimeTypes.includes(logoFile.mimetype)) {
-      const err = new Error('Invalid logo file type. Supported types: JPEG, PNG, GIF, WebP');
-      err.status = 400;
-      throw err;
-    }
-    
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (logoFile.size > maxSize) {
-      const err = new Error('Logo file size exceeds 5MB limit');
-      err.status = 400;
-      throw err;
-    }
-    
-    // Delete old logo if exists
-    if (logoUrl) {
-      await deleteLogoFromBlob(logoUrl).catch(console.error);
-    }
-    
-    // Upload new logo
-    logoUrl = await uploadLogoToBlob(logoFile);
-    updateData.logo = logoUrl;
-  } else if (updateData.logo === null || updateData.logo === '') {
-    // If logo is being removed
-    if (logoUrl) {
-      await deleteLogoFromBlob(logoUrl).catch(console.error);
-    }
-    updateData.logo = null;
   }
 
   // Handle password update
@@ -259,10 +224,6 @@ const updateUser = async (id, updateData, logoFile = null) => {
     const ownerData = updateData.role === 'owner' ? updateData : existingUser;
     if (!ownerData.company_name || !ownerData.address || !ownerData.city || 
         !ownerData.state || !ownerData.pincode) {
-      // Clean up uploaded logo if validation fails
-      if (logoFile && logoUrl) {
-        await deleteLogoFromBlob(logoUrl).catch(console.error);
-      }
       const err = new Error('For owner role, company_name, address, city, state, and pincode are required');
       err.status = 400;
       throw err;
@@ -276,19 +237,12 @@ const updateUser = async (id, updateData, logoFile = null) => {
   ).select('-passwordHash');
 
   if (!updatedUser) {
-    // Clean up uploaded logo if update fails
-    if (logoFile && logoUrl) {
-      await deleteLogoFromBlob(logoUrl).catch(console.error);
-    }
     const err = new Error('User not found or update failed');
     err.status = 404;
     throw err;
   }
   
-  return {
-    ...updatedUser.toObject(),
-    hasLogo: !!updatedUser.logo
-  };
+  return updatedUser;
 };
 
 const forgotPassword = async (email, otp) => {

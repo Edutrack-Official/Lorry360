@@ -211,14 +211,15 @@ app.http('updateUser', {
   methods: ['PUT'],
   authLevel: 'anonymous',
   route: 'users/update/{userId}',
-  handler: async (req, context) => {
+  handler: async (request) => {
     try {
       await connectDB();
       
       // ✅ Verify token
-      const { decoded: user, newAccessToken } = await verifyToken(req);
+      const { decoded: user, newAccessToken } = await verifyToken(request);
 
-      const { userId } = req.params;
+      const { userId } = request.params;
+      const body = await request.json();
 
       // Users can only update their own data, admin can update any
       if (user.role !== 'admin' && user.userId !== userId) {
@@ -228,47 +229,8 @@ app.http('updateUser', {
         };
       }
 
-      const headers = Object.fromEntries(req.headers);
-      const busboy = Busboy({ headers });
-
-      const fields = {};
-      let logoFile = null;
-
-      const fileParsePromise = new Promise((resolve, reject) => {
-        busboy.on('file', (fieldname, file, { filename, encoding, mimeType }) => {
-          const chunks = [];
-
-          file.on('data', (chunk) => chunks.push(chunk));
-          
-          file.on('end', () => {
-            if (fieldname === 'logo') {
-              logoFile = {
-                fieldname,
-                originalname: filename,
-                mimetype: mimeType,
-                buffer: Buffer.concat(chunks),
-                size: chunks.reduce((acc, chunk) => acc + chunk.length, 0)
-              };
-            }
-          });
-        });
-
-        busboy.on('field', (fieldname, value) => {
-          fields[fieldname] = value;
-        });
-
-        busboy.on('finish', resolve);
-        busboy.on('error', reject);
-      });
-
-      // Feed Busboy with raw buffer
-      const buffer = Buffer.from(await req.arrayBuffer());
-      busboy.end(buffer);
-
-      await fileParsePromise;
-
-      // Call controller with fields and logo file
-      const result = await updateUser(userId, fields, logoFile);
+      // Note: Logo must be handled separately via dedicated upload endpoint
+      const result = await updateUser(userId, body);
 
       // ✅ Include new access token if generated
       const response = { status: 200, jsonBody: { success: true, data: result } };
@@ -278,7 +240,6 @@ app.http('updateUser', {
       
       return response;
     } catch (err) {
-      context.log('Update user error:', err.message);
       return {
         status: err.status || 500,
         jsonBody: { success: false, error: err.message },
