@@ -10,7 +10,8 @@ const {
   resetPassword,
   deactivateUser,
   deleteUserLogo,
-  getAllOwners
+  getAllOwners,
+  updateUserLogo
 } = require('../controllers/user.controller');
 const { verifyToken } = require('../middleware/auth.middleware');
 const { loginUser } = require('../controllers/auth.controller');
@@ -436,6 +437,90 @@ app.http('getAllOwners', {
       
       return response;
     } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { success: false, error: err.message },
+      };
+    }
+  },
+});
+
+/**
+ * ✅ Update User Logo Only
+ */
+app.http('updateUserLogo', {
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  route: 'users/{userId}/logo',
+  handler: async (req, context) => {
+    try {
+      await connectDB();
+      
+      // ✅ Verify token
+      const { decoded: user, newAccessToken } = await verifyToken(req);
+      
+      const { userId } = req.params;
+
+      // Users can only update their own logo, admin can update any
+      if (user.role !== 'admin' && user.userId !== userId) {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied.' },
+        };
+      }
+
+      const headers = Object.fromEntries(req.headers);
+      const busboy = Busboy({ headers });
+
+      let logoFile = null;
+
+      const fileParsePromise = new Promise((resolve, reject) => {
+        busboy.on('file', (fieldname, file, { filename, encoding, mimeType }) => {
+          const chunks = [];
+
+          file.on('data', (chunk) => chunks.push(chunk));
+          
+          file.on('end', () => {
+            if (fieldname === 'logo') {
+              logoFile = {
+                fieldname,
+                originalname: filename,
+                mimetype: mimeType,
+                buffer: Buffer.concat(chunks),
+                size: chunks.reduce((acc, chunk) => acc + chunk.length, 0)
+              };
+            }
+          });
+        });
+
+        busboy.on('finish', resolve);
+        busboy.on('error', reject);
+      });
+
+      // Feed Busboy with raw buffer
+      const buffer = Buffer.from(await req.arrayBuffer());
+      busboy.end(buffer);
+      await fileParsePromise;
+
+      if (!logoFile) {
+        return {
+          status: 400,
+          jsonBody: { success: false, error: 'Logo file is required' },
+        };
+      }
+
+      // Call controller with logo file only
+      const result = await updateUserLogo(userId, logoFile);
+
+      // ✅ Include new access token if generated
+      const response = { status: 200, jsonBody: { success: true, data: result } };
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      context.log('Update logo error:', err.message);
       return {
         status: err.status || 500,
         jsonBody: { success: false, error: err.message },

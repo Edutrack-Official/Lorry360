@@ -357,6 +357,61 @@ const deleteUserLogo = async (id) => {
   };
 };
 
+
+const updateUserLogo = async (id, logoFile) => {
+  // Find existing user
+  const existingUser = await User.findById(id);
+  if (!existingUser) {
+    const err = new Error('User not found');
+    err.status = 404;
+    throw err;
+  }
+
+  // Validate file type
+  const validMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+  if (!validMimeTypes.includes(logoFile.mimetype)) {
+    const err = new Error('Invalid logo file type. Supported types: JPEG, PNG, GIF, WebP');
+    err.status = 400;
+    throw err;
+  }
+  
+  // Validate file size (max 5MB)
+  const maxSize = 5 * 1024 * 1024; // 5MB
+  if (logoFile.size > maxSize) {
+    const err = new Error('Logo file size exceeds 5MB limit');
+    err.status = 400;
+    throw err;
+  }
+  
+  // Delete old logo if exists
+  if (existingUser.logo) {
+    await deleteLogoFromBlob(existingUser.logo).catch(console.error);
+  }
+  
+  // Upload new logo
+  const logoUrl = await uploadLogoToBlob(logoFile);
+  
+  // Update user with new logo URL
+  const updatedUser = await User.findByIdAndUpdate(
+    id, 
+    { logo: logoUrl }, 
+    { new: true }
+  ).select('-passwordHash');
+
+  if (!updatedUser) {
+    // Clean up uploaded logo if update fails
+    await deleteLogoFromBlob(logoUrl).catch(console.error);
+    const err = new Error('User not found or update failed');
+    err.status = 404;
+    throw err;
+  }
+  
+  return {
+    ...updatedUser.toObject(),
+    hasLogo: !!updatedUser.logo
+  };
+};
+
 module.exports = {
   createUser,
   getAllUsers,
@@ -368,5 +423,6 @@ module.exports = {
   getAllOwners,
   deleteUserLogo,
   uploadLogoToBlob,
-  deleteLogoFromBlob
+  deleteLogoFromBlob,
+  updateUserLogo
 };
