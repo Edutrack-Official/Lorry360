@@ -11,7 +11,6 @@ const tripSchema = new mongoose.Schema({
   
   trip_number: {
     type: String,
-    unique: true,
     required: true
   },
   
