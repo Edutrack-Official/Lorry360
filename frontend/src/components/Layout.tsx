@@ -57,7 +57,7 @@
 //   const [showLogoutModal, setShowLogoutModal] = useState(false);
 //   const [showNotifications, setShowNotifications] = useState(false);
 //   const [showUserMenu, setShowUserMenu] = useState(false);
-  
+
 //   const notificationRef = useRef<HTMLDivElement>(null);
 //   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -534,7 +534,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  
+
   const notificationRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -559,7 +559,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   const navigation = [
-   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["owner"], color: "blue" },
+    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, roles: ["owner"], color: "blue" },
     { name: "Lorries", href: "/lorries", icon: Truck, roles: ["owner"], color: "green" },
     { name: "Drivers", href: "/drivers", icon: UserCircle2, roles: ["owner"], color: "orange" },
     { name: "Customers", href: "/customers", icon: Building2, roles: ["owner"], color: "purple" },
@@ -622,9 +622,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Mobile sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-gradient-to-b from-blue-600 to-blue-700 shadow-2xl transform transition-transform duration-300 ease-in-out lg:hidden ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-gradient-to-b from-blue-600 to-blue-700 shadow-2xl transform transition-transform duration-300 ease-in-out lg:hidden ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         {/* Mobile Header */}
         <div className="flex h-16 items-center justify-between px-4 border-b border-blue-500/50 bg-blue-700/50">
@@ -653,10 +652,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 to={item.href}
                 onClick={() => setSidebarOpen(false)}
                 className={`group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200
-                  ${
-                    isActive
-                      ? "bg-white text-blue-700 shadow-lg scale-[1.02]"
-                      : "text-white hover:bg-white/10 hover:translate-x-1"
+                  ${isActive
+                    ? "bg-white text-blue-700 shadow-lg scale-[1.02]"
+                    : "text-white hover:bg-white/10 hover:translate-x-1"
                   }`}
               >
                 <div className={`${isActive ? 'bg-blue-100' : 'bg-white/10'} p-2 rounded-lg`}>
@@ -708,10 +706,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   aria-label={item.name}
                   className={`group relative flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl
                     transition-all duration-200 hover:scale-110
-                    ${
-                      isActive
-                        ? "bg-white text-blue-700 shadow-xl scale-110"
-                        : "text-white hover:bg-white/10"
+                    ${isActive
+                      ? "bg-white text-blue-700 shadow-xl scale-110"
+                      : "text-white hover:bg-white/10"
                     }`}
                 >
                   <Icon className="h-5 w-5 relative z-10" />
@@ -799,9 +796,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         return (
                           <div
                             key={notification.id}
-                            className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${
-                              notification.unread ? 'bg-blue-50/30' : ''
-                            }`}
+                            className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${notification.unread ? 'bg-blue-50/30' : ''
+                              }`}
                           >
                             <div className="flex items-start gap-3">
                               <div className={`w-10 h-10 bg-${notification.color}-100 rounded-xl flex items-center justify-center flex-shrink-0`}>
@@ -873,10 +869,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       </div>
                     </div>
                     <div className="py-2">
-                      <button className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                        <UserCircle2 className="h-5 w-5 text-gray-500" />
-                        <span className="font-medium">My Profile</span>
-                      </button>
+                      <Link to="/profile" className="block">
+                        <button className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                          <UserCircle2 className="h-5 w-5 text-gray-500" />
+                          <span className="font-medium">My Profile</span>
+                        </button>
+                      </Link>
                       <button className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                         <Settings className="h-5 w-5 text-gray-500" />
                         <span className="font-medium">Settings</span>

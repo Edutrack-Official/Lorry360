@@ -57,6 +57,7 @@ import BunkDetails from './pages/Bunks/BunkDetails';
 import BunkExpenses from './pages/Bunks/BunkExpenses';
 import BunkPayments from './pages/Bunks/BunkPayments';
 import BunkPaymentForm from './pages/Bunks/BunkPaymentForm';
+import ProfilePage from './pages/ProfilePage';
 
 
 
@@ -103,6 +104,7 @@ function App() {
                     <Routes>
                       {/* Dashboard */}
                       <Route path="/dashboard" element={<OwnerRoute><Dashboard /></OwnerRoute>} />
+                      <Route path="/profile" element={<OwnerRoute><ProfilePage /></OwnerRoute>} />
 
                       {/* Lorries - OWNER ONLY */}
                       <Route path="/lorries" element={<OwnerRoute><Lorries /></OwnerRoute>} />
