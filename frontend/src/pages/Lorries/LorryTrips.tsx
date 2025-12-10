@@ -847,6 +847,39 @@ const LorryTrips = () => {
     }
   };
 
+const handleBulkStatusUpdate = async (status: string) => {
+  if (selectedTrips.length === 0) {
+    toast.error('Please select trips to update');
+    return;
+  }
+
+  try {
+    const tripIds = selectedTrips.map(t => t.id);
+    const response = await api.post('/trips/bulk-update-status', {
+      tripIds,
+      status
+    });
+
+    if (response.data.success) {
+      toast.success(`Updated ${response.data.data.summary.trips_updated} trip${response.data.data.summary.trips_updated > 1 ? 's' : ''} to ${status}`);
+      
+      // Update the trips in state
+      fetchTrips();
+      setSelectedTrips([]);
+      setShowBulkActions(false);
+      
+      // Show detailed summary if available
+      if (response.data.data.summary.trips_skipped > 0) {
+        toast.success(`${response.data.data.summary.trips_skipped} trip${response.data.data.summary.trips_skipped > 1 ? 's were' : ' was'} already in "${status}" status or inactive`);
+      }
+    } else {
+      toast.error('Failed to update status');
+    }
+  } catch (error: any) {
+    toast.error(error.response?.data?.error || `Failed to update status to ${status}`);
+  }
+};
+
   const handlePriceChange = async (data: {
     update_customer_amount: boolean;
     extra_amount: number;
@@ -1274,6 +1307,18 @@ const LorryTrips = () => {
                           >
                             <DollarSign className="h-4 w-4" />
                             <span>Apply Price Change</span>
+                          </button>
+
+                          {/* Mark as Completed Button */}
+                          <button
+                            onClick={() => {
+                              setShowBulkActions(false);
+                              handleBulkStatusUpdate('completed');
+                            }}
+                            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-green-600 hover:bg-green-50"
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                            <span>Mark as Completed</span>
                           </button>
 
                           <button
