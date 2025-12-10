@@ -223,7 +223,7 @@ const ExpenseForm = () => {
       
       // Navigate back based on where we came from
       if (formData.bunk_id) {
-        navigate(`/bunks/${formData.bunk_id}/expenses`);
+        navigate(`/lorries/${formData.lorry_id}/expenses`);
       } else if (formData.lorry_id) {
         navigate(`/lorries/${formData.lorry_id}/expenses`);
       } else {
