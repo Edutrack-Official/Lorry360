@@ -65,7 +65,11 @@ const InvoiceGenerator = () => {
       }
     } catch (error) {
       console.error('Error generating invoice:', error);
-      toast.error('Error generating invoice');
+      if(error.response && error.response.data && error.response.data.error){
+        toast.error(error.response.data.error); 
+        } 
+
+
     }
     setLoading(false);
   };

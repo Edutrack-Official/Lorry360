@@ -48,12 +48,12 @@ app.http('createUser', {
   methods: ['POST'],
   authLevel: 'anonymous',
   route: 'users/create',
-  handler: async (req, context) => {
+  handler: async (request) => {
     try {
       await connectDB();
       
       // ✅ Verify token for admin access
-      const { decoded: user, newAccessToken } = await verifyToken(req);
+      const { decoded: user, newAccessToken } = await verifyToken(request);
 
       // Only admin can create users
       if (user.role !== 'admin') {
@@ -63,57 +63,17 @@ app.http('createUser', {
         };
       }
 
-      const headers = Object.fromEntries(req.headers);
-      const busboy = Busboy({ headers });
-
-      const fields = {};
-      let logoFile = null;
-
-      const fileParsePromise = new Promise((resolve, reject) => {
-        busboy.on('file', (fieldname, file, { filename, encoding, mimeType }) => {
-          const chunks = [];
-
-          file.on('data', (chunk) => chunks.push(chunk));
-          
-          file.on('end', () => {
-            if (fieldname === 'logo') {
-              logoFile = {
-                fieldname,
-                originalname: filename,
-                mimetype: mimeType,
-                buffer: Buffer.concat(chunks),
-                size: chunks.reduce((acc, chunk) => acc + chunk.length, 0)
-              };
-            }
-          });
-        });
-
-        busboy.on('field', (fieldname, value) => {
-          fields[fieldname] = value;
-        });
-
-        busboy.on('finish', resolve);
-        busboy.on('error', reject);
-      });
-
-      // Feed Busboy with raw buffer
-      const buffer = Buffer.from(await req.arrayBuffer());
-      busboy.end(buffer);
-
-      await fileParsePromise;
-
-      // Call controller with fields and logo file
-      const result = await createUser(fields, logoFile);
+      const body = await request.json();
+      const result = await createUser(body);
       
       // ✅ Include new access token if generated
-      const response = { status: 201, jsonBody: { success: true, data: result } };
+      const response = { status: 201, jsonBody: result };
       if (newAccessToken) {
         response.jsonBody.newAccessToken = newAccessToken;
       }
       
       return response;
     } catch (err) {
-      context.log('Create user error:', err.message);
       return {
         status: err.status || 500,
         jsonBody: { success: false, error: err.message },
@@ -121,6 +81,7 @@ app.http('createUser', {
     }
   },
 });
+
 
 /**
  * ✅ Get All Users
