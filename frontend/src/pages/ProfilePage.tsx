@@ -16,11 +16,31 @@ import {
   MapPin,
   Briefcase,
   AlertTriangle,
-  Trash2
+  Trash2,
+  ChevronDown
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
+
+// Popular country codes
+const COUNTRY_CODES = [
+  { code: '+91', country: 'India', flag: '🇮🇳' },
+//   { code: '+1', country: 'United States', flag: '🇺🇸' },
+//   { code: '+44', country: 'United Kingdom', flag: '🇬🇧' },
+//   { code: '+86', country: 'China', flag: '🇨🇳' },
+//   { code: '+81', country: 'Japan', flag: '🇯🇵' },
+//   { code: '+49', country: 'Germany', flag: '🇩🇪' },
+//   { code: '+33', country: 'France', flag: '🇫🇷' },
+//   { code: '+61', country: 'Australia', flag: '🇦🇺' },
+//   { code: '+971', country: 'UAE', flag: '🇦🇪' },
+//   { code: '+65', country: 'Singapore', flag: '🇸🇬' },
+//   { code: '+60', country: 'Malaysia', flag: '🇲🇾' },
+//   { code: '+92', country: 'Pakistan', flag: '🇵🇰' },
+//   { code: '+880', country: 'Bangladesh', flag: '🇧🇩' },
+//   { code: '+94', country: 'Sri Lanka', flag: '🇱🇰' },
+//   { code: '+977', country: 'Nepal', flag: '🇳🇵' },
+];
 
 interface UserProfile {
   _id: string;
@@ -43,6 +63,7 @@ interface UserProfile {
 interface EditFormData {
   name: string;
   phone: string;
+  countryCode: string;
   company_name: string;
   address: string;
   city: string;
@@ -152,6 +173,7 @@ const ProfilePage: React.FC = () => {
   const [formData, setFormData] = useState<EditFormData>({
     name: '',
     phone: '',
+    countryCode: '+91',
     company_name: '',
     address: '',
     city: '',
@@ -161,6 +183,7 @@ const ProfilePage: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   
   // State for delete confirmation modal
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -196,9 +219,24 @@ const ProfilePage: React.FC = () => {
         console.log('User data received:', userData);
         
         setUser(userData);
+        
+        // Parse phone number to extract country code
+        const phoneStr = userData.phone || '';
+        let extractedCode = '+91';
+        let phoneNumber = phoneStr;
+        
+        if (phoneStr) {
+          const match = phoneStr.match(/^(\+\d+)-(.+)$/);
+          if (match) {
+            extractedCode = match[1];
+            phoneNumber = match[2];
+          }
+        }
+        
         setFormData({
           name: userData.name || '',
-          phone: userData.phone || '',
+          phone: phoneNumber,
+          countryCode: extractedCode,
           company_name: userData.company_name || '',
           address: userData.address || '',
           city: userData.city || '',
@@ -233,10 +271,24 @@ const ProfilePage: React.FC = () => {
 
   const handleEditToggle = () => {
     if (isEditing) {
+      // Parse phone number when resetting
+      const phoneStr = user?.phone || '';
+      let extractedCode = '+91';
+      let phoneNumber = phoneStr;
+      
+      if (phoneStr) {
+        const match = phoneStr.match(/^(\+\d+)-(.+)$/);
+        if (match) {
+          extractedCode = match[1];
+          phoneNumber = match[2];
+        }
+      }
+      
       // Reset form to original values
       setFormData({
         name: user?.name || '',
-        phone: user?.phone || '',
+        phone: phoneNumber,
+        countryCode: extractedCode,
         company_name: user?.company_name || '',
         address: user?.address || '',
         city: user?.city || '',
@@ -255,63 +307,66 @@ const ProfilePage: React.FC = () => {
     }));
   };
 
-const handleSaveProfile = async () => {
-  if (!user) return;
+  const handleSaveProfile = async () => {
+    if (!user) return;
 
-  setIsSaving(true);
-  try {
-    // Prepare update data as JSON
-    const updateData: any = {
-      name: formData.name,
-      phone: formData.phone,
-      role: user.role,
-    };
-
-    // Add owner-specific fields if user is owner
-    if (user.role === 'owner') {
-      updateData.company_name = formData.company_name;
-      updateData.address = formData.address;
-      updateData.city = formData.city;
-      updateData.state = formData.state;
-      updateData.pincode = formData.pincode;
-    }
-
-    console.log('Updating profile with data:', updateData);
-    
-    const response = await api.put(`/users/update/${user._id}`, updateData);
-    
-    if (response.data.success) {
-      const updatedUser = response.data.data;
-      console.log('Profile update successful:', updatedUser);
+    setIsSaving(true);
+    try {
+      // Combine country code and phone number
+      const fullPhone = `${formData.countryCode}-${formData.phone}`;
       
-      setUser(updatedUser);
-      toast.success('Profile updated successfully');
-      setIsEditing(false);
-    } else {
-      throw new Error(response.data.error || 'Update failed');
-    }
-  } catch (error: any) {
-    console.error('Profile update error:', error);
-    
-    if (error.response?.status === 400) {
-      const errorMsg = error.response?.data?.error;
-      if (errorMsg?.includes('Phone must be in format')) {
-        toast.error('Phone number must be in format: +91-XXXXXXXXXX');
-      } else if (errorMsg?.includes('Pincode must be 6 digits')) {
-        toast.error('Pincode must be 6 digits');
-      } else {
-        toast.error(errorMsg || 'Validation error');
+      // Prepare update data as JSON
+      const updateData: any = {
+        name: formData.name,
+        phone: fullPhone,
+        role: user.role,
+      };
+
+      // Add owner-specific fields if user is owner
+      if (user.role === 'owner') {
+        updateData.company_name = formData.company_name;
+        updateData.address = formData.address;
+        updateData.city = formData.city;
+        updateData.state = formData.state;
+        updateData.pincode = formData.pincode;
       }
-    } else if (error.response?.status === 401) {
-      toast.error('Session expired. Please login again.');
-      window.location.href = '/login';
-    } else {
-      toast.error(error.response?.data?.error || 'Failed to update profile');
+
+      console.log('Updating profile with data:', updateData);
+      
+      const response = await api.put(`/users/update/${user._id}`, updateData);
+      
+      if (response.data.success) {
+        const updatedUser = response.data.data;
+        console.log('Profile update successful:', updatedUser);
+        
+        setUser(updatedUser);
+        toast.success('Profile updated successfully');
+        setIsEditing(false);
+      } else {
+        throw new Error(response.data.error || 'Update failed');
+      }
+    } catch (error: any) {
+      console.error('Profile update error:', error);
+      
+      if (error.response?.status === 400) {
+        const errorMsg = error.response?.data?.error;
+        if (errorMsg?.includes('Phone must be in format')) {
+          toast.error('Phone number must be in correct format');
+        } else if (errorMsg?.includes('Pincode must be 6 digits')) {
+          toast.error('Pincode must be 6 digits');
+        } else {
+          toast.error(errorMsg || 'Validation error');
+        }
+      } else if (error.response?.status === 401) {
+        toast.error('Session expired. Please login again.');
+        window.location.href = '/login';
+      } else {
+        toast.error(error.response?.data?.error || 'Failed to update profile');
+      }
+    } finally {
+      setIsSaving(false);
     }
-  } finally {
-    setIsSaving(false);
-  }
-};
+  };
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -715,17 +770,65 @@ const handleSaveProfile = async () => {
                         Phone Number <span className="text-red-500">*</span>
                       </label>
                       {isEditing ? (
-                        <input
-                          type="tel"
-                          name="phone"
-                          value={formData.phone}
-                          onChange={handleInputChange}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm"
-                          placeholder="+91-9876543210"
-                          pattern="^\+91-\d{10}$"
-                          title="Format: +91-XXXXXXXXXX"
-                          required
-                        />
+                        <div className="flex gap-2">
+                          {/* Country Code Dropdown */}
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+                              className="h-full px-3 py-3 border-2 border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm bg-white flex items-center gap-2 min-w-[110px]"
+                            >
+                              <span className="text-lg">{COUNTRY_CODES.find(c => c.code === formData.countryCode)?.flag || '🌐'}</span>
+                              <span className="font-medium">{formData.countryCode}</span>
+                              <ChevronDown className="h-4 w-4 text-gray-400" />
+                            </button>
+                            
+                            {/* Dropdown Menu */}
+                            {showCountryDropdown && (
+                              <>
+                                <div 
+                                  className="fixed inset-0 z-10" 
+                                  onClick={() => setShowCountryDropdown(false)}
+                                />
+                                <div className="absolute top-full left-0 mt-2 w-64 bg-white border-2 border-gray-200 rounded-xl shadow-xl z-20 max-h-64 overflow-y-auto">
+                                  {COUNTRY_CODES.map((country) => (
+                                    <button
+                                      key={country.code}
+                                      type="button"
+                                      onClick={() => {
+                                        setFormData(prev => ({ ...prev, countryCode: country.code }));
+                                        setShowCountryDropdown(false);
+                                      }}
+                                      className={`w-full px-4 py-3 text-left hover:bg-blue-50 transition-colors flex items-center gap-3 ${
+                                        formData.countryCode === country.code ? 'bg-blue-50 text-blue-700' : ''
+                                      }`}
+                                    >
+                                      <span className="text-xl">{country.flag}</span>
+                                      <div className="flex-1">
+                                        <div className="font-medium text-sm">{country.country}</div>
+                                        <div className="text-xs text-gray-500">{country.code}</div>
+                                      </div>
+                                      {formData.countryCode === country.code && (
+                                        <CheckCircle className="h-4 w-4 text-blue-600" />
+                                      )}
+                                    </button>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                          
+                          {/* Phone Number Input */}
+                          <input
+                            type="tel"
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleInputChange}
+                            className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm"
+                            placeholder="9876543210"
+                            required
+                          />
+                        </div>
                       ) : (
                         <div className="px-4 py-3 bg-gray-50 rounded-xl border-2 border-gray-100">
                           <p className="text-gray-900 font-medium">{user.phone || 'N/A'}</p>
