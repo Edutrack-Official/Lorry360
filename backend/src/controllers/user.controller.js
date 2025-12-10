@@ -71,8 +71,82 @@ const extractLogoUrlFromUser = (userData) => {
   }
   return null;
 };
-
 const createUser = async (userData) => {
+  const {
+    name,
+    email,
+    password,
+    role,
+    phone,
+    company_name,
+    address,
+    city,
+    state,
+    pincode,
+    plan_type
+  } = userData;
+
+  // Basic required fields validation
+  if (!name || !email || !password || !role || !phone) {
+    const err = new Error('Missing required fields: name, email, password, role, phone');
+    err.status = 400;
+    throw err;
+  }
+
+  // For owner role, validate business fields
+  if (role === 'owner') {
+    if (!company_name || !address || !city || !state || !pincode) {
+      const err = new Error('For owner role, company_name, address, city, state, and pincode are required');
+      err.status = 400;
+      throw err;
+    }
+  }
+
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  // Check if user already exists
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    const err = new Error('User with this email already exists');
+    err.status = 409;
+    throw err;
+  }
+
+  // Create new user
+  const newUser = new User({
+    name,
+    email,
+    passwordHash,
+    role,
+    phone,
+    ...(role === 'owner' && {
+      company_name,
+      address,
+      city,
+      state,
+      pincode,
+      plan_type: plan_type || 'trial'
+    }),
+    isActive: true
+  });
+
+  await newUser.save();
+
+  // Send onboarding email
+  setTimeout(() => {
+    sendOnboardingEmail({ 
+      toEmail: email, 
+      name, 
+      role, 
+      password,
+      ...(role === 'owner' && { company_name, plan_type: plan_type || 'trial' })
+    }).catch(console.error);
+  }, 0);
+
+  return {
+    message: 'User created successfully and onboarding email sent',
+    userId: newUser._id
+  };
 };
 
 const getAllUsers = async (filterParams = {}) => {
