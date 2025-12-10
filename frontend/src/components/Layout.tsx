@@ -503,7 +503,8 @@ import {
   AlarmClock,
   BellPlus,
   FileText,
-  FileCheck
+  FileCheck,
+  Fuel
 } from "lucide-react";
 
 const RailTooltip: React.FC<{ label: string }> = ({ label }) => (
@@ -567,9 +568,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: "Collab", href: "/partners", icon: UserCheck, roles: ["owner"], color: "teal" },
     { name: "Reminder", href: "/reminders", icon: BellPlus, roles: ["owner"] },
     { name: "Owners", href: "/owners", icon: Users, roles: ["admin"], color: "cyan" },
+    { name: "Bunks", href: "/bunks", icon: Fuel, roles: ["owner"], color: "amber" },
     { name: "Invoice", href: "/invoice", icon: FileCheck, roles: ["owner"], color: "cyan" },
     { name: "Proforma Invoice", href: "/proinvoice", icon: FileText, roles: ["owner"], color: "cyan" },
-
     { name: "Settings", href: "/settings", icon: Settings, roles: ["owner"], color: "gray" },
 
   ];
@@ -853,6 +854,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </button>
 
                 {/* User Dropdown */}
+                {/* User Dropdown */}
                 {showUserMenu && (
                   <div className="absolute right-0 top-14 w-64 bg-white border border-gray-200 rounded-2xl shadow-2xl animate-fade-in overflow-hidden">
                     <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
@@ -869,17 +871,35 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       </div>
                     </div>
                     <div className="py-2">
-                      <Link to="/profile" className="block">
+                      <Link
+                        to="/profile"
+                        className="block"
+                        onClick={() => setShowUserMenu(false)}
+                      >
                         <button className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                           <UserCircle2 className="h-5 w-5 text-gray-500" />
                           <span className="font-medium">My Profile</span>
                         </button>
                       </Link>
-                      <button className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                      <button
+                        className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          // Add navigation to settings if needed
+                          // navigate("/settings");
+                        }}
+                      >
                         <Settings className="h-5 w-5 text-gray-500" />
                         <span className="font-medium">Settings</span>
                       </button>
-                      <button className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                      <button
+                        className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          // Add navigation to messages if needed
+                          // navigate("/messages");
+                        }}
+                      >
                         <Mail className="h-5 w-5 text-gray-500" />
                         <span className="font-medium">Messages</span>
                       </button>

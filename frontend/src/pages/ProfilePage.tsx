@@ -25,7 +25,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 // Popular country codes
 const COUNTRY_CODES = [
-  { code: '+91', country: 'India', flag: '🇮🇳' },
+  { code: '+91', country: 'India'},
 //   { code: '+1', country: 'United States', flag: '🇺🇸' },
 //   { code: '+44', country: 'United Kingdom', flag: '🇬🇧' },
 //   { code: '+86', country: 'China', flag: '🇨🇳' },
@@ -778,7 +778,7 @@ const ProfilePage: React.FC = () => {
                               onClick={() => setShowCountryDropdown(!showCountryDropdown)}
                               className="h-full px-3 py-3 border-2 border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm bg-white flex items-center gap-2 min-w-[110px]"
                             >
-                              <span className="text-lg">{COUNTRY_CODES.find(c => c.code === formData.countryCode)?.flag || '🌐'}</span>
+                              {/* <span className="text-lg">{COUNTRY_CODES.find(c => c.code === formData.countryCode)?.flag || '🌐'}</span> */}
                               <span className="font-medium">{formData.countryCode}</span>
                               <ChevronDown className="h-4 w-4 text-gray-400" />
                             </button>
@@ -803,7 +803,7 @@ const ProfilePage: React.FC = () => {
                                         formData.countryCode === country.code ? 'bg-blue-50 text-blue-700' : ''
                                       }`}
                                     >
-                                      <span className="text-xl">{country.flag}</span>
+                                      {/* <span className="text-xl">{country.flag}</span> */}
                                       <div className="flex-1">
                                         <div className="font-medium text-sm">{country.country}</div>
                                         <div className="text-xs text-gray-500">{country.code}</div>
