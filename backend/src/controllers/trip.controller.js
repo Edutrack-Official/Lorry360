@@ -828,7 +828,7 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date, include
     
     trips.forEach(trip => {
       const tripDate = trip.trip_date.toISOString().split('T')[0];
-      const groupKey = `${trip.material_name}_${trip.no_of_unit_customer}_${trip.location}_${trip.rate_per_unit}_${trip.customer_amount}`;
+      const groupKey = `${tripDate}_${trip.material_name}_${trip.no_of_unit_customer}_${trip.location}_${trip.rate_per_unit}_${trip.customer_amount}`;
       
       if (!groupedTrips[groupKey]) {
         groupedTrips[groupKey] = {
