@@ -9,7 +9,6 @@ import {
   MapPin,
   Loader
 } from 'lucide-react';
-import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import api from "../api/client";
 import { useAuth } from '../contexts/AuthContext';
@@ -292,320 +291,374 @@ const ProformaInvoiceGenerator = () => {
   );
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Proforma Invoice Generator</h1>
-          <p className="text-gray-600">Generate proforma invoices for customer estimates</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={resetForm}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-          >
-            Reset
-          </button>
-          <button
-            onClick={downloadProformaPDF}
-            disabled={downloading}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            {downloading ? (
-              <>
-                <Loader className="h-4 w-4 animate-spin" />
-                Generating PDF...
-              </>
-            ) : (
-              <>
-                <Download className="h-4 w-4" />
-                Download Proforma
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Customer Selection */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <User className="h-5 w-5 text-blue-600" />
-            Customer Information
-          </h2>
-
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 mb-4">
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  checked={!useCustomCustomer}
-                  onChange={() => setUseCustomCustomer(false)}
-                  className="text-blue-600"
-                />
-                Select Existing Customer
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  checked={useCustomCustomer}
-                  onChange={() => setUseCustomCustomer(true)}
-                  className="text-blue-600"
-                />
-                Enter Custom Customer
-              </label>
+    <div className="min-h-screen bg-gray-50">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+        {/* Header - Mobile Optimized */}
+        <header className="mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="space-y-1">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
+                Proforma Invoice Generator
+              </h1>
+              <p className="text-sm sm:text-base text-gray-600">
+                Generate proforma invoices for customer estimates
+              </p>
             </div>
+            
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <button
+                onClick={resetForm}
+                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Reset
+              </button>
+              <button
+                onClick={downloadProformaPDF}
+                disabled={downloading}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              >
+                {downloading ? (
+                  <>
+                    <Loader className="h-4 w-4 animate-spin" />
+                    <span className="hidden sm:inline">Generating PDF...</span>
+                    <span className="sm:hidden">Generating...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-4 w-4" />
+                    <span className="hidden sm:inline">Download Proforma</span>
+                    <span className="sm:hidden">Download</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </header>
 
-            {!useCustomCustomer ? (
-              <>
-                {/* Search Box */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search customers..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                  />
+        {/* Customer & Invoice Details Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
+          {/* Customer Selection Card */}
+          <section className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-sm">
+            <div className="p-4 sm:p-6">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <User className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 flex-shrink-0" />
+                Customer Information
+              </h2>
+
+              <div className="space-y-4">
+                {/* Radio Selection - Mobile Optimized */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={!useCustomCustomer}
+                      onChange={() => setUseCustomCustomer(false)}
+                      className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-sm sm:text-base">Select Existing</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={useCustomCustomer}
+                      onChange={() => setUseCustomCustomer(true)}
+                      className="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-sm sm:text-base">Enter Custom</span>
+                  </label>
                 </div>
 
-                <div className="max-h-60 overflow-y-auto">
-                  {filteredCustomers.map(customer => (
-                    <div
-                      key={customer._id}
-                      onClick={() => setSelectedCustomer(customer._id)}
-                      className={`p-4 border rounded-lg mb-2 cursor-pointer transition-all ${
-                        selectedCustomer === customer._id
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <h3 className="font-semibold text-gray-900">{customer.name}</h3>
-                      <p className="text-sm text-gray-600">{customer.phone}</p>
-                      <p className="text-sm text-gray-500 truncate">{customer.address}</p>
+                {!useCustomCustomer ? (
+                  <div className="space-y-3">
+                    {/* Search Box */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                      <input
+                        type="text"
+                        placeholder="Search customers..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                      />
                     </div>
-                  ))}
+
+                    {/* Customer List - Scrollable */}
+                    <div className="max-h-48 sm:max-h-60 overflow-y-auto space-y-2">
+                      {filteredCustomers.map(customer => (
+                        <button
+                          key={customer._id}
+                          onClick={() => setSelectedCustomer(customer._id)}
+                          className={`w-full text-left p-3 sm:p-4 border rounded-lg transition-all ${
+                            selectedCustomer === customer._id
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <h3 className="font-semibold text-sm sm:text-base text-gray-900">
+                            {customer.name}
+                          </h3>
+                          <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                            {customer.phone}
+                          </p>
+                          <p className="text-xs sm:text-sm text-gray-500 truncate mt-0.5">
+                            {customer.address}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Customer Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={customCustomer.name}
+                        onChange={(e) => setCustomCustomer({...customCustomer, name: e.target.value})}
+                        className="w-full px-3 py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                        placeholder="Enter customer name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Address
+                      </label>
+                      <textarea
+                        value={customCustomer.address}
+                        onChange={(e) => setCustomCustomer({...customCustomer, address: e.target.value})}
+                        className="w-full px-3 py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow resize-none"
+                        rows="3"
+                        placeholder="Enter customer address"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                        Phone
+                      </label>
+                      <input
+                        type="text"
+                        value={customCustomer.phone}
+                        onChange={(e) => setCustomCustomer({...customCustomer, phone: e.target.value})}
+                        className="w-full px-3 py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                        placeholder="Enter customer phone"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Site Address Section */}
+                <div className="pt-4 border-t border-gray-200 space-y-3">
+                  <h3 className="text-sm sm:text-base font-semibold text-gray-900 flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                    Site Address (Optional)
+                  </h3>
+                  <textarea
+                    value={siteAddress}
+                    onChange={(e) => setSiteAddress(e.target.value)}
+                    className="w-full px-3 py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow resize-none"
+                    rows="3"
+                    placeholder="Enter site/project address where goods/services will be delivered"
+                  />
+                  <p className="text-xs sm:text-sm text-gray-500">
+                    This will appear separately from the customer's address on the invoice
+                  </p>
                 </div>
-              </>
-            ) : (
+              </div>
+            </div>
+          </section>
+
+          {/* Invoice Details Card */}
+          <section className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-sm">
+            <div className="p-4 sm:p-6">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 flex-shrink-0" />
+                Invoice Details
+              </h2>
+
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Customer Name *
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Invoice Number
                   </label>
                   <input
                     type="text"
-                    value={customCustomer.name}
-                    onChange={(e) => setCustomCustomer({...customCustomer, name: e.target.value})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter customer name"
+                    value={invoiceNumber}
+                    onChange={(e) => setInvoiceNumber(e.target.value)}
+                    className="w-full px-3 py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                    placeholder="Enter invoice number"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Address
-                  </label>
-                  <textarea
-                    value={customCustomer.address}
-                    onChange={(e) => setCustomCustomer({...customCustomer, address: e.target.value})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    rows="3"
-                    placeholder="Enter customer address"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Date
                   </label>
                   <input
-                    type="text"
-                    value={customCustomer.phone}
-                    onChange={(e) => setCustomCustomer({...customCustomer, phone: e.target.value})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter customer phone"
+                    type="date"
+                    value={invoiceDate}
+                    onChange={(e) => setInvoiceDate(e.target.value)}
+                    className="w-full px-3 py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
                   />
+                </div>
+
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <p className="text-base sm:text-lg font-semibold text-blue-800 text-center">
+                    Subtotal: ₹{calculateSubtotal().toFixed(2)}
+                  </p>
                 </div>
               </div>
-            )}
+            </div>
+          </section>
+        </div>
 
-            {/* Site Address Section - Common for both customer types */}
-            <div className="pt-4 border-t border-gray-200">
-              <h3 className="text-md font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-blue-600" />
-                Site Address (Optional)
-              </h3>
+        {/* Invoice Items Section */}
+        <section className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-sm mb-4 sm:mb-6">
+          <div className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900">
+                Items Details
+              </h2>
+              <button
+                onClick={addInvoiceItem}
+                className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                Add Item
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {invoiceItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="p-3 sm:p-4 border border-gray-200 rounded-lg space-y-3"
+                >
+                  {/* Mobile: Stack all fields vertically */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+                    {/* Description - Full width on mobile */}
+                    <div className="sm:col-span-2 lg:col-span-1">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5">
+                        Description *
+                      </label>
+                      <input
+                        type="text"
+                        value={item.description}
+                        onChange={(e) => updateInvoiceItem(item.id, 'description', e.target.value)}
+                        className="w-full px-2.5 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                        placeholder="Item description"
+                      />
+                    </div>
+
+                    {/* Quantity */}
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5">
+                        Quantity
+                      </label>
+                      <input
+                        type="number"
+                        value={item.quantity}
+                        onChange={(e) => updateInvoiceItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
+                        className="w-full px-2.5 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                        min="1"
+                      />
+                    </div>
+
+                    {/* Unit */}
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5">
+                        Unit
+                      </label>
+                      <input
+                        type="text"
+                        value={item.unit}
+                        onChange={(e) => updateInvoiceItem(item.id, 'unit', e.target.value)}
+                        className="w-full px-2.5 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                        placeholder="Unit"
+                      />
+                    </div>
+
+                    {/* Rate */}
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5">
+                        Rate (₹)
+                      </label>
+                      <input
+                        type="number"
+                        value={item.rate}
+                        onChange={(e) => updateInvoiceItem(item.id, 'rate', parseFloat(e.target.value) || 0)}
+                        className="w-full px-2.5 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
+
+                    {/* Amount */}
+                    <div>
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5">
+                        Amount (₹)
+                      </label>
+                      <input
+                        type="text"
+                        value={item.amount.toFixed(2)}
+                        readOnly
+                        className="w-full px-2.5 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                      />
+                    </div>
+
+                    {/* Delete Button */}
+                    <div className="flex items-end">
+                      {invoiceItems.length > 1 && (
+                        <button
+                          onClick={() => removeInvoiceItem(item.id)}
+                          className="w-full sm:w-auto px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center gap-2"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="sm:hidden text-sm">Remove</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Payment Terms & Notes Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          {/* Payment Terms */}
+          <section className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-sm">
+            <div className="p-4 sm:p-6">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">
+                Payment Terms (Optional)
+              </h2>
               <textarea
-                value={siteAddress}
-                onChange={(e) => setSiteAddress(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                rows="3"
-                placeholder="Enter site/project address where goods/services will be delivered"
-              />
-              <p className="text-sm text-gray-500 mt-2">
-                This will appear separately from the customer's address on the invoice
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Invoice Details */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <FileText className="h-5 w-5 text-blue-600" />
-            Invoice Details
-          </h2>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Invoice Number
-              </label>
-              <input
-                type="text"
-                value={invoiceNumber}
-                onChange={(e) => setInvoiceNumber(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter invoice number"
+                value={paymentTerms}
+                onChange={(e) => setPaymentTerms(e.target.value)}
+                className="w-full px-3 py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow resize-none"
+                rows="4"
+                placeholder="Enter payment terms (e.g., 50% advance, 50% before delivery, Net 30 days, etc.)"
               />
             </div>
+          </section>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Date
-              </label>
-              <input
-                type="date"
-                value={invoiceDate}
-                onChange={(e) => setInvoiceDate(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+          {/* Notes */}
+          <section className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-sm">
+            <div className="p-4 sm:p-6">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">
+                Notes (Optional)
+              </h2>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="w-full px-3 py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow resize-none"
+                rows="4"
+                placeholder="Enter additional notes, terms and conditions, validity period, etc."
               />
             </div>
-
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <p className="text-lg font-semibold text-blue-800 text-center">
-                Subtotal: ₹{calculateSubtotal().toFixed(2)}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Invoice Items */}
-      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Items Details</h2>
-          <button
-            onClick={addInvoiceItem}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            <Plus className="h-4 w-4" />
-            Add Item
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          {invoiceItems.map((item, index) => (
-            <div key={item.id} className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end p-4 border border-gray-200 rounded-lg">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description *
-                </label>
-                <input
-                  type="text"
-                  value={item.description}
-                  onChange={(e) => updateInvoiceItem(item.id, 'description', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Item description"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Quantity
-                </label>
-                <input
-                  type="number"
-                  value={item.quantity}
-                  onChange={(e) => updateInvoiceItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                  min="1"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Unit
-                </label>
-                <input
-                  type="text"
-                  value={item.unit}
-                  onChange={(e) => updateInvoiceItem(item.id, 'unit', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Unit"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Rate (₹)
-                </label>
-                <input
-                  type="number"
-                  value={item.rate}
-                  onChange={(e) => updateInvoiceItem(item.id, 'rate', parseFloat(e.target.value) || 0)}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Amount (₹)
-                </label>
-                <input
-                  type="text"
-                  value={item.amount.toFixed(2)}
-                  readOnly
-                  className="w-full p-2 border border-gray-300 rounded-lg bg-gray-50"
-                />
-              </div>
-              <div className="flex justify-center">
-                {invoiceItems.length > 1 && (
-                  <button
-                    onClick={() => removeInvoiceItem(item.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                  >
-                    <Trash2 className="h-5 w-5" />
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Notes and Payment Terms */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Payment Terms */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Payment Terms (Optional)</h2>
-          <textarea
-            value={paymentTerms}
-            onChange={(e) => setPaymentTerms(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-            rows="4"
-            placeholder="Enter payment terms (e.g., 50% advance, 50% before delivery, Net 30 days, etc.)"
-          />
-        </div>
-
-        {/* Notes */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Notes (Optional)</h2>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-            rows="4"
-            placeholder="Enter additional notes, terms and conditions, validity period, etc."
-          />
+          </section>
         </div>
       </div>
     </div>

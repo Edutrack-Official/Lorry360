@@ -341,11 +341,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </nav>
 
           {/* Desktop User Avatar */}
-          <div className="mb-6 flex-shrink-0">
+          {/* <div className="mb-6 flex-shrink-0">
             <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-500 rounded-xl flex items-center justify-center border-2 border-white cursor-pointer hover:scale-110 transition-transform duration-200 shadow-lg">
               <UserCircle2 className="h-6 w-6 text-white" />
             </div>
-          </div>
+          </div> */}
         </div>
       </aside>
 
