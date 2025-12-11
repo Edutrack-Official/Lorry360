@@ -125,12 +125,12 @@ const BunkDetails = () => {
 
   const getStatusBadge = (isActive: boolean) => {
     const config = isActive 
-      ? { color: "bg-green-100 text-green-800 border-green-200", icon: "✅", label: "Active" }
-      : { color: "bg-red-100 text-red-800 border-red-200", icon: "⏸️", label: "Inactive" };
+      ? { color: "bg-green-100 text-green-800 border-green-200", label: "Active" }
+      : { color: "bg-red-100 text-red-800 border-red-200",  label: "Inactive" };
     
     return (
       <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium border ${config.color}`}>
-        <span>{config.icon}</span>
+        {/* <span>{config.icon}</span> */}
         {config.label}
       </span>
     );
@@ -248,12 +248,12 @@ const BunkDetails = () => {
               </div>
 
               {/* Total Fuel Quantity */}
-              <div className="min-w-[140px] sm:min-w-[160px] text-center p-4 bg-white border border-blue-100 rounded-xl shadow-sm">
+              {/* <div className="min-w-[140px] sm:min-w-[160px] text-center p-4 bg-white border border-blue-100 rounded-xl shadow-sm">
                 <div className="text-lg sm:text-2xl font-bold text-blue-600 break-words">
                   {stats.totalFuelQuantity.toFixed(2)} L
                 </div>
                 <div className="text-xs sm:text-sm text-blue-600 mt-1">Fuel Quantity</div>
-              </div>
+              </div> */}
 
               {/* Total Expense Amount */}
               <div className="min-w-[140px] sm:min-w-[160px] text-center p-4 bg-white border border-purple-100 rounded-xl shadow-sm">
@@ -264,12 +264,12 @@ const BunkDetails = () => {
               </div>
 
               {/* Average Fuel Price */}
-              <div className="min-w-[140px] sm:min-w-[160px] text-center p-4 bg-white border border-amber-100 rounded-xl shadow-sm">
+              {/* <div className="min-w-[140px] sm:min-w-[160px] text-center p-4 bg-white border border-amber-100 rounded-xl shadow-sm">
                 <div className="text-lg sm:text-2xl font-bold text-amber-600 break-words">
                   ₹{stats.avgFuelPrice.toFixed(2)}/L
                 </div>
                 <div className="text-xs sm:text-sm text-amber-600 mt-1">Avg Fuel Price</div>
-              </div>
+              </div> */}
 
               {/* Payments Made */}
               <div className="min-w-[140px] sm:min-w-[160px] text-center p-4 bg-white border border-green-100 rounded-xl shadow-sm">
@@ -303,7 +303,7 @@ const BunkDetails = () => {
 
       {/* Tabs - Mobile Optimized */}
       <div className="bg-white rounded-xl border shadow-sm">
-        <div className="border-b border-gray-200 overflow-x-auto">
+        <div className="border-b border-gray-200 overflow-x-auto scrollbar-hide">
           <nav className="flex space-x-4 sm:space-x-8 px-4 sm:px-6 min-w-max">
             <Link
               to={`/bunks/${bunkId}/expenses`}

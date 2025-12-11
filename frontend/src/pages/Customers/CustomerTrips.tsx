@@ -117,7 +117,6 @@ const CustomerTrips = () => {
       <div className="text-center py-12 px-4">
         <Package className="h-12 w-12 sm:h-16 sm:w-16 text-gray-300 mx-auto mb-4" />
         <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">No trips found</h3>
-        <p className="text-sm text-gray-500">No trips have been recorded for this customer yet.</p>
       </div>
     );
   }

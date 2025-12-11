@@ -256,11 +256,6 @@ const ManageBunkForm: React.FC = () => {
                 Cancel
               </button>
             </div>
-
-            {/* Required fields note */}
-            <div className="text-xs text-gray-500 mt-4">
-              * Required fields
-            </div>
           </form>
         </div>
       </div>

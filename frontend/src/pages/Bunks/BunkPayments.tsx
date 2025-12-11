@@ -465,18 +465,6 @@ const BunkPayments = () => {
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
                 {payments.length === 0 ? 'No payments yet' : 'No payments found'}
               </h3>
-              <p className="text-gray-500 mb-6">
-                {searchText ? 'Try adjusting your search filters' : 'Start by making your first payment to this bunk'}
-              </p>
-              {payments.length === 0 && (
-                <Link
-                  to={`/bunks/${bunkId}/payments/create`}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add First Payment
-                </Link>
-              )}
             </div>
           </div>
         )}

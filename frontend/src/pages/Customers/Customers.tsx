@@ -1,19 +1,20 @@
 import React, { useEffect, useState } from "react";
-import { 
-  MapPin, 
-  User, 
-  Phone, 
-  Mail, 
-  Search, 
-  MoreVertical, 
-  Edit, 
-  Trash2, 
-  Building, 
-  X, 
-  Clock, 
+import {
+  MapPin,
+  User,
+  Phone,
+  Mail,
+  Search,
+  MoreVertical,
+  Edit,
+  Trash2,
+  Building,
+  X,
+  Clock,
   Power,
   CheckCircle2,
-  PauseCircle
+  PauseCircle,
+  Plus
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -138,82 +139,107 @@ const Customers = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
       {/* Header */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-6 mb-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <User className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+      <div className="bg-white border-b sticky top-0 z-20 shadow-sm">
+        <div className="px-4 py-4 sm:px-6">
+          {/* Top Row */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <User className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Customers</h1>
+                <p className="text-xs sm:text-sm text-gray-500 mt-0.5">{filtered.length} {filtered.length === 1 ? 'customer' : 'customers'}</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Customers</h1>
-              <p className="text-sm text-gray-600">Manage your customer relationships</p>
-            </div>
+
+            <Link
+              to="/customers/create"
+              className="inline-flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm text-sm sm:text-base font-medium"
+            >
+              <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="hidden sm:inline">Add Customer</span>
+              <span className="sm:hidden">Add</span>
+            </Link>
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* Search Bar & Status Filters - Desktop Layout */}
+          <div className="mb-3 flex flex-col lg:flex-row lg:items-center gap-3">
             {/* Search Bar */}
-            <div className="relative w-full lg:w-80">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
               <input
                 type="text"
-                placeholder="Search customers..."
+                placeholder="Search customers by name, phone, or address..."
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
-                className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               />
-              {searchText && (
-                <button
-                  onClick={clearSearch}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
             </div>
 
-            {/* Add Customer */}
-            <Link
-              to="/customers/create"
-              className="flex-shrink-0 inline-flex items-center gap-2 px-3 py-2.5 sm:px-4 sm:py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm text-sm font-medium"
-            >
-              <FaPlus size={16} />
-              <span className="hidden sm:inline">Add Customer</span>
-            </Link>
+            {/* Quick Status Filters - Hidden on Mobile, Shown on Desktop */}
+            <div className="hidden lg:flex items-center gap-2">
+              <button
+                onClick={() => setFilterStatus("all")}
+                className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filterStatus === "all"
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white border border-gray-300 text-gray-700'
+                  }`}
+              >
+                All ({customers.length})
+              </button>
+              <button
+                onClick={() => setFilterStatus("active")}
+                className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filterStatus === "active"
+                    ? 'bg-green-600 text-white'
+                    : 'bg-white border border-gray-300 text-gray-700'
+                  }`}
+              >
+                Active ({customers.filter(c => c.isActive).length})
+              </button>
+              <button
+                onClick={() => setFilterStatus("inactive")}
+                className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filterStatus === "inactive"
+                    ? 'bg-red-600 text-white'
+                    : 'bg-white border border-gray-300 text-gray-700'
+                  }`}
+              >
+                Inactive ({customers.filter(c => !c.isActive).length})
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Status Filters */}
-        <div className="flex items-center gap-2 mt-4 overflow-x-auto pb-1 scrollbar-hide">
-          <button
-            onClick={() => setFilterStatus("all")}
-            className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-              filterStatus === "all" 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-white border border-gray-300 text-gray-700'
-            }`}
-          >
-            All ({customers.length})
-          </button>
-          <button
-            onClick={() => setFilterStatus("active")}
-            className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-              filterStatus === "active" 
-                ? 'bg-green-600 text-white' 
-                : 'bg-white border border-gray-300 text-gray-700'
-            }`}
-          >
-            Active ({customers.filter(c => c.isActive).length})
-          </button>
-          <button
-            onClick={() => setFilterStatus("inactive")}
-            className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-              filterStatus === "inactive" 
-                ? 'bg-red-600 text-white' 
-                : 'bg-white border border-gray-300 text-gray-700'
-            }`}
-          >
-            Inactive ({customers.filter(c => !c.isActive).length})
-          </button>
+          {/* Filter Button & Status Pills - Mobile Only */}
+          <div className="flex lg:hidden items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {/* Quick Status Filters */}
+            <button
+              onClick={() => setFilterStatus("all")}
+              className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filterStatus === "all"
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white border border-gray-300 text-gray-700'
+                }`}
+            >
+              All ({customers.length})
+            </button>
+            <button
+              onClick={() => setFilterStatus("active")}
+              className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filterStatus === "active"
+                  ? 'bg-green-600 text-white'
+                  : 'bg-white border border-gray-300 text-gray-700'
+                }`}
+            >
+              Active ({customers.filter(c => c.isActive).length})
+            </button>
+            <button
+              onClick={() => setFilterStatus("inactive")}
+              className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filterStatus === "inactive"
+                  ? 'bg-red-600 text-white'
+                  : 'bg-white border border-gray-300 text-gray-700'
+                }`}
+            >
+              Inactive ({customers.filter(c => !c.isActive).length})
+            </button>
+          </div>
         </div>
       </div>
 
@@ -347,22 +373,10 @@ const Customers = () => {
         <div className="bg-white rounded-xl border border-gray-200 p-8 sm:p-12 text-center">
           <User className="h-12 w-12 sm:h-16 sm:w-16 text-gray-300 mx-auto mb-4" />
           <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
-            {searchText || filterStatus !== "all" 
-              ? "No customers found matching your criteria" 
+            {searchText || filterStatus !== "all"
+              ? "No customers found matching your criteria"
               : "No customers yet"}
           </h3>
-          <p className="text-sm text-gray-600 mb-4">
-            {searchText && "Try a different search term"}
-            {!searchText && filterStatus !== "all" && "Try changing the status filter"}
-            {!searchText && filterStatus === "all" && "Get started by adding your first customer"}
-          </p>
-          <Link
-            to="/customers/create"
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm text-sm font-medium"
-          >
-            <FaPlus size={16} />
-            Add Customer
-          </Link>
         </div>
       )}
 
@@ -494,11 +508,10 @@ const Customers = () => {
                   </button>
                   <button
                     onClick={() => handleToggleStatus(selectedCustomer._id, selectedCustomer.isActive)}
-                    className={`flex-1 py-2.5 rounded-lg transition-colors font-medium ${
-                      selectedCustomer.isActive
+                    className={`flex-1 py-2.5 rounded-lg transition-colors font-medium ${selectedCustomer.isActive
                         ? 'bg-red-100 text-red-600 hover:bg-red-200'
                         : 'bg-green-100 text-green-600 hover:bg-green-200'
-                    }`}
+                      }`}
                   >
                     {selectedCustomer.isActive ? "Deactivate" : "Activate"}
                   </button>

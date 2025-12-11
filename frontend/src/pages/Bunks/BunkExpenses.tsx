@@ -122,14 +122,6 @@ const BunkExpenses = () => {
       <div className="text-center py-12 px-4">
         <Fuel className="h-12 w-12 sm:h-16 sm:w-16 text-gray-300 mx-auto mb-4" />
         <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">No fuel expenses found</h3>
-        <p className="text-sm text-gray-500">No fuel expenses have been recorded for this bunk yet.</p>
-        <Link
-          to={`/expenses/create?bunk=${bunkId}`}
-          className="inline-flex items-center gap-2 px-4 py-2 mt-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
-        >
-          <Fuel className="h-4 w-4" />
-          Add Fuel Expense
-        </Link>
       </div>
     );
   }
