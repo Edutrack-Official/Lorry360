@@ -1034,6 +1034,7 @@ import {
 import toast from 'react-hot-toast';
 import api from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
+import BackButton from '../components/BackButton';
 
 // Popular country codes
 const COUNTRY_CODES = [
@@ -1553,55 +1554,63 @@ const ProfilePage: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
         {/* Header */}
         <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Profile Settings</h1>
-                <p className="text-sm text-gray-600 mt-1">Manage your account information</p>
-              </div>
-              <div className="flex items-center gap-2">
-                {isEditing ? (
-                  <>
-                    <button
-                      onClick={handleEditToggle}
-                      disabled={isSaving}
-                      className="flex-1 sm:flex-none px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
-                    >
-                      <X className="h-4 w-4" />
-                      <span className="hidden sm:inline">Cancel</span>
-                    </button>
-                    <button
-                      onClick={handleSaveProfile}
-                      disabled={isSaving}
-                      className="flex-1 sm:flex-none px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/30"
-                    >
-                      {isSaving ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>Saving...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Save className="h-4 w-4" />
-                          <span>Save</span>
-                        </>
-                      )}
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={handleEditToggle}
-                    className="w-full sm:w-auto px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/30"
-                  >
-                    <Edit className="h-4 w-4" />
-                    <span>Edit Profile</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <BackButton className="mb-4" />
+    
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Title Section */}
+      <div className="flex-1 min-w-0">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 truncate">
+          Profile Settings
+        </h1>
+        <p className="text-sm text-gray-600 mt-1">
+          Manage your account information
+        </p>
+      </div>
 
+      {/* Action Buttons */}
+      <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+        {isEditing ? (
+          <>
+            <button
+              onClick={handleEditToggle}
+              disabled={isSaving}
+              className="flex-1 sm:flex-none sm:min-w-[100px] px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
+            >
+              <X className="h-4 w-4" />
+              <span className="hidden sm:inline">Cancel</span>
+            </button>
+            <button
+              onClick={handleSaveProfile}
+              disabled={isSaving}
+              className="flex-1 sm:flex-none sm:min-w-[100px] px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/30"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  <span>Save</span>
+                </>
+              )}
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={handleEditToggle}
+            className="w-full sm:w-auto sm:min-w-[140px] px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/30"
+          >
+            <Edit className="h-4 w-4" />
+            <span>Edit Profile</span>
+          </button>
+        )}
+      </div>
+    </div>
+  </div>
+</div>
         {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
