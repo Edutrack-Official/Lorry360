@@ -765,8 +765,9 @@ const getTripsByCrusherId = async (owner_id, crusher_id, filterParams = {}) => {
 const getInvoiceData = async (owner_id, customer_id, from_date, to_date, include_inactive = false) => {
   try {
     // 1. Get current user (owner) details for company header
-    const owner = await User.findById(owner_id).select('name company_name address city state pincode phone logo');
+    const owner = await User.findById(owner_id).select('name company_name address city state pincode phone logo gst_number');
     
+    console.log("Owner details:", owner);
     if (!owner) {
       const err = new Error('Owner not found');
       err.status = 404;
@@ -1010,7 +1011,8 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date, include
         pincode: owner.pincode,
         phone: owner.phone,
         full_address: `${owner.address}, ${owner.city}, ${owner.state} - ${owner.pincode}`,
-        logo: owner.logo || null
+        logo: owner.logo || null,
+        gst_number: owner.gst_number || null
       },
       
       // Customer Information
