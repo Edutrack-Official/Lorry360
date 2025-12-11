@@ -207,12 +207,12 @@ const Bunks = () => {
                           }`}>
                             {bunk.isActive ? "Active" : "Inactive"}
                           </span>
-                          {bunk.address && (
+                          {/* {bunk.address && (
                             <span className="text-xs bg-gray-100 text-gray-800 px-2 py-0.5 rounded-full truncate flex items-center gap-1">
                               <MapPin className="h-3 w-3" />
                               {bunk.address}
                             </span>
-                          )}
+                          )} */}
                         </div>
                       </div>
                       
@@ -248,7 +248,7 @@ const Bunks = () => {
                                 <Pencil className="h-4 w-4 text-gray-500" />
                                 Edit Bunk
                               </button>
-                              <button
+                              {/* <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   navigate(`/bunks/${bunk._id}/details`);
@@ -257,7 +257,7 @@ const Bunks = () => {
                               >
                                 <Eye className="h-4 w-4 text-gray-500" />
                                 View Details
-                              </button>
+                              </button> */}
                               <div className="border-t border-gray-100 my-1"></div>
                               <button
                                 onClick={(e) => {
@@ -291,11 +291,8 @@ const Bunks = () => {
                   </div>
 
                   {/* Card Footer - Positioned at bottom */}
-                  <div className="pt-3 border-t border-gray-100 mt-auto">
-                    <div className="flex items-center justify-between text-xs text-gray-600 px-4 pb-4 sm:px-5 sm:pb-5">
-                      <div>
-                        ID: {bunk._id.substring(0, 8)}...
-                      </div>
+                  {/* <div className="pt-3 border-t border-gray-100 mt-auto">
+                    <div className="flex items-center justify-end text-xs text-gray-600 px-4 pb-4 sm:px-5 sm:pb-5">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -307,7 +304,7 @@ const Bunks = () => {
                         View
                       </button>
                     </div>
-                  </div>
+                  </div> */}
                 </motion.div>
               ))}
             </div>
@@ -478,16 +475,6 @@ const Bunks = () => {
                     })}
                   </p>
                 </div>
-              </div>
-            </div>
-
-            {/* Bunk ID */}
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="text-sm text-gray-600 mb-2">Bunk ID</h4>
-                <p className="font-mono text-sm text-gray-800 bg-white px-3 py-2 rounded border">
-                  {selectedBunk._id}
-                </p>
               </div>
             </div>
           </div>
