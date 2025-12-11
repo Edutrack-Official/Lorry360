@@ -35,7 +35,7 @@ const userSchema = new mongoose.Schema({
     },
     required: [true, 'Role is required']
   },
-  
+
   logo: {
     type: String,
     default: null,
@@ -69,6 +69,11 @@ const userSchema = new mongoose.Schema({
       return this.role === 'owner';
     },
     trim: true
+  },
+  gst_number: {
+    type: String,
+    default: null,
+    trim: true,
   },
   pincode: {
     type: String,
