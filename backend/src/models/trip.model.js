@@ -70,6 +70,7 @@ const tripSchema = new mongoose.Schema({
     min: 0
   },
   
+  
   // Destination
   customer_id: {
     type: mongoose.Schema.Types.ObjectId,
@@ -83,6 +84,14 @@ const tripSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Location is required'],
     trim: true
+  },
+
+    collab_trip_status: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: function() {
+      return this.collab_owner_id ? 'pending' : undefined;
+    }
   },
   
   customer_amount: {

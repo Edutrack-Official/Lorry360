@@ -17,7 +17,8 @@
     cloneTrips,
     bulkSoftDeleteTrips,
     updateTripPricesForMultipleTrips,
-    bulkUpdateTripStatus
+    bulkUpdateTripStatus,
+    updateCollabTripStatus
   } = require('../controllers/trip.controller');
   const { verifyToken } = require('../middleware/auth.middleware');
   const { log } = require('console');
@@ -149,6 +150,68 @@ app.http('getAllTrips', {
       }
     },
   });
+
+  app.http('updateCollabTripStatus', {
+  methods: ['PUT'],
+  authLevel: 'anonymous',
+  route: 'trips/collab/{tripId}/status',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      if (user.role !== 'owner') {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
+        };
+      }
+
+      const { tripId } = request.params;
+      const body = await request.json();
+      
+      if (!body.status || !body.collab_owner_id) {
+        return {
+          status: 400,
+          jsonBody: { 
+            success: false, 
+            error: 'Status and collab_owner_id are required' 
+          },
+        };
+      }
+
+      const result = await updateCollabTripStatus(
+        tripId, 
+        body.collab_owner_id, 
+        user.userId, 
+        body.status
+      );
+
+      const response = { 
+        status: 200, 
+        jsonBody: { 
+          success: true, 
+          data: result 
+        } 
+      };
+      
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { 
+          success: false, 
+          error: err.message 
+        },
+      };
+    }
+  },
+});
 
   /**
    * ✅ Get Trip by ID (My trips)
