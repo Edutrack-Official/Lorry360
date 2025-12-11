@@ -16,7 +16,8 @@
     getTripsByCustomerId,
     cloneTrips,
     bulkSoftDeleteTrips,
-    updateTripPricesForMultipleTrips
+    updateTripPricesForMultipleTrips,
+    bulkUpdateTripStatus
   } = require('../controllers/trip.controller');
   const { verifyToken } = require('../middleware/auth.middleware');
   const { log } = require('console');
@@ -835,6 +836,102 @@ app.http('updateTripPrices', {
       return {
         status: err.status || 500,
         jsonBody: { success: false, error: err.message },
+      };
+    }
+  },
+});
+
+
+app.http('bulkUpdateTripStatus', {
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  route: 'trips/bulk-update-status',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      if (user.role !== 'owner') {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
+        };
+      }
+
+      const body = await request.json();
+      const { tripIds, status } = body;
+
+      // Validate input
+      if (!tripIds || !Array.isArray(tripIds) || tripIds.length === 0) {
+        return {
+          status: 400,
+          jsonBody: { 
+            success: false, 
+            error: 'tripIds must be a non-empty array' 
+          },
+        };
+      }
+
+      if (!status || typeof status !== 'string') {
+        return {
+          status: 400,
+          jsonBody: { 
+            success: false, 
+            error: 'status is required' 
+          },
+        };
+      }
+
+      // Validate status value
+      const validStatuses = ['scheduled', 'dispatched', 'loaded', 'in_transit', 'delivered', 'completed', 'cancelled'];
+      if (!validStatuses.includes(status)) {
+        return {
+          status: 400,
+          jsonBody: { 
+            success: false, 
+            error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` 
+          },
+        };
+      }
+
+      // Check if trying to update too many trips at once (optional)
+      if (tripIds.length > 100) {
+        return {
+          status: 400,
+          jsonBody: { 
+            success: false, 
+            error: 'Cannot update more than 100 trips at once. Please select fewer trips.' 
+          },
+        };
+      }
+
+      // Call the bulk update function
+      const result = await bulkUpdateTripStatus(user.userId, {
+        tripIds,
+        status
+      });
+
+      const response = { 
+        status: 200, 
+        jsonBody: { 
+          success: true, 
+          data: result 
+        } 
+      };
+      
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { 
+          success: false, 
+          error: err.message 
+        },
       };
     }
   },

@@ -71,30 +71,72 @@ const createTrip = async (tripData) => {
     throw err;
   }
 
-  // Generate trip number with monthly reset
-  const now = new Date();
-  const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
+  // Generate trip number with monthly reset and retry logic for duplicates
+  let newTrip;
+  let retryCount = 0;
+  const maxRetries = 3;
   
-  // Count ACTIVE trips for current month
-  const count = await Trip.countDocuments({
-    isActive: true, // Added: Only count active trips
-    createdAt: {
-      $gte: new Date(now.getFullYear(), now.getMonth(), 1),
-      $lt: new Date(now.getFullYear(), now.getMonth() + 1, 1)
+  while (retryCount < maxRetries) {
+    try {
+      const now = new Date();
+      const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
+      
+      // Find the highest trip number for current month with retry-safe method
+      const highestTrip = await Trip.findOne(
+        {
+          isActive: true,
+          createdAt: {
+            $gte: new Date(now.getFullYear(), now.getMonth(), 1),
+            $lt: new Date(now.getFullYear(), now.getMonth() + 1, 1)
+          }
+        },
+        { trip_number: 1 },
+        { sort: { trip_number: -1 } }
+      );
+      
+      let nextNumber = 1;
+      if (highestTrip && highestTrip.trip_number) {
+        // Extract the sequential number from the trip number
+        const match = highestTrip.trip_number.match(/TR\d{6}(\d{4})/);
+        if (match && match[1]) {
+          nextNumber = parseInt(match[1]) + 1;
+        }
+      }
+      
+      const trip_number = `TR${yearMonth}${String(nextNumber).padStart(4, '0')}`;
+
+      // Calculate profit
+      const profit = customer_amount - crusher_amount;
+
+      // Add generated fields to dbData
+      dbData.trip_number = trip_number;
+      dbData.profit = profit;
+
+      newTrip = new Trip(dbData);
+      await newTrip.save();
+      break; // Success - exit the retry loop
+      
+    } catch (error) {
+      retryCount++;
+      
+      // If it's not a duplicate key error, or we've reached max retries, throw the error
+      if (!error.message.includes('duplicate key') || retryCount >= maxRetries) {
+        console.error(`Failed to create trip after ${retryCount} attempts:`, error.message);
+        
+        // Create a more user-friendly error message
+        const err = new Error(retryCount >= maxRetries 
+          ? 'Unable to generate unique trip number. Please try again.' 
+          : error.message);
+        err.status = error.status || 500;
+        throw err;
+      }
+      
+      // Wait a bit before retrying (exponential backoff)
+      await new Promise(resolve => setTimeout(resolve, 100 * Math.pow(2, retryCount)));
+      console.log(`Retrying trip creation (attempt ${retryCount + 1}/${maxRetries})...`);
     }
-  });
-  
-  const trip_number = `TR${yearMonth}${String(count + 1).padStart(4, '0')}`;
+  }
 
-  // Calculate profit
-  const profit = customer_amount - crusher_amount;
-
-  // Add generated fields to dbData
-  dbData.trip_number = trip_number;
-  dbData.profit = profit;
-
-  const newTrip = new Trip(dbData);
-  await newTrip.save();
   return newTrip;
 };
 
@@ -1668,7 +1710,162 @@ const updateTripPricesForMultipleTrips = async (owner_id, tripData) => {
   }
 };
 
+// Add this function before module.exports
+const bulkUpdateTripStatus = async (owner_id, statusData) => {
+  try {
+    const { tripIds, status } = statusData;
 
+    // Validate inputs
+    if (!owner_id || !tripIds || !Array.isArray(tripIds) || tripIds.length === 0) {
+      throw new Error('owner_id and tripIds array are required');
+    }
+
+    if (!status || typeof status !== 'string') {
+      throw new Error('status is required and must be a string');
+    }
+
+    // Validate status value
+    const validStatuses = ['scheduled', 'dispatched', 'loaded', 'in_transit', 'delivered', 'completed', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+      throw new Error(`Invalid status. Must be one of: ${validStatuses.join(', ')}`);
+    }
+
+    // Prepare update data with timestamps
+    const updateData = { status };
+    const now = new Date();
+    
+    // Set timestamps based on status
+    switch (status) {
+      case 'dispatched':
+        updateData.dispatched_at = now;
+        break;
+      case 'loaded':
+        updateData.loaded_at = now;
+        break;
+      case 'delivered':
+        updateData.delivered_at = now;
+        break;
+      case 'completed':
+        updateData.completed_at = now;
+        break;
+    }
+
+    // Clear timestamps for status changes that shouldn't have them
+    if (status === 'scheduled') {
+      updateData.dispatched_at = null;
+      updateData.loaded_at = null;
+      updateData.delivered_at = null;
+      updateData.completed_at = null;
+    }
+
+    // Update trips where:
+    // - ID is in the list
+    // - Owner is current user
+    // - isActive is true
+    const result = await Trip.updateMany(
+      {
+        _id: { $in: tripIds },
+        owner_id,
+        isActive: true
+      },
+      { $set: updateData }
+    );
+
+    // If no trips were updated, check why
+    if (result.modifiedCount === 0) {
+      // Check if trips exist and are active
+      const existingTrips = await Trip.find({
+        _id: { $in: tripIds },
+        owner_id
+      }).select('_id trip_number isActive status');
+
+      const existingTripIds = existingTrips.map(t => t._id.toString());
+      const nonExistingTripIds = tripIds.filter(id => !existingTripIds.includes(id));
+      
+      const inactiveTrips = existingTrips.filter(t => !t.isActive);
+      const alreadyInStatusTrips = existingTrips.filter(t => t.status === status);
+      
+      return {
+        success: false,
+        message: 'No trips were updated',
+        details: {
+          total_requested: tripIds.length,
+          existing_trips: existingTrips.length,
+          non_existing_trips: nonExistingTripIds,
+          inactive_trips: inactiveTrips.map(t => ({
+            id: t._id,
+            trip_number: t.trip_number
+          })),
+          already_in_status: alreadyInStatusTrips.map(t => ({
+            id: t._id,
+            trip_number: t.trip_number
+          })),
+          modifiedCount: 0
+        }
+      };
+    }
+
+    // Get updated trips for response
+    const updatedTrips = await Trip.find({
+      _id: { $in: tripIds },
+      owner_id,
+      isActive: true
+    })
+    .populate('lorry_id', 'registration_number nick_name')
+    .populate('driver_id', 'name phone')
+    .populate('crusher_id', 'name')
+    .populate('customer_id', 'name phone')
+    .populate('collab_owner_id', 'name company_name phone');
+
+    // Calculate summary
+    const tripsByMaterial = {};
+
+    updatedTrips.forEach(trip => {
+      // Group by material
+      if (!tripsByMaterial[trip.material_name]) {
+        tripsByMaterial[trip.material_name] = 0;
+      }
+      tripsByMaterial[trip.material_name]++;
+    });
+
+    // Calculate totals
+    const totalAmount = updatedTrips.reduce((sum, trip) => sum + trip.customer_amount, 0);
+    const totalProfit = updatedTrips.reduce((sum, trip) => sum + trip.profit, 0);
+
+    return {
+      success: true,
+      message: `Successfully updated ${result.modifiedCount} trip${result.modifiedCount > 1 ? 's' : ''} to "${status}" status`,
+      summary: {
+        total_trips_requested: tripIds.length,
+        trips_updated: result.modifiedCount,
+        trips_skipped: tripIds.length - result.modifiedCount,
+        new_status: status,
+        trips_by_material: tripsByMaterial,
+        total_amount_updated: totalAmount,
+        total_profit_updated: totalProfit,
+        timestamp_added: updateData.dispatched_at || updateData.loaded_at || 
+                         updateData.delivered_at || updateData.completed_at || null,
+        updated_at: now
+      },
+      updated_trips: updatedTrips.map(trip => ({
+        trip_id: trip._id,
+        trip_number: trip.trip_number,
+        material_name: trip.material_name,
+        driver_name: trip.driver_id?.name || 'Unknown',
+        customer_name: trip.customer_id?.name || trip.collab_owner_id?.name || 'Unknown',
+        new_status: status,
+        old_status: trip.status, // Note: this will show new status since we just updated
+        amount: trip.customer_amount,
+        profit: trip.profit,
+        trip_date: trip.trip_date
+      }))
+    };
+
+  } catch (error) {
+    console.error('Error in bulkUpdateTripStatus:', error);
+    throw error;
+  }
+};
 
 
 
@@ -1689,5 +1886,6 @@ module.exports = {
   getInvoiceData,
   cloneTrips,
   bulkSoftDeleteTrips,
-  updateTripPricesForMultipleTrips
+  updateTripPricesForMultipleTrips,
+  bulkUpdateTripStatus
 };
