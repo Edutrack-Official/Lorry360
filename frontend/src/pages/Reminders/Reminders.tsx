@@ -18,6 +18,7 @@ import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "../../api/client";
+import DeleteConfirmationModal from "../../components/DeleteConfirmationModal";
 
 interface Reminder {
   _id: string;
@@ -39,6 +40,11 @@ const Reminders = () => {
   const [selectedDate, setSelectedDate] = useState("");
   const [todaysCount, setTodaysCount] = useState(0);
   const [filteredReminders, setFilteredReminders] = useState<Reminder[]>([]);
+  
+  // Delete modal states
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const navigate = useNavigate();
 
@@ -169,17 +175,26 @@ const Reminders = () => {
     }
   };
 
-  const handleDeleteReminder = async (id: string, note: string) => {
-    const notePreview = note.length > 30 ? note.substring(0, 30) + "..." : note;
-    if (!window.confirm(`Delete reminder "${notePreview}"?`)) return;
-    
+  const handleDeleteClick = (reminder: Reminder) => {
+    setSelectedReminder(reminder);
+    setDeleteModalOpen(true);
+    setShowActionMenu(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedReminder) return;
+
+    setIsDeleting(true);
     try {
-      await api.delete(`/reminders/${id}`);
+      await api.delete(`/reminders/${selectedReminder._id}`);
       toast.success("Reminder deleted");
-      setShowActionMenu(null);
+      setDeleteModalOpen(false);
+      setSelectedReminder(null);
       fetchReminders(); // Refresh the list
     } catch (error: any) {
       toast.error(error.response?.data?.error || "Failed to delete reminder");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -602,7 +617,7 @@ const Reminders = () => {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleDeleteReminder(reminder._id, reminder.note);
+                                  handleDeleteClick(reminder);
                                 }}
                                 className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
                               >
@@ -647,28 +662,24 @@ const Reminders = () => {
                   : "Create reminders for payments, maintenance, and important tasks"
                 }
               </p>
-              {/* <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Link
-                  to="/reminders/create"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-sm font-medium"
-                >
-                  <Plus className="h-5 w-5" />
-                  Add First Reminder
-                </Link>
-                {getActiveFiltersCount() > 0 && (
-                  <button
-                    onClick={resetFilters}
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 bg-white rounded-lg hover:bg-gray-50 transition-all font-medium"
-                  >
-                    <RotateCcw className="h-5 w-5" />
-                    Clear Filters
-                  </button>
-                )}
-              </div> */}
             </div>
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setSelectedReminder(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Delete Reminder"
+        message="Are you sure you want to delete this reminder? This action cannot be undone."
+        isLoading={isDeleting}
+        itemName={selectedReminder?.note || ""}
+      />
 
       {/* Quick Add FAB for Mobile */}
       <Link
