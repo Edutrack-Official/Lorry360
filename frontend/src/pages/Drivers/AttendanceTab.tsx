@@ -1,6 +1,6 @@
 // components/AttendanceTab.tsx
 import React, { useEffect, useState } from "react";
-import { Calendar, Plus, Filter, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Calendar, Plus, Filter, ChevronLeft, ChevronRight, X, Settings, XCircle, Truck, CircleDot, Circle, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -57,26 +57,51 @@ const AttendanceTab: React.FC<AttendanceTabProps> = ({ driverId }) => {
         }
     };
 
-    const getStatusBadge = (status: string) => {
-        const statusConfig = {
-            fullduty: { color: 'bg-green-100 text-green-800 border-green-200', label: 'Full Duty', icon: '✅' },
-            halfduty: { color: 'bg-yellow-100 text-yellow-800 border-yellow-200', label: 'Half Duty', icon: '🟡' },
-            doubleduty: { color: 'bg-blue-100 text-blue-800 border-blue-200', label: 'Double Duty', icon: '🔵' },
-            tripduty: { color: 'bg-purple-100 text-purple-800 border-purple-200', label: 'Trip Duty', icon: '🚛' },
-            custom: { color: 'bg-orange-100 text-orange-800 border-orange-200', label: 'Custom', icon: '⚙️' },
-            absent: { color: 'bg-red-100 text-red-800 border-red-200', label: 'Absent', icon: '❌' }
-        };
-
-        const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.absent;
-
-        return (
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${config.color}`}>
-                <span>{config.icon}</span>
-                <span className="hidden sm:inline">{config.label}</span>
-                <span className="sm:hidden">{config.label.split(' ')[0]}</span>
-            </span>
-        );
+const getStatusBadge = (status: string) => {
+    const statusConfig = {
+        fullduty: {
+            color: 'bg-green-100 text-green-800 border-green-200',
+            label: 'Full Duty',
+            icon: CheckCircle2
+        },
+        halfduty: {
+            color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+            label: 'Half Duty',
+            icon: Circle
+        },
+        doubleduty: {
+            color: 'bg-blue-100 text-blue-800 border-blue-200',
+            label: 'Double Duty',
+            icon: CircleDot
+        },
+        tripduty: {
+            color: 'bg-purple-100 text-purple-800 border-purple-200',
+            label: 'Trip Duty',
+            icon: Truck
+        },
+        custom: {
+            color: 'bg-orange-100 text-orange-800 border-orange-200',
+            label: 'Custom',
+            icon: Settings
+        },
+        absent: {
+            color: 'bg-red-100 text-red-800 border-red-200',
+            label: 'Absent',
+            icon: XCircle
+        }
     };
+
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.absent;
+    const IconComponent = config.icon;
+
+    return (
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${config.color}`}>
+            <IconComponent className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">{config.label}</span>
+            <span className="sm:hidden">{config.label.split(' ')[0]}</span>
+        </span>
+    );
+};
 
     const getStatusBackground = (status: string) => {
         const backgrounds = {
