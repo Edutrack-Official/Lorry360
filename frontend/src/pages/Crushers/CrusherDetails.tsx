@@ -282,8 +282,8 @@ const fetchTrips = async () => {
 
       {/* Tabs - Mobile Optimized */}
       <div className="bg-white rounded-xl border shadow-sm">
-        <div className="border-b border-gray-200 overflow-x-auto">
-          <nav className="flex space-x-4 sm:space-x-8 px-4 sm:px-6 min-w-max">
+        <div className="border-b border-gray-200 overflow-x-auto scrollbar-hide">
+          <nav className="flex space-x-4 sm:space-x-8 px-4 sm:px-6 min-w-max ">
             <Link
               to={`/crushers/${crusherId}/trips`}
               className={`py-3 sm:py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 whitespace-nowrap ${

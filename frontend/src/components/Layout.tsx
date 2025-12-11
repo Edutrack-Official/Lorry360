@@ -173,7 +173,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: "Bunks", href: "/bunks", icon: Fuel, roles: ["owner"], color: "amber" },
     { name: "Invoice", href: "/invoice", icon: FileCheck, roles: ["owner"], color: "cyan" },
     { name: "Proforma Invoice", href: "/proinvoice", icon: FileText, roles: ["owner"], color: "cyan" },
-    { name: "Settings", href: "/settings", icon: Settings, roles: ["owner"], color: "gray" },
+    // { name: "Settings", href: "/settings", icon: Settings, roles: ["owner"], color: "gray" },
 
   ];
 
@@ -380,7 +380,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="flex items-center gap-2">
               {/* Notifications */}
               <div className="relative" ref={notificationRef}>
-                <button
+                {/* <button
                   className="relative p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all duration-200"
                   onClick={() => {
                     setShowNotifications(!showNotifications);
@@ -396,7 +396,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       </span>
                     </span>
                   )}
-                </button>
+                </button> */}
 
                 {/* Notifications Dropdown */}
                 {showNotifications && (
@@ -519,14 +519,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         <UserCircle2 className="w-5 h-5 text-gray-400" />
                         My Profile
                       </Link>
-                      <Link
+                      {/* <Link
                         to="/settings"
                         onClick={() => setShowUserMenu(false)}
                         className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors font-medium"
                       >
                         <Settings className="w-5 h-5 text-gray-400" />
                         Settings
-                      </Link>
+                      </Link> */}
                     </div>
 
                     <div className="border-t border-gray-100 p-2">
