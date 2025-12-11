@@ -1866,6 +1866,62 @@ const bulkUpdateTripStatus = async (owner_id, statusData) => {
   }
 };
 
+const updateCollabTripStatus = async (tripId, collabOwnerId, requestingUserId, status) => {
+  try {
+    const Trip = require('../models/trip.model');
+
+    // Find the trip - must have collab_owner_id (collaborative trip)
+    const trip = await Trip.findOne({ 
+      _id: tripId,
+      isActive: true,
+      collab_owner_id: { $exists: true, $ne: null }
+    })
+    .populate('owner_id', 'name company_name')
+    .populate('collab_owner_id', 'name company_name')
+    .populate('lorry_id', 'registration_number nick_name')
+    .populate('driver_id', 'name phone')
+    .populate('crusher_id', 'name');
+
+    if (!trip) {
+      const error = new Error('Collaborative trip not found');
+      error.status = 404;
+      throw error;
+    }
+
+    // Security check: Only the collab_owner (receiving partner) can approve/reject
+    if (trip.collab_owner_id._id.toString() !== requestingUserId) {
+      const error = new Error('Access denied. Only the receiving partner can approve/reject this trip');
+      error.status = 403;
+      throw error;
+    }
+
+    // Validate status
+    if (!['approved', 'rejected'].includes(status)) {
+      const error = new Error('Invalid status. Must be "approved" or "rejected"');
+      error.status = 400;
+      throw error;
+    }
+
+    // Cannot change status if already approved or rejected
+    if (trip.collab_trip_status && trip.collab_trip_status !== 'pending') {
+      const error = new Error(`Trip is already ${trip.collab_trip_status}. Cannot change status.`);
+      error.status = 400;
+      throw error;
+    }
+
+    // Update the trip status
+    trip.collab_trip_status = status;
+    await trip.save();
+
+    return {
+      message: `Trip ${status} successfully`,
+      trip
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
 
 
 module.exports = {
@@ -1886,5 +1942,6 @@ module.exports = {
   cloneTrips,
   bulkSoftDeleteTrips,
   updateTripPricesForMultipleTrips,
-  bulkUpdateTripStatus
+  bulkUpdateTripStatus,
+  updateCollabTripStatus  
 };
