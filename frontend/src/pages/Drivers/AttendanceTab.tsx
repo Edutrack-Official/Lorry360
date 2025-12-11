@@ -482,16 +482,6 @@ const getStatusBadge = (status: string) => {
                                 </div>
                             ))}
                         </div>
-
-                        {/* Instructions */}
-                        <div className="text-center pt-3 space-y-1">
-                            <p className="text-xs sm:text-sm font-medium text-gray-600">
-                                Click on dates to add or edit attendance
-                            </p>
-                            <p className="text-[10px] sm:text-xs text-gray-400">
-                                Future dates are disabled
-                            </p>
-                        </div>
                     </div>
                 )}
 
