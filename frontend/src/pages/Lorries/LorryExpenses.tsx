@@ -33,7 +33,7 @@ interface Expense {
   _id: string;
   owner_id: string;
   lorry_id: { _id: string; registration_number: string; nick_name?: string };
-  date: string;
+  date: string; // This is the expense date field
   category: 'fuel' | 'maintenance' | 'repair' | 'toll' | 'fine' | 'other';
   amount: number;
   description?: string;
@@ -55,6 +55,7 @@ const LorryExpenses = () => {
 
   const [lorry, setLorry] = useState<Lorry | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [allExpenses, setAllExpenses] = useState<Expense[]>([]); // Store all expenses for client-side filtering
   const [loading, setLoading] = useState(true);
   const [expensesLoading, setExpensesLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
@@ -86,19 +87,16 @@ const LorryExpenses = () => {
   };
 
   const fetchExpenses = async () => {
+    setExpensesLoading(true);
     try {
-      const filterParams: any = {};
-      if (dateRange.start) filterParams.start_date = dateRange.start;
-      if (dateRange.end) filterParams.end_date = dateRange.end;
-      if (filterCategory !== 'all') filterParams.category = filterCategory;
-      if (filterPaymentMode !== 'all') filterParams.payment_mode = filterPaymentMode;
-
-      console.log('Fetching expenses for lorry:', lorryId, 'with params:', filterParams);
-
-      const res = await api.get(`/expenses/lorry/${lorryId}`, { params: filterParams });
+      // Only fetch ALL expenses initially
+      console.log('Fetching all expenses for lorry:', lorryId);
+      
+      const res = await api.get(`/expenses/lorry/${lorryId}`);
       const expensesData = res.data.data?.expenses || [];
-      setExpenses(expensesData);
-
+      setAllExpenses(expensesData); // Store all expenses
+      setExpenses(expensesData); // Set initial expenses
+      
       console.log('Received expenses:', expensesData.length);
     } catch (error: any) {
       toast.error(error.response?.data?.error || "Failed to fetch expenses");
@@ -114,11 +112,61 @@ const LorryExpenses = () => {
     }
   }, [lorryId]);
 
+  // Apply filters client-side when filter values change
   useEffect(() => {
-    if (lorryId) {
-      fetchExpenses();
+    if (allExpenses.length === 0) return;
+    
+    let filtered = [...allExpenses];
+    
+    // Apply date filter FIRST
+    if (dateRange.start || dateRange.end) {
+      filtered = filtered.filter((expense) => {
+        const expenseDate = new Date(expense.date);
+        expenseDate.setHours(0, 0, 0, 0); // Normalize time to midnight
+        
+        if (dateRange.start) {
+          const startDate = new Date(dateRange.start);
+          startDate.setHours(0, 0, 0, 0);
+          if (expenseDate < startDate) return false;
+        }
+        
+        if (dateRange.end) {
+          const endDate = new Date(dateRange.end);
+          endDate.setHours(23, 59, 59, 999); // End of day
+          if (expenseDate > endDate) return false;
+        }
+        
+        return true;
+      });
     }
-  }, [dateRange, filterCategory, filterPaymentMode]);
+    
+    // Apply category filter
+    if (filterCategory !== 'all') {
+      filtered = filtered.filter(expense => expense.category === filterCategory);
+    }
+    
+    // Apply payment mode filter
+    if (filterPaymentMode !== 'all') {
+      filtered = filtered.filter(expense => expense.payment_mode === filterPaymentMode);
+    }
+    
+    // Apply search text filter
+    if (searchText) {
+      filtered = filtered.filter((expense) => {
+        return (
+          expense.description?.toLowerCase().includes(searchText.toLowerCase()) ||
+          expense.category.toLowerCase().includes(searchText.toLowerCase()) ||
+          expense.amount.toString().includes(searchText)
+        );
+      });
+    }
+    
+    setExpenses(filtered);
+    
+    console.log('Filtered expenses:', filtered.length, 'from', allExpenses.length);
+    console.log('Date range:', dateRange);
+    console.log('Filtered expense dates:', filtered.map(e => e.date));
+  }, [dateRange, filterCategory, filterPaymentMode, searchText, allExpenses]);
 
   const handleDeleteClick = (expenseId: string, description: string, amount: number, category: string) => {
     setSelectedExpense({ id: expenseId, description, amount, category });
@@ -135,22 +183,13 @@ const LorryExpenses = () => {
       toast.success("Expense deleted successfully");
       setDeleteModalOpen(false);
       setSelectedExpense(null);
-      fetchExpenses();
+      fetchExpenses(); // Refetch all expenses
     } catch (error: any) {
       toast.error(error.response?.data?.error || "Failed to delete expense");
     } finally {
       setIsDeleting(false);
     }
   };
-
-  const filteredExpenses = expenses.filter((expense) => {
-    const matchesSearch =
-      expense.description?.toLowerCase().includes(searchText.toLowerCase()) ||
-      expense.category.toLowerCase().includes(searchText.toLowerCase()) ||
-      expense.amount.toString().includes(searchText);
-
-    return matchesSearch;
-  });
 
   const getCategoryConfig = (category: string) => {
     const config = {
@@ -230,6 +269,7 @@ const LorryExpenses = () => {
     setFilterCategory("all");
     setFilterPaymentMode("all");
     setDateRange({ start: "", end: "" });
+    // Expenses will be automatically filtered in the useEffect
   };
 
   const handleActionMenuToggle = (expenseId: string, e: React.MouseEvent<HTMLButtonElement>) => {
@@ -259,6 +299,9 @@ const LorryExpenses = () => {
       return () => document.removeEventListener('click', handleClickOutside);
     }
   }, [showActionMenu]);
+
+  // Show current filter status in UI
+  const hasActiveFilters = searchText || filterCategory !== "all" || filterPaymentMode !== "all" || dateRange.start || dateRange.end;
 
   if (loading) {
     return (
@@ -290,10 +333,10 @@ const LorryExpenses = () => {
   }
 
   const stats = {
-    total: expenses.length,
-    totalAmount: expenses.reduce((sum, expense) => sum + expense.amount, 0),
-    fuel: expenses.filter(e => e.category === 'fuel').length,
-    fuelAmount: expenses.filter(e => e.category === 'fuel').reduce((sum, e) => sum + e.amount, 0)
+    total: allExpenses.length,
+    totalAmount: allExpenses.reduce((sum, expense) => sum + expense.amount, 0),
+    fuel: allExpenses.filter(e => e.category === 'fuel').length,
+    fuelAmount: allExpenses.filter(e => e.category === 'fuel').reduce((sum, e) => sum + e.amount, 0)
   };
 
   return (
@@ -302,7 +345,7 @@ const LorryExpenses = () => {
       <div className="bg-white border-b z-20 shadow-sm">
         <div className="px-4 py-4 sm:px-6">
           <div className="flex items-center justify-between gap-3 mb-3">
-            <div className="relative">
+            <div className="relative flex-1 min-w-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
               <input
                 type="text"
@@ -326,25 +369,28 @@ const LorryExpenses = () => {
 
       {/* Filters */}
       <div className="px-4 py-3 sm:px-6 bg-white border-b">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${showFilters ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white border-gray-300 text-gray-700'
-              }`}
-          >
-            <Filter className="h-4 w-4" />
-            Filters
-          </button>
-
-          {(searchText || filterCategory !== "all" || filterPaymentMode !== "all" || dateRange.start || dateRange.end) && (
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2">
             <button
-              onClick={clearFilters}
-              className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100"
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${showFilters ? 'bg-green-50 border-green-200 text-green-700' : 'bg-white border-gray-300 text-gray-700'
+                }`}
             >
-              <X className="h-3 w-3" />
-              Clear
+              <Filter className="h-4 w-4" />
+              Filters
             </button>
-          )}
+
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100"
+              >
+                <X className="h-3 w-3" />
+                Clear
+              </button>
+            )}
+          </div>
+          
         </div>
 
         {showFilters && (
@@ -430,9 +476,9 @@ const LorryExpenses = () => {
           <div className="flex justify-center items-center min-h-64">
             <Loader2 className="h-8 w-8 animate-spin text-green-600" />
           </div>
-        ) : filteredExpenses.length > 0 ? (
+        ) : expenses.length > 0 ? (
           <div className="space-y-4">
-            {filteredExpenses.map((expense) => {
+            {expenses.map((expense) => {
               const categoryConfig = getCategoryConfig(expense.category);
               const paymentConfig = getPaymentModeConfig(expense.payment_mode);
               const CategoryIcon = categoryConfig.icon;
@@ -500,7 +546,23 @@ const LorryExpenses = () => {
         ) : (
           <div className="bg-white rounded-xl border border-gray-200 p-8 sm:p-12 text-center">
             <IndianRupee className="h-12 w-12 sm:h-16 sm:w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">No expenses found</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
+              {hasActiveFilters ? "No matching expenses found" : "No expenses found"}
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              {hasActiveFilters 
+                ? "Try adjusting your filters" 
+                : "Add your first expense to get started"}
+            </p>
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
+              >
+                <X className="h-4 w-4" />
+                Clear all filters
+              </button>
+            )}
           </div>
         )}
       </div>

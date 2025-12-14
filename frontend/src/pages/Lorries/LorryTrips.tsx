@@ -847,38 +847,38 @@ const LorryTrips = () => {
     }
   };
 
-const handleBulkStatusUpdate = async (status: string) => {
-  if (selectedTrips.length === 0) {
-    toast.error('Please select trips to update');
-    return;
-  }
-
-  try {
-    const tripIds = selectedTrips.map(t => t.id);
-    const response = await api.post('/trips/bulk-update-status', {
-      tripIds,
-      status
-    });
-
-    if (response.data.success) {
-      toast.success(`Updated ${response.data.data.summary.trips_updated} trip${response.data.data.summary.trips_updated > 1 ? 's' : ''} to ${status}`);
-      
-      // Update the trips in state
-      fetchTrips();
-      setSelectedTrips([]);
-      setShowBulkActions(false);
-      
-      // Show detailed summary if available
-      if (response.data.data.summary.trips_skipped > 0) {
-        toast.success(`${response.data.data.summary.trips_skipped} trip${response.data.data.summary.trips_skipped > 1 ? 's were' : ' was'} already in "${status}" status or inactive`);
-      }
-    } else {
-      toast.error('Failed to update status');
+  const handleBulkStatusUpdate = async (status: string) => {
+    if (selectedTrips.length === 0) {
+      toast.error('Please select trips to update');
+      return;
     }
-  } catch (error: any) {
-    toast.error(error.response?.data?.error || `Failed to update status to ${status}`);
-  }
-};
+
+    try {
+      const tripIds = selectedTrips.map(t => t.id);
+      const response = await api.post('/trips/bulk-update-status', {
+        tripIds,
+        status
+      });
+
+      if (response.data.success) {
+        toast.success(`Updated ${response.data.data.summary.trips_updated} trip${response.data.data.summary.trips_updated > 1 ? 's' : ''} to ${status}`);
+
+        // Update the trips in state
+        fetchTrips();
+        setSelectedTrips([]);
+        setShowBulkActions(false);
+
+        // Show detailed summary if available
+        if (response.data.data.summary.trips_skipped > 0) {
+          toast.success(`${response.data.data.summary.trips_skipped} trip${response.data.data.summary.trips_skipped > 1 ? 's were' : ' was'} already in "${status}" status or inactive`);
+        }
+      } else {
+        toast.error('Failed to update status');
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || `Failed to update status to ${status}`);
+    }
+  };
 
   const handlePriceChange = async (data: {
     update_customer_amount: boolean;
@@ -1244,7 +1244,7 @@ const handleBulkStatusUpdate = async (status: string) => {
         <div className="px-4 py-4 sm:px-6">
           <div className="flex items-center justify-between gap-3 mb-3">
             {/* Search Bar */}
-            <div className="relative">
+            <div className="relative flex-1 min-w-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
               <input
                 type="text"
@@ -1254,100 +1254,9 @@ const handleBulkStatusUpdate = async (status: string) => {
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
               />
             </div>
-            <div className="flex items-center gap-2">
-              {/* Bulk Actions Dropdown */}
-              {selectedTrips.length > 0 && (
-                <div className="relative">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowBulkActions(!showBulkActions);
-                    }}
-                    className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs sm:text-sm font-medium"
-                  >
-                    <span>{selectedTrips.length} Selected</span>
-                    <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4" />
-                  </button>
 
-                  <AnimatePresence>
-                    {showBulkActions && (
-                      <>
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="fixed inset-0 z-40 bg-black/20 sm:hidden"
-                          onClick={() => setShowBulkActions(false)}
-                        />
-
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                          className="absolute right-0 top-full mt-2 z-50 w-56 bg-white rounded-lg shadow-2xl border border-gray-200 py-2 max-h-[calc(100vh-200px)] overflow-y-auto"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <button
-                            onClick={() => {
-                              setShowBulkActions(false);
-                              handleBulkClone();
-                            }}
-                            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-blue-600 hover:bg-blue-50"
-                          >
-                            <Copy className="h-4 w-4" />
-                            <span>Clone Selected</span>
-                          </button>
-
-                          <button
-                            onClick={() => {
-                              setShowBulkActions(false);
-                              handleBulkPriceChange();
-                            }}
-                            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-green-600 hover:bg-green-50 border-t border-gray-200"
-                          >
-                            <DollarSign className="h-4 w-4" />
-                            <span>Apply Price Change</span>
-                          </button>
-
-                          {/* Mark as Completed Button */}
-                          <button
-                            onClick={() => {
-                              setShowBulkActions(false);
-                              handleBulkStatusUpdate('completed');
-                            }}
-                            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-green-600 hover:bg-green-50"
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                            <span>Mark as Completed</span>
-                          </button>
-
-                          <button
-                            onClick={() => {
-                              setShowBulkActions(false);
-                              handleBulkDeleteClick();
-                            }}
-                            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 border-t border-gray-200"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            <span>Delete Selected</span>
-                          </button>
-
-                          <button
-                            onClick={() => {
-                              setShowBulkActions(false);
-                              handleClearSelection();
-                            }}
-                            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 border-t border-gray-200"
-                          >
-                            <X className="h-4 w-4" />
-                            <span>Clear Selection</span>
-                          </button>
-                        </motion.div>
-                      </>
-                    )}
-                  </AnimatePresence>
-                </div>
-              )}
+            {/* Buttons Container */}
+            <div className="flex items-center gap-2 flex-shrink-0">
 
               {/* Add Trip Button */}
               <Link
@@ -1364,49 +1273,129 @@ const handleBulkStatusUpdate = async (status: string) => {
 
       {/* Advanced Filters Section */}
       <div className="px-4 py-3 sm:px-6 bg-white border-b">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            {/* Advanced Filters Toggle */}
-            <button
-              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${showAdvancedFilters || hasActiveFilters() ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-white border-gray-300 text-gray-700'
-                }`}
-            >
-              <FilterIcon className="h-4 w-4" />
-              {showAdvancedFilters ? 'Hide Filters' : 'Filters'}
-              {hasActiveFilters() && (
-                <span className="ml-1 bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5 rounded-full">
-                  ✓
-                </span>
-              )}
-            </button>
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+          {/* Advanced Filters Toggle */}
+          <button
+            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            className={`flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${showAdvancedFilters || hasActiveFilters()
+                ? 'bg-blue-50 border-blue-200 text-blue-700'
+                : 'bg-white border-gray-300 text-gray-700'
+              }`}
+          >
+            <FilterIcon className="h-4 w-4" />
+            <span className="hidden sm:inline">{showAdvancedFilters ? 'Hide Filters' : 'Filters'}</span>
+            <span className="sm:hidden">{showAdvancedFilters ? 'Hide' : 'Filter'}</span>
+          </button>
 
-            {/* Clear All Filters Button */}
-            {hasActiveFilters() && (
+          {/* Bulk Actions Dropdown */}
+          {selectedTrips.length > 0 && (
+            <div className="relative flex-shrink-0">
               <button
-                onClick={clearAllFilters}
-                className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowBulkActions(!showBulkActions);
+                }}
+                className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs sm:text-sm font-medium whitespace-nowrap"
               >
-                <X className="h-3 w-3" />
-                Clear All
+                <span>{selectedTrips.length} Selected</span>
+                <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4" />
               </button>
-            )}
-          </div>
+
+              <AnimatePresence>
+                {showBulkActions && (
+                  <>
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="fixed inset-0 z-40 bg-black/20 sm:hidden"
+                      onClick={() => setShowBulkActions(false)}
+                    />
+
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                      className="absolute left-0 top-full mt-2 z-50 w-56 bg-white rounded-lg shadow-2xl border border-gray-200 py-2 max-h-[calc(100vh-200px)] overflow-y-auto"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        onClick={() => {
+                          setShowBulkActions(false);
+                          handleBulkClone();
+                        }}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-blue-600 hover:bg-blue-50"
+                      >
+                        <Copy className="h-4 w-4" />
+                        <span>Clone Selected</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setShowBulkActions(false);
+                          handleBulkPriceChange();
+                        }}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-green-600 hover:bg-green-50 border-t border-gray-200"
+                      >
+                        <DollarSign className="h-4 w-4" />
+                        <span>Apply Price Change</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setShowBulkActions(false);
+                          handleBulkStatusUpdate('completed');
+                        }}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-green-600 hover:bg-green-50"
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                        <span>Mark as Completed</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setShowBulkActions(false);
+                          handleBulkDeleteClick();
+                        }}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 border-t border-gray-200"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span>Delete Selected</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setShowBulkActions(false);
+                          handleClearSelection();
+                        }}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 border-t border-gray-200"
+                      >
+                        <X className="h-4 w-4" />
+                        <span>Clear Selection</span>
+                      </button>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
 
           {/* Select All Button */}
           <button
             onClick={handleSelectAll}
-            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+            className="flex-shrink-0 flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 whitespace-nowrap"
           >
             {selectedTrips.length === filteredTrips.length ? (
               <>
                 <CheckSquare className="h-4 w-4" />
-                Deselect All
+                <span className="hidden sm:inline">Deselect All</span>
+                <span className="sm:hidden">Deselect</span>
               </>
             ) : (
               <>
                 <Square className="h-4 w-4" />
-                Select All
+                <span className="hidden sm:inline">Select All</span>
+                <span className="sm:hidden">Select</span>
               </>
             )}
           </button>
