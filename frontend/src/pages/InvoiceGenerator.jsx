@@ -119,8 +119,15 @@ const InvoiceGenerator = () => {
       const res = await api.get(requestUrl);    
       if (res.data.success) {
         setInvoiceData(res.data.data);
-        console.log("Generated invoice data:", res.data.data);
-        toast.success(`${invoiceType === 'customer' ? 'Customer' : 'Collaboration'} invoice data loaded successfully!`);
+
+  await downloadPDF(
+    res.data.data,
+    invoiceType === 'customer' ? res.data.data?.customer?.name : null,
+    invoiceType === 'collaboration' ? res.data.data?.partner?.name : null
+  );
+
+  toast.success(`${invoiceType === 'customer' ? 'Customer' : 'Collaboration'} invoice downloaded successfully!`);
+
       } else {
         toast.error(res.data.error || 'Failed to generate invoice');
       }
@@ -261,7 +268,7 @@ const processAllItems = async (items, type) => {
     toast.success(`Successfully generated ${successCount} ${type} ${successCount === 1 ? 'invoice' : 'invoices'}`);
   }
   if (failCount > 0) {
-    toast.error(`Failed to generate ${failCount} ${type} ${failCount === 1 ? 'invoice' : 'invoices'}`);
+    toast.error(`No data found for ${failCount} ${type} ${failCount === 1 ? 'invoice' : 'invoices'}`);
   }
 };
 
@@ -581,7 +588,7 @@ const downloadPDF = async (invoiceData, customerName = null, partnerName = null)
           <h1 className="text-2xl font-bold text-gray-900">Invoice Generator</h1>
           <p className="text-gray-600">Generate customer invoices and collaboration statements</p>
         </div>
-        <div className="flex items-center gap-3">
+        {/* <div className="flex items-center gap-3">
           <button
             onClick={resetInvoice}
             className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
@@ -601,7 +608,7 @@ const downloadPDF = async (invoiceData, customerName = null, partnerName = null)
               Download PDF
             </button>
           )}
-        </div>
+        </div> */}
       </div>
 
       {/* Invoice Type Selection */}
@@ -823,238 +830,8 @@ const downloadPDF = async (invoiceData, customerName = null, partnerName = null)
           </div>
         </div>
       </div>
+  
 
-      {/* Invoice Preview */}
-      {invoiceData && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-6"
-        >
-          {/* Invoice Header with Logo on Left */}
-          <div className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm">
-            <div className="flex justify-between items-start">
-              <div className="flex items-start gap-4">
-                {getSupplierLogo() && (
-                  <img
-                    src={getSupplierLogo()}
-                    alt="Company Logo"
-                    className="w-24 h-20 object-contain mt-1"
-                  />
-                )}
-                <div className="leading-tight">
-                  <h1 className="text-2xl font-bold text-gray-900 mb-1">
-                    {getSupplierName()}
-                  </h1>
-                  <p className="text-gray-600">{getSupplierAddress()}</p>
-                  <p className="text-gray-600">CONTACT: {getSupplierPhone()}</p>
-                  {getSupplierGST() && (
-                    <p className="text-gray-700 font-semibold mt-1">
-                      GSTIN: <span className="font-bold">{getSupplierGST()}</span>
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="text-right">
-                <h2 className="text-3xl font-bold text-gray-800 tracking-wide">
-                  {isCollaboration() ? 'COLLABORATION STATEMENT' : 'INVOICE'}
-                </h2>
-                {isCollaboration() && (
-                  <p className="text-sm text-gray-600 mt-2">
-                    Period: {getInvoicePeriod()}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Customer/Partner & Invoice Info */}
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                  {isCollaboration() ? 'Collaboration With:' : 'Bill To:'}
-                </h3>
-                <div className="text-gray-600">
-                  {isCollaboration() ? (
-                    <>
-                      <p className="font-medium text-lg">{getPartnerName()}</p>
-                      <p>{getPartnerAddress()}</p>
-                      <p>Phone: {getPartnerPhone()}</p>
-                      {getPartnerGST() && (
-                        <p className="font-semibold">GSTIN: {getPartnerGST()}</p>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <p className="font-medium">{getCustomerName()}</p>
-                      <p>{getCustomerAddress()}</p>
-                      <p>Phone: {getCustomerPhone()}</p>
-                    </>
-                  )}
-                </div>
-              </div>
-              <div className="text-right">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Details:</h3>
-                <div className="text-gray-600">
-                  <p><strong>{isCollaboration() ? 'Statement No:' : 'Invoice No:'}</strong> {getInvoiceNumber()}</p>
-                  <p><strong>Period:</strong> {getInvoicePeriod()}</p>
-                  {isCollaboration() && (
-                    <p><strong>Opening Balance Date:</strong> {new Date(getOpeningBalanceDate()).toLocaleDateString()}</p>
-                  )}
-                  <p><strong>Generated:</strong> {new Date().toLocaleDateString()}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Invoice Table */}
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Transaction Details
-              </h2>
-              {isCollaboration() && (
-                <div className="text-sm text-gray-600">
-                  <p>{getAdditionalInfo().calculation_note}</p>
-                </div>
-              )}
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-50">
-                    {getTableHeaders().map((header, index) => (
-                      <th key={index} className="p-3 text-left text-sm font-semibold text-gray-900 border">
-                        {header}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {getTableRows().map((row, index) => (
-                    <tr key={index} className={`border-b hover:bg-gray-50 ${row.is_balance_row ? 'bg-gray-100 font-semibold' : ''}`}>
-                      <td className="p-3 border">{row.s_no || ''}</td>
-                      <td className="p-3 border">{row.date ? new Date(row.date).toLocaleDateString('en-GB') : ''}</td>
-                      <td className="p-3 border">{row.particular}</td>
-                      <td className="p-3 border">{row.quantity || ''}</td>
-                      <td className="p-3 border">{row.location || ''}</td>
-                      <td className="p-3 border">{row.price || ''}</td>
-                      <td className="p-3 border">{row.no_of_loads || ''}</td>
-                      <td className="p-3 border font-medium">{row.total_amount || ''}</td>
-                      <td className="p-3 border">{row.amount_received || ''}</td>
-                      <td className="p-3 border font-semibold">{row.balance}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Financial Summary */}
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Financial Summary</h2>
-            {isCollaboration() ? (
-              <div className="space-y-6">
-                {/* Summary Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-gray-600">Opening Balance</p>
-                    <p className="text-xl font-bold text-blue-600">{getSummary().opening_balance || '₹0.00'}</p>
-                  </div>
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <p className="text-sm text-gray-600">Your Trips</p>
-                    <p className="text-xl font-bold text-green-600">{getSummary().total_my_trips_amount || '₹0'}</p>
-                    <p className="text-xs text-gray-500 mt-1">({getSummary().total_my_trips || 0} trips)</p>
-                  </div>
-                  <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                    <p className="text-sm text-gray-600">Partner Trips</p>
-                    <p className="text-xl font-bold text-yellow-600">{getSummary().total_partner_trips_amount || '₹0'}</p>
-                    <p className="text-xs text-gray-500 mt-1">({getSummary().total_partner_trips || 0} trips)</p>
-                  </div>
-                  <div className="text-center p-4 bg-purple-50 rounded-lg">
-                    <p className="text-sm text-gray-600">Closing Balance</p>
-                    <p className="text-xl font-bold text-purple-600">{getSummary().closing_balance || '₹0.00'}</p>
-                  </div>
-                </div>
-
-                {/* Payment Summary */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-red-50 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-2">Your Payments to Partner</p>
-                    <p className="text-lg font-bold text-red-600">{getSummary().total_my_payments_amount || '₹0'}</p>
-                    <p className="text-xs text-gray-500 mt-1">({getSummary().total_my_payments || 0} payments)</p>
-                  </div>
-                  <div className="p-4 bg-teal-50 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-2">Partner Payments to You</p>
-                    <p className="text-lg font-bold text-teal-600">{getSummary().total_partner_payments_amount || '₹0'}</p>
-                    <p className="text-xs text-gray-500 mt-1">({getSummary().total_partner_payments || 0} payments)</p>
-                  </div>
-                </div>
-
-                {/* Final Settlement */}
-                <div className={`p-6 rounded-lg ${getFinancialSummary().closing_balance === 0 
-                  ? 'bg-green-50 border border-green-200' 
-                  : getFinancialSummary().closing_balance > 0 
-                    ? 'bg-orange-50 border border-orange-200'
-                    : 'bg-red-50 border border-red-200'
-                }`}>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">Settlement Summary</h3>
-                  <p className="text-lg mb-2">
-                    <span className="font-semibold">{getSummary().who_needs_to_pay || ''}</span>
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600">Amount to be settled:</p>
-                      <p className="text-2xl font-bold">
-                        {getSummary().amount_to_pay || '₹0.00'}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-600">Net Trip Amount: {getSummary().net_trip_amount || '₹0'}</p>
-                      <p className="text-sm text-gray-600">Net Payment Amount: {getSummary().net_payment_amount || '₹0'}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Calculation Note */}
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600 italic">
-                    {getAdditionalInfo().calculation_note}
-                  </p>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {getFinancialSummary().closing_balance > 0 
-                      ? getAdditionalInfo().positive_balance_note
-                      : getAdditionalInfo().negative_balance_note
-                    }
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-gray-600">Opening Balance</p>
-                  <p className="text-xl font-bold text-blue-600">{getSummary().opening_balance || '₹0.00'}</p>
-                </div>
-                <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <p className="text-sm text-gray-600">Total Sales</p>
-                  <p className="text-xl font-bold text-green-600">{getSummary().total_sales_amount || '₹0'}</p>
-                </div>
-                <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                  <p className="text-sm text-gray-600">Total Received</p>
-                  <p className="text-xl font-bold text-yellow-600">{getSummary().total_received || '₹0'}</p>
-                </div>
-                <div className="text-center p-4 bg-purple-50 rounded-lg">
-                  <p className="text-sm text-gray-600">Closing Balance</p>
-                  <p className="text-xl font-bold text-purple-600">{getSummary().closing_balance || '₹0.00'}</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </motion.div>
-      )}
     </div>
   );
 };
