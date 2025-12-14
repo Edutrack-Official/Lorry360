@@ -393,7 +393,7 @@ const Lorries = () => {
                                 <Edit className="h-4 w-4 text-gray-500" />
                                 Edit Lorry
                               </button>
-                              <button
+                              {/* <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleToggleStatus(lorry._id, lorry.status);
@@ -402,7 +402,7 @@ const Lorries = () => {
                               >
                                 <Power className="h-4 w-4 text-gray-500" />
                                 Change Status
-                              </button>
+                              </button> */}
                               <div className="border-t border-gray-100 my-1"></div>
                               <button
                                 onClick={(e) => {

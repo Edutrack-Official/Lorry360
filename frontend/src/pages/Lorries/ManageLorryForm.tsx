@@ -4,10 +4,10 @@ import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 import BackButton from "../../components/BackButton";
 import FloatingInput from "../../components/FloatingInput";
-import { 
-  Truck, 
-  Save, 
-  X, 
+import {
+  Truck,
+  Save,
+  X,
   ArrowLeft,
   CheckCircle2,
   Clock,
@@ -66,14 +66,14 @@ const ManageLorryForm: React.FC = () => {
 
   const validate = (): boolean => {
     const newErrors: FormErrors = {};
-    
+
     if (!formData.registration_number.trim()) {
       newErrors.registration_number = "Registration number is required";
     } else if (formData.registration_number.length < 3) {
       newErrors.registration_number = "Registration number must be at least 3 characters";
     }
 
-    if (!formData.status) {
+    if (isEditMode && !formData.status) {
       newErrors.status = "Status is required";
     }
 
@@ -85,7 +85,7 @@ const ManageLorryForm: React.FC = () => {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    
+
     if (name === "status") {
       if (value === 'active' || value === 'maintenance' || value === 'inactive') {
         setFormData((prev) => ({
@@ -115,7 +115,9 @@ const ManageLorryForm: React.FC = () => {
         await api.put(`/lorries/update/${id}`, formData);
         toast.success("Lorry updated successfully");
       } else {
-        await api.post("/lorries/create", formData);
+        const addData = { ...formData, status: 'active' };
+
+        await api.post("/lorries/create", addData);
         toast.success("Lorry created successfully");
         setFormData(initialFormData);
       }
@@ -128,9 +130,9 @@ const ManageLorryForm: React.FC = () => {
   };
 
   const statusOptions = [
-    { 
-      value: 'active', 
-      label: 'Active', 
+    {
+      value: 'active',
+      label: 'Active',
       description: 'Lorry is operational and available',
       icon: CheckCircle2,
       color: 'border-green-200 bg-green-50',
@@ -138,9 +140,9 @@ const ManageLorryForm: React.FC = () => {
       iconColor: 'text-green-600',
       dotColor: 'bg-green-500'
     },
-    { 
-      value: 'maintenance', 
-      label: 'Maintenance', 
+    {
+      value: 'maintenance',
+      label: 'Maintenance',
       description: 'Lorry is under maintenance',
       icon: Clock,
       color: 'border-amber-200 bg-amber-50',
@@ -148,9 +150,9 @@ const ManageLorryForm: React.FC = () => {
       iconColor: 'text-amber-600',
       dotColor: 'bg-amber-500'
     },
-    { 
-      value: 'inactive', 
-      label: 'Inactive', 
+    {
+      value: 'inactive',
+      label: 'Inactive',
       description: 'Lorry is not in service',
       icon: PauseCircle,
       color: 'border-gray-200 bg-gray-50',
@@ -238,59 +240,60 @@ const ManageLorryForm: React.FC = () => {
               </div>
 
               {/* Status Selection */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-3">
-                  Status *
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {statusOptions.map((statusOption) => {
-                    const StatusIcon = statusOption.icon;
-                    const isSelected = formData.status === statusOption.value;
-                    
-                    return (
-                      <label
-                        key={statusOption.value}
-                        className={`relative flex cursor-pointer rounded-lg border-2 p-4 transition-all ${
-                          isSelected
-                            ? statusOption.selectedColor
-                            : `${statusOption.color} hover:border-gray-300`
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="status"
-                          value={statusOption.value}
-                          checked={isSelected}
-                          onChange={handleChange}
-                          className="sr-only"
-                        />
-                        <div className="flex flex-col w-full gap-2">
-                          <div className="flex items-center justify-between">
-                            <StatusIcon className={`h-5 w-5 ${statusOption.iconColor}`} />
-                            {isSelected && (
-                              <span className={`h-2 w-2 rounded-full ${statusOption.dotColor} animate-pulse`}></span>
-                            )}
+              {isEditMode && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 mb-3">
+                    Status *
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {statusOptions.map((statusOption) => {
+                      const StatusIcon = statusOption.icon;
+                      const isSelected = formData.status === statusOption.value;
+
+                      return (
+                        <label
+                          key={statusOption.value}
+                          className={`relative flex cursor-pointer rounded-lg border-2 p-4 transition-all ${isSelected
+                              ? statusOption.selectedColor
+                              : `${statusOption.color} hover:border-gray-300`
+                            }`}
+                        >
+                          <input
+                            type="radio"
+                            name="status"
+                            value={statusOption.value}
+                            checked={isSelected}
+                            onChange={handleChange}
+                            className="sr-only"
+                          />
+                          <div className="flex flex-col w-full gap-2">
+                            <div className="flex items-center justify-between">
+                              <StatusIcon className={`h-5 w-5 ${statusOption.iconColor}`} />
+                              {isSelected && (
+                                <span className={`h-2 w-2 rounded-full ${statusOption.dotColor} animate-pulse`}></span>
+                              )}
+                            </div>
+                            <div>
+                              <p className={`font-semibold text-sm ${statusOption.iconColor}`}>
+                                {statusOption.label}
+                              </p>
+                              <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                                {statusOption.description}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className={`font-semibold text-sm ${statusOption.iconColor}`}>
-                              {statusOption.label}
-                            </p>
-                            <p className="text-xs text-gray-600 mt-1 leading-relaxed">
-                              {statusOption.description}
-                            </p>
-                          </div>
-                        </div>
-                      </label>
-                    );
-                  })}
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {errors.status && (
+                    <p className="mt-2 text-sm text-red-600 flex items-start gap-1">
+                      <span className="text-red-500 font-bold">•</span>
+                      {errors.status}
+                    </p>
+                  )}
                 </div>
-                {errors.status && (
-                  <p className="mt-2 text-sm text-red-600 flex items-start gap-1">
-                    <span className="text-red-500 font-bold">•</span>
-                    {errors.status}
-                  </p>
-                )}
-              </div>
+              )}
             </div>
           </div>
 

@@ -37,7 +37,7 @@ interface Expense {
   category: 'fuel' | 'maintenance' | 'repair' | 'toll' | 'fine' | 'other';
   amount: number;
   description?: string;
-  payment_mode: 'cash' | 'bank' | 'upi';
+  payment_mode: 'cash' | 'bank' | 'upi' | 'credit';
   createdAt: string;
   updatedAt: string;
 }
@@ -243,7 +243,12 @@ const LorryExpenses = () => {
         color: "bg-purple-50 text-purple-700 border-purple-200",
         icon: Smartphone,
         label: "UPI"
-      }
+      },
+      credit: {
+      color: "bg-red-50 text-red-700 border-red-200",
+      icon: CreditCard, 
+      label: "Credit"
+    }
     };
     return config[mode as keyof typeof config] || config.cash;
   };
@@ -424,7 +429,7 @@ const LorryExpenses = () => {
             <div>
               <p className="text-xs font-medium text-gray-700 mb-2">Payment Mode</p>
               <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                {['all', 'cash', 'bank', 'upi'].map((mode) => {
+                {['all', 'cash', 'bank', 'upi', 'credit'].map((mode) => {
                   const config = mode === 'all' ? null : getPaymentModeConfig(mode);
                   const IconComponent = config?.icon;
 
