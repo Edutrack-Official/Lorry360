@@ -244,7 +244,7 @@ const CollaborationListPage = () => {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
           <button
             onClick={() => setActiveTab('active')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all whitespace-nowrap ${
