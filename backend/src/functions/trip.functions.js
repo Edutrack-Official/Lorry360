@@ -22,7 +22,7 @@
   } = require('../controllers/trip.controller');
   const { verifyToken } = require('../middleware/auth.middleware');
   const { log } = require('console');
-  const { getInvoiceData } = require('../controllers/trip.controller');
+  const { getInvoiceData,getCollaborationInvoiceData } = require('../controllers/trip.controller');
 
   /**
    * ✅ Create Trip (Customer or Collaborative)
@@ -693,6 +693,67 @@ app.http('getInvoiceData', {
 });
 
 
+app.http('getCollaborationInvoiceData', {
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  route: 'trips/collaboration-invoice-data',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      // Only owners can access invoice data
+      if (user.role !== 'owner') {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
+        };
+      }
+
+      const url = new URL(request.url);
+      const partner_owner_id = url.searchParams.get('partner_owner_id');
+      const from_date = url.searchParams.get('from_date');
+      const to_date = url.searchParams.get('to_date');
+      const include_inactive = url.searchParams.get('include_inactive') === 'true';
+      
+      // Validate required parameters
+      if (!partner_owner_id || !from_date || !to_date) {
+        return {
+          status: 400,
+          jsonBody: { 
+            success: false, 
+            error: 'Partner owner ID, from date and to date are required' 
+          },
+        };
+      }
+
+      const result = await getCollaborationInvoiceData(user.userId, partner_owner_id, from_date, to_date, include_inactive);
+
+      const response = { 
+        status: 200, 
+        jsonBody: { 
+          success: true, 
+          data: result 
+        } 
+      };
+      
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      return {
+        status: err.status || 500,
+        jsonBody: { 
+          success: false, 
+          error: err.message 
+        },
+      };
+    }
+  },
+});
 /**
  * ✅ Clone Trip (Create multiple copies of a trip)
  */

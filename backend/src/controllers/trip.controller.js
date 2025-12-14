@@ -5,7 +5,7 @@ const Crusher = require('../models/crusher.model');
 const Lorry = require('../models/lorry.model');
 const User = require('../models/user.model');
 const Payment = require('../models/payment.model');
-
+const Collaboration = require('../models/collaboration.model');
 const createTrip = async (tripData) => {
   const {
     owner_id,
@@ -1925,7 +1925,507 @@ const updateCollabTripStatus = async (tripId, collabOwnerId, requestingUserId, s
   }
 };
 
+const getCollaborationInvoiceData = async (owner_id, partner_owner_id, from_date, to_date) => {
+  try {
+    console.log("Fetching collaboration invoice data for:", { 
+      owner_id, 
+      partner_owner_id, 
+      from_date, 
+      to_date 
+    });
 
+    // 1. Get current user (owner) details for company header
+    const currentOwner = await User.findById(owner_id).select('name company_name address city state pincode phone logo gst_number');
+    
+    if (!currentOwner) {
+      const err = new Error('Current owner not found');
+      err.status = 404;
+      throw err;
+    }
+
+    // 2. Get partner owner details
+    const partnerOwner = await User.findById(partner_owner_id).select('name company_name address city state pincode phone logo gst_number');
+    
+    if (!partnerOwner) {
+      const err = new Error('Partner owner not found');
+      err.status = 404;
+      throw err;
+    }
+
+    // 3. Check if collaboration exists and is active
+    const collaboration = await Collaboration.findOne({
+      $or: [
+        { from_owner_id: owner_id, to_owner_id: partner_owner_id, status: 'active' },
+        { from_owner_id: partner_owner_id, to_owner_id: owner_id, status: 'active' }
+      ]
+    });
+
+    if (!collaboration) {
+      const err = new Error('Active collaboration not found between the owners');
+      err.status = 404;
+      throw err;
+    }
+
+    // 4. Fetch trips done by CURRENT USER for PARTNER (I worked for partner)
+    const myTrips = await Trip.find({
+      owner_id: owner_id,
+      collab_owner_id: partner_owner_id,
+      isActive: true,
+      status: 'completed',
+      collab_trip_status: 'approved',
+      trip_date: { 
+        $gte: new Date(from_date), 
+        $lte: new Date(to_date) 
+      }
+    })
+      .populate('customer_id', 'name')
+      .populate('lorry_id', 'registration_number nick_name')
+      .populate('driver_id', 'name phone')
+      .populate('crusher_id', 'name')
+      .sort({ trip_date: 1 });
+
+    // 5. Fetch trips done by PARTNER for CURRENT USER (Partner worked for me)
+    const partnerTrips = await Trip.find({
+      owner_id: partner_owner_id,
+      collab_owner_id: owner_id,
+      isActive: true,
+      status: 'completed',
+      collab_trip_status: 'approved',
+      trip_date: { 
+        $gte: new Date(from_date), 
+        $lte: new Date(to_date) 
+      }
+    })
+      .populate('customer_id', 'name')
+      .populate('lorry_id', 'registration_number nick_name')
+      .populate('driver_id', 'name phone')
+      .populate('crusher_id', 'name')
+      .sort({ trip_date: 1 });
+
+    // 6. Fetch payments made by CURRENT USER to PARTNER (I paid partner)
+    const myPayments = await Payment.find({
+      owner_id: owner_id,
+      payment_type: 'to_collab_owner',
+      collab_owner_id: partner_owner_id,
+      isActive: true,
+      collab_payment_status: 'approved',
+      payment_date: { 
+        $gte: new Date(from_date), 
+        $lte: new Date(to_date) 
+      }
+    })
+      .populate('customer_id', 'name')
+      .sort({ payment_date: 1 });
+
+    // 7. Fetch payments made by PARTNER to CURRENT USER (Partner paid me)
+    const partnerPayments = await Payment.find({
+      owner_id: partner_owner_id,
+      payment_type: 'to_collab_owner',
+      collab_owner_id: owner_id,
+      isActive: true,
+      collab_payment_status: 'approved',
+      payment_date: { 
+        $gte: new Date(from_date), 
+        $lte: new Date(to_date) 
+      }
+    })
+      .populate('customer_id', 'name')
+      .sort({ payment_date: 1 });
+
+    // 8. Group trips by material, quantity, location, price AND customer_amount (exact match)
+    const groupTrips = (trips) => {
+      const grouped = {};
+      
+      trips.forEach(trip => {
+        const tripDate = trip.trip_date.toISOString().split('T')[0];
+        const groupKey = `${tripDate}_${trip.material_name}_${trip.no_of_unit_customer}_${trip.location}_${trip.rate_per_unit}_${trip.customer_amount}`;
+        
+        if (!grouped[groupKey]) {
+          grouped[groupKey] = {
+            date: tripDate,
+            material_name: trip.material_name,
+            quantity: trip.no_of_unit_customer,
+            location: trip.location,
+            rate_per_unit: trip.rate_per_unit,
+            customer_amount: trip.customer_amount,
+            no_of_loads: 0,
+            total_amount: 0,
+            trips: []
+          };
+        }
+        
+        grouped[groupKey].no_of_loads += 1;
+        grouped[groupKey].total_amount += trip.customer_amount;
+        grouped[groupKey].trips.push(trip);
+        
+        if (new Date(tripDate) < new Date(grouped[groupKey].date)) {
+          grouped[groupKey].date = tripDate;
+        }
+      });
+
+      return Object.values(grouped).sort((a, b) => new Date(a.date) - new Date(b.date));
+    };
+
+    const myGroupedTrips = groupTrips(myTrips);
+    const partnerGroupedTrips = groupTrips(partnerTrips);
+
+    // 9. Calculate opening balance (all previous active trips and payments)
+    const previousMyTrips = await Trip.find({
+      owner_id: owner_id,
+      collab_owner_id: partner_owner_id,
+      isActive: true,
+      status: 'completed',
+      collab_trip_status: 'approved',
+      trip_date: { $lt: new Date(from_date) }
+    });
+
+    const previousPartnerTrips = await Trip.find({
+      owner_id: partner_owner_id,
+      collab_owner_id: owner_id,
+      isActive: true,
+      status: 'completed',
+      collab_trip_status: 'approved',
+      trip_date: { $lt: new Date(from_date) }
+    });
+
+    const previousMyPayments = await Payment.find({
+      owner_id: owner_id,
+      payment_type: 'to_collab_owner',
+      collab_owner_id: partner_owner_id,
+      isActive: true,
+      collab_payment_status: 'approved',
+      payment_date: { $lt: new Date(from_date) }
+    });
+
+    const previousPartnerPayments = await Payment.find({
+      owner_id: partner_owner_id,
+      payment_type: 'to_collab_owner',
+      collab_owner_id: owner_id,
+      isActive: true,
+      collab_payment_status: 'approved',
+      payment_date: { $lt: new Date(from_date) }
+    });
+
+    // Calculate previous amounts
+    const previousMyTripsAmount = previousMyTrips.reduce((sum, trip) => sum + (trip.customer_amount || 0), 0);
+    const previousPartnerTripsAmount = previousPartnerTrips.reduce((sum, trip) => sum + (trip.customer_amount || 0), 0);
+    const previousMyPaymentsAmount = previousMyPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+    const previousPartnerPaymentsAmount = previousPartnerPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+
+    // CORRECTED: Opening Balance from CURRENT USER's perspective
+    // What partner owes me = (My trips for partner) - (Partner trips for me)
+    // Adjusted for payments = What partner owes me - (My payments to partner) + (Partner payments to me)
+    const openingBalance = (previousMyTripsAmount - previousPartnerTripsAmount) - 
+                          (previousMyPaymentsAmount - previousPartnerPaymentsAmount);
+
+    // 10. Create table rows
+    const tableRows = [];
+    let currentBalance = openingBalance;
+
+    // Add opening balance row
+    const fromDateObj = new Date(from_date);
+    const previousDay = new Date(fromDateObj);
+    previousDay.setDate(fromDateObj.getDate() - 1);
+    
+    const openingBalanceRow = {
+      s_no: '',
+      date: '',
+      particular: `BALANCE AS OF ${previousDay.toLocaleDateString('en-IN')}`,
+      quantity: '',
+      location: '',
+      price: '',
+      no_of_loads: '',
+      total_amount: '',
+      amount_received: '',
+      balance: `₹${openingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      is_balance_row: true,
+      is_opening_balance: true
+    };
+    tableRows.push(openingBalanceRow);
+
+    // Combine all transactions and sort by date
+    const allTransactions = [];
+
+    // My trips - Partner owes me (increases balance)
+    myGroupedTrips.forEach(group => {
+      allTransactions.push({
+        type: 'my_trip',
+        date: group.date,
+        data: group,
+        sortDate: new Date(group.date)
+      });
+    });
+
+    // Partner trips - I owe partner (decreases balance)
+    partnerGroupedTrips.forEach(group => {
+      allTransactions.push({
+        type: 'partner_trip',
+        date: group.date,
+        data: group,
+        sortDate: new Date(group.date)
+      });
+    });
+
+    // My payments to partner - I paid partner (decreases balance)
+    myPayments.forEach(payment => {
+      allTransactions.push({
+        type: 'my_payment',
+        date: payment.payment_date,
+        data: payment,
+        sortDate: new Date(payment.payment_date)
+      });
+    });
+
+    // Partner payments to me - Partner paid me (increases balance)
+    partnerPayments.forEach(payment => {
+      allTransactions.push({
+        type: 'partner_payment',
+        date: payment.payment_date,
+        data: payment,
+        sortDate: new Date(payment.payment_date)
+      });
+    });
+
+    // Sort all transactions by date
+    allTransactions.sort((a, b) => a.sortDate - b.sortDate);
+
+    // Generate table rows with running balance
+    allTransactions.forEach((transaction, index) => {
+      let row = {};
+
+      if (transaction.type === 'my_trip') {
+        const group = transaction.data;
+        
+        // My trip: Partner needs to pay me → Increases what partner owes me
+        row = {
+          s_no: tableRows.length,
+          date: transaction.date,
+          particular: `[TRIP TO ${partnerOwner.name}] ${group.material_name}`,
+          quantity: `${group.quantity} Unit`,
+          location: group.location,
+          price: `₹${group.customer_amount.toLocaleString('en-IN')}`,
+          no_of_loads: group.no_of_loads,
+          total_amount: `₹${group.total_amount.toLocaleString('en-IN')}`,
+          amount_received: '-',
+          balance: `₹${(currentBalance + group.total_amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          section: 'my_trips',
+          transaction_type: 'my_trip',
+          is_grouped: true
+        };
+
+        currentBalance += group.total_amount;
+
+      } else if (transaction.type === 'partner_trip') {
+        const group = transaction.data;
+        
+        // Partner trip: I need to pay partner → Decreases what partner owes me
+        row = {
+          s_no: tableRows.length,
+          date: transaction.date,
+          particular: `[TRIP FROM ${partnerOwner.name}] ${group.material_name}`,
+          quantity: `${group.quantity} Unit`,
+          location: group.location,
+          price: `₹${group.customer_amount.toLocaleString('en-IN')}`,
+          no_of_loads: group.no_of_loads,
+          total_amount: `₹${group.total_amount.toLocaleString('en-IN')}`,
+          amount_received: '-',
+          balance: `₹${(currentBalance - group.total_amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          section: 'partner_trips',
+          transaction_type: 'partner_trip',
+          is_grouped: true
+        };
+
+        currentBalance -= group.total_amount;
+
+      } 
+      else
+       if (transaction.type === 'my_payment') {
+  const payment = transaction.data;
+  
+  // My payment: I paid partner → Reduces what I owe → INCREASES balance (+)
+  row = {
+    s_no: tableRows.length,
+    date: transaction.date.toISOString().split('T')[0],
+    particular: `[PAID TO ${partnerOwner.name}] ${payment.notes || 'Payment'}`,
+    quantity: '-',
+    location: '-',
+    price: '-',
+    no_of_loads: '-',
+    total_amount: '-',
+    amount_received: `₹${payment.amount.toLocaleString('en-IN')}`,
+    balance: `₹${(currentBalance + payment.amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    section: 'my_payments',
+    transaction_type: 'my_payment',
+    is_payment: true
+  };
+
+  currentBalance += payment.amount; // ADD payment amount (reduce my debt)
+
+} else if (transaction.type === 'partner_payment') {
+  const payment = transaction.data;
+  
+  // Partner payment: Partner paid me → Reduces what partner owes me → DECREASES balance (-)
+  row = {
+    s_no: tableRows.length,
+    date: transaction.date.toISOString().split('T')[0],
+    particular: `[RECEIVED FROM ${partnerOwner.name}] ${payment.notes || 'Payment'}`,
+    quantity: '-',
+    location: '-',
+    price: '-',
+    no_of_loads: '-',
+    total_amount: '-',
+    amount_received: `₹${payment.amount.toLocaleString('en-IN')}`,
+    balance: `₹${(currentBalance - payment.amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    section: 'partner_payments',
+    transaction_type: 'partner_payment',
+    is_payment: true
+  };
+
+  currentBalance -= payment.amount; // SUBTRACT payment amount (reduce partner's debt)
+}
+
+      tableRows.push(row);
+    });
+
+    // Add closing balance row
+    const closingBalanceRow = {
+      s_no: '',
+      date: '',
+      particular: `BALANCE AS OF ${new Date(to_date).toLocaleDateString('en-IN')}`,
+      quantity: '',
+      location: '',
+      price: '',
+      no_of_loads: '',
+      total_amount: '',
+      amount_received: '',
+      balance: `₹${currentBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      is_balance_row: true,
+      is_closing_balance: true
+    };
+    tableRows.push(closingBalanceRow);
+
+    // 11. Calculate totals
+    const totalMyTripsAmount = myTrips.reduce((sum, trip) => sum + (trip.customer_amount || 0), 0);
+    const totalPartnerTripsAmount = partnerTrips.reduce((sum, trip) => sum + (trip.customer_amount || 0), 0);
+    const totalMyPaymentsAmount = myPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+    const totalPartnerPaymentsAmount = partnerPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+    
+    // Calculate net amounts
+    const netTripAmount = totalMyTripsAmount - totalPartnerTripsAmount;
+    const netPaymentAmount = totalPartnerPaymentsAmount - totalMyPaymentsAmount; // Partner payments minus my payments
+    
+    // Determine who needs to pay based on FINAL balance
+    let whoOwes = '';
+    let amountOwed = Math.abs(currentBalance);
+    
+    if (currentBalance > 0) {
+      // Positive balance means partner owes me
+      whoOwes = `${partnerOwner.name} needs to pay ${currentOwner.name}`;
+    } else if (currentBalance < 0) {
+      // Negative balance means I owe partner
+      whoOwes = `${currentOwner.name} needs to pay ${partnerOwner.name}`;
+      amountOwed = Math.abs(currentBalance);
+    } else {
+      whoOwes = 'All settled up';
+      amountOwed = 0;
+    }
+
+    // 12. Prepare invoice data structure
+    const invoiceData = {
+      supplier: {
+        name: currentOwner.company_name || currentOwner.name,
+        address: currentOwner.address,
+        city: currentOwner.city,
+        state: currentOwner.state,
+        pincode: currentOwner.pincode,
+        phone: currentOwner.phone,
+        full_address: `${currentOwner.address}, ${currentOwner.city}, ${currentOwner.state} - ${currentOwner.pincode}`,
+        logo: currentOwner.logo || null,
+        gst_number: currentOwner.gst_number || null
+      },
+      
+      partner: {
+        name: partnerOwner.name,
+        address: partnerOwner.address,
+        city: partnerOwner.city,
+        state: partnerOwner.state,
+        pincode: partnerOwner.pincode,
+        phone: partnerOwner.phone,
+        full_address: `${partnerOwner.address}, ${partnerOwner.city}, ${partnerOwner.state} - ${partnerOwner.pincode}`,
+        logo: partnerOwner.logo || null,
+        gst_number: partnerOwner.gst_number || null,
+        is_partner: true
+      },
+      
+      invoice_details: {
+        invoice_number: `COL-INV-${Date.now()}`,
+        date: new Date().toISOString().split('T')[0],
+        from_date: from_date,
+        to_date: to_date,
+        period: `${new Date(from_date).toLocaleDateString('en-IN')} to ${new Date(to_date).toLocaleDateString('en-IN')}`,
+        opening_balance_date: previousDay.toISOString().split('T')[0],
+        closing_balance_date: to_date,
+        is_collaboration: true,
+        type: 'collaboration_statement'
+      },
+      
+      table_data: {
+        headers: [
+          'S.No', 'Date', 'Particular', 'Quantity', 'Location', 
+          'Price', 'No of Loads', 'Total Amount', 'Transaction Amount', 'Balance'
+        ],
+        rows: tableRows,
+        summary: {
+          opening_balance: `₹${openingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          total_my_trips: myTrips.length,
+          total_partner_trips: partnerTrips.length,
+          total_my_payments: myPayments.length,
+          total_partner_payments: partnerPayments.length,
+          total_my_trips_amount: `₹${totalMyTripsAmount.toLocaleString('en-IN')}`,
+          total_partner_trips_amount: `₹${totalPartnerTripsAmount.toLocaleString('en-IN')}`,
+          total_my_payments_amount: `₹${totalMyPaymentsAmount.toLocaleString('en-IN')}`,
+          total_partner_payments_amount: `₹${totalPartnerPaymentsAmount.toLocaleString('en-IN')}`,
+          net_trip_amount: `₹${netTripAmount.toLocaleString('en-IN')}`,
+          net_payment_amount: `₹${netPaymentAmount.toLocaleString('en-IN')}`,
+          closing_balance: `₹${currentBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          who_needs_to_pay: whoOwes,
+          amount_to_pay: `₹${amountOwed.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        }
+      },
+      
+      financial_summary: {
+        opening_balance: openingBalance,
+        total_my_trips: totalMyTripsAmount,
+        total_partner_trips: totalPartnerTripsAmount,
+        total_my_payments: totalMyPaymentsAmount,
+        total_partner_payments: totalPartnerPaymentsAmount,
+        net_trip_amount: netTripAmount,
+        net_payment_amount: netPaymentAmount,
+        closing_balance: currentBalance,
+        amount_payable: amountOwed,
+        who_owes: currentBalance > 0 ? 'partner' : 'you'
+      },
+      
+      additional_info: {
+        notes: 'All amounts in Indian Rupees',
+        calculation_note: `Balance = (Your trips - Partner trips) - (Your payments - Partner payments)`,
+        positive_balance_note: 'Positive balance means partner needs to pay you',
+        negative_balance_note: 'Negative balance means you need to pay partner'
+      }
+    };
+
+    console.log("Collaboration invoice data generated successfully");
+    console.log("Final balance:", currentBalance);
+    console.log("Who owes:", whoOwes);
+    console.log("Amount:", amountOwed);
+
+    return invoiceData;
+
+  } catch (error) {
+    console.error('Error fetching collaboration invoice data:', error);
+    throw error;
+  }
+};
 
 module.exports = {
   createTrip,
@@ -1946,5 +2446,6 @@ module.exports = {
   bulkSoftDeleteTrips,
   updateTripPricesForMultipleTrips,
   bulkUpdateTripStatus,
-  updateCollabTripStatus  
+  updateCollabTripStatus ,
+  getCollaborationInvoiceData
 };

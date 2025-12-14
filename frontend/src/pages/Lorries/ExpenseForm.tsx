@@ -11,7 +11,7 @@ interface ExpenseFormData {
   category: 'fuel' | 'maintenance' | 'repair' | 'toll' | 'fine' | 'other';
   amount: number;
   description: string;
-  payment_mode: 'cash' | 'bank' | 'upi';
+  payment_mode: 'cash' | 'bank' | 'upi' | 'credit'; // Added 'credit' here
   bunk_id?: string;
 }
 
@@ -441,41 +441,44 @@ const ExpenseForm = () => {
               )}
             </div>
 
-            {/* Payment Mode */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Payment Mode *
-              </label>
-              <div className="grid grid-cols-3 gap-3">
-                {(['cash', 'bank', 'upi'] as const).map(mode => (
-                  <label 
-                    key={mode} 
-                    className={`flex items-center justify-center gap-2 p-3 border rounded-lg cursor-pointer transition-colors ${
-                      formData.payment_mode === mode 
-                        ? 'border-green-500 bg-green-50 text-green-700' 
-                        : errors.payment_mode
-                        ? 'border-red-300 bg-white hover:bg-gray-50'
-                        : 'border-gray-300 bg-white hover:bg-gray-50'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="payment_mode"
-                      value={mode}
-                      checked={formData.payment_mode === mode}
-                      onChange={handleChange}
-                      className="sr-only"
-                    />
-                    <span className="capitalize font-medium">{mode}</span>
-                  </label>
-                ))}
-              </div>
-              {errors.payment_mode && (
-                <p className="mt-2 text-sm text-red-600 flex items-start gap-1">
-                  {errors.payment_mode}
-                </p>
-              )}
-            </div>
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    Payment Mode *
+  </label>
+  <div className="grid grid-cols-3 gap-3">
+    {(
+      formData.category === 'fuel' 
+        ? ['cash', 'bank', 'upi', 'credit'] as const 
+        : ['cash', 'bank', 'upi'] as const
+    ).map(mode => (
+      <label 
+        key={mode} 
+        className={`flex items-center justify-center gap-2 p-3 border rounded-lg cursor-pointer transition-colors ${
+          formData.payment_mode === mode 
+            ? 'border-green-500 bg-green-50 text-green-700' 
+            : errors.payment_mode
+            ? 'border-red-300 bg-white hover:bg-gray-50'
+            : 'border-gray-300 bg-white hover:bg-gray-50'
+        }`}
+      >
+        <input
+          type="radio"
+          name="payment_mode"
+          value={mode}
+          checked={formData.payment_mode === mode}
+          onChange={handleChange}
+          className="sr-only"
+        />
+        <span className="capitalize font-medium">{mode}</span>
+      </label>
+    ))}
+  </div>
+  {errors.payment_mode && (
+    <p className="mt-2 text-sm text-red-600 flex items-start gap-1">
+      {errors.payment_mode}
+    </p>
+  )}
+</div>
 
             {/* Description */}
             <div>
