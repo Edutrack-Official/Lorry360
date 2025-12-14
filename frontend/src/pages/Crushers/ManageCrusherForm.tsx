@@ -33,7 +33,7 @@ const ManageCrusherForm: React.FC = () => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(false);
-  
+
   // New material form
   const [newMaterial, setNewMaterial] = useState({
     material_name: "",
@@ -90,7 +90,7 @@ const ManageCrusherForm: React.FC = () => {
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const { name, value } = e.target;
-    
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -114,7 +114,7 @@ const ManageCrusherForm: React.FC = () => {
     }
 
     // Check for duplicate material names
-    if (formData.materials.some(m => 
+    if (formData.materials.some(m =>
       m.material_name.toLowerCase() === newMaterial.material_name.toLowerCase()
     )) {
       toast.error("Material with this name already exists");
@@ -145,7 +145,7 @@ const ManageCrusherForm: React.FC = () => {
   const updateMaterial = (index: number, field: keyof Material, value: string | number) => {
     setFormData(prev => ({
       ...prev,
-      materials: prev.materials.map((material, i) => 
+      materials: prev.materials.map((material, i) =>
         i === index ? { ...material, [field]: value } : material
       )
     }));
@@ -182,19 +182,21 @@ const ManageCrusherForm: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 space-y-6">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header section */}
-      <div className="bg-white p-5 rounded-t-xl border shadow-md flex items-center gap-3">
-         <BackButton />
-        <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-800">
-          <Package className="w-6 h-6 text-blue-600" />
-          {isEditMode ? "Edit Crusher" : "Add Crusher"}
-        </h2>
+      <div className="bg-white p-4 sm:p-5 rounded-t-xl border shadow-md flex items-center gap-3">
+        <BackButton />
+        <div className="flex items-center justify-center lg:justify-start flex-1 min-w-0">
+          <h2 className="text-lg sm:text-2xl font-bold flex items-center gap-2 text-gray-800 text-center lg:text-left">
+            {/* <Package className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 flex-shrink-0" /> */}
+            <span>{isEditMode ? "Edit Crusher" : "Add Crusher"}</span>
+          </h2>
+        </div>
       </div>
 
       {/* Form section */}
-      <div className="bg-white rounded-b-xl shadow-md p-8">
-        <form onSubmit={handleSubmit} className="space-y-6 bg-white rounded">
+      <div className="bg-white rounded-b-xl shadow-md p-4 sm:p-6 lg:p-8">
+        <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
           {/* Crusher Name */}
           <div>
             <FloatingInput
@@ -211,12 +213,12 @@ const ManageCrusherForm: React.FC = () => {
 
           {/* Materials Section */}
           <div className="space-y-4">
-            <label className="block text-lg font-semibold text-gray-700">
+            <label className="block text-base sm:text-lg font-semibold text-gray-700">
               Materials & Prices
             </label>
-            
+
             {/* Add New Material */}
-            <div className="bg-gray-50 p-4 rounded-lg border">
+            <div className="bg-gray-50 p-3 sm:p-4 rounded-lg border">
               <h3 className="text-sm font-medium text-gray-700 mb-3">Add New Material</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
@@ -231,7 +233,7 @@ const ManageCrusherForm: React.FC = () => {
                       material_name: e.target.value
                     }))}
                     placeholder="e.g., Sand, Gravel, Stone"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
                   />
                 </div>
                 <div>
@@ -239,7 +241,7 @@ const ManageCrusherForm: React.FC = () => {
                     Price per Unit *
                   </label>
                   <div className="relative">
-                    <IndianRupee className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                    <IndianRupee className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <input
                       type="number"
                       step="0.01"
@@ -250,7 +252,7 @@ const ManageCrusherForm: React.FC = () => {
                         price_per_unit: e.target.value
                       }))}
                       placeholder="0.00"
-                      className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
                     />
                   </div>
                 </div>
@@ -259,7 +261,7 @@ const ManageCrusherForm: React.FC = () => {
                 type="button"
                 onClick={addMaterial}
                 disabled={!newMaterial.material_name.trim() || !newMaterial.price_per_unit}
-                className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                className="mt-3 w-full sm:w-auto px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 font-medium"
               >
                 <Plus size={16} />
                 Add Material
@@ -275,27 +277,27 @@ const ManageCrusherForm: React.FC = () => {
                 {formData.materials.map((material, index) => (
                   <div
                     key={index}
-                    className="flex items-center gap-3 p-3 bg-white border rounded-lg"
+                    className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 bg-white border rounded-lg"
                   >
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
                       <div>
                         <input
                           type="text"
                           value={material.material_name}
                           onChange={(e) => updateMaterial(index, 'material_name', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
                           placeholder="Material name"
                         />
                       </div>
                       <div className="relative">
-                        <IndianRupee className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                        <IndianRupee className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                         <input
                           type="number"
                           step="0.01"
                           min="0"
                           value={material.price_per_unit}
                           onChange={(e) => updateMaterial(index, 'price_per_unit', parseFloat(e.target.value) || 0)}
-                          className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base"
                           placeholder="0.00"
                         />
                       </div>
@@ -303,10 +305,11 @@ const ManageCrusherForm: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => removeMaterial(index)}
-                      className="p-2 rounded-full hover:bg-red-100 text-red-600 transition-colors"
+                      className="w-full sm:w-auto p-2 rounded-lg sm:rounded-full hover:bg-red-100 text-red-600 transition-colors flex items-center justify-center gap-2 sm:gap-0"
                       title="Remove material"
                     >
                       <X size={16} />
+                      <span className="sm:hidden">Remove</span>
                     </button>
                   </div>
                 ))}
@@ -315,11 +318,11 @@ const ManageCrusherForm: React.FC = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col md:flex-row gap-4 pt-6 border-t border-gray-200">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6 border-t border-gray-200">
             <button
               type="submit"
               disabled={submitting}
-              className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
             >
               {submitting ? (
                 <>
@@ -337,7 +340,7 @@ const ManageCrusherForm: React.FC = () => {
             <button
               type="button"
               onClick={() => navigate("/crushers")}
-              className="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
             >
               Cancel
             </button>

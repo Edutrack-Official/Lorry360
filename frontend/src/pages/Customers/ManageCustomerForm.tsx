@@ -91,16 +91,16 @@ const ManageCustomerForm: React.FC = () => {
     if (name === "phone") {
       // Auto-format phone number
       let formattedValue = value;
-      
+
       // Ensure it starts with +91-
       if (!formattedValue.startsWith("+91-")) {
         formattedValue = "+91-" + formattedValue.replace(/\+91-?/g, "");
       }
-      
+
       // Allow only 10 digits after +91-
       const digits = formattedValue.slice(4).replace(/\D/g, "").slice(0, 10);
       formattedValue = "+91-" + digits;
-      
+
       setFormData((prev) => ({
         ...prev,
         [name]: formattedValue,
@@ -165,18 +165,19 @@ const ManageCustomerForm: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 space-y-6">
+    <div className="min-h-screen bg-gray-50 p-2 space-y-6">
       {/* Header section */}
       <div className="bg-white p-5 rounded-t-xl border shadow-md flex items-center gap-3">
         <BackButton />
-        <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-800">
-          <User className="w-6 h-6 text-blue-600" />
-          {isEditMode ? "Edit Customer" : "Add Customer"}
-        </h2>
+        <div className="flex items-center justify-center lg:justify-start flex-1">
+          <h2 className="text-lg sm:text-2xl font-bold text-gray-800 text-center lg:text-left">
+            {isEditMode ? "Edit Customer" : "Add Customer"}
+          </h2>
+        </div>
       </div>
 
       {/* Form section */}
-      <div className="bg-white rounded-b-xl shadow-md p-8">
+      <div className="bg-white rounded-b-xl shadow-md p-4 sm:p-6 lg:p-8">
         <form onSubmit={handleSubmit} className="space-y-6 bg-white rounded">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Name */}
@@ -235,7 +236,7 @@ const ManageCustomerForm: React.FC = () => {
               </label>
               <div className="space-y-3">
                 {/* Add new site address */}
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="text"
                     value={newSiteAddress}
@@ -253,10 +254,10 @@ const ManageCustomerForm: React.FC = () => {
                     type="button"
                     onClick={addSiteAddress}
                     disabled={!newSiteAddress.trim()}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                    className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
                   >
                     <Plus size={16} />
-                    Add
+                    <span>Add</span>
                   </button>
                 </div>
 
@@ -268,14 +269,14 @@ const ManageCustomerForm: React.FC = () => {
                         key={index}
                         className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
                       >
-                        <div className="flex items-center gap-2">
-                          <MapPin size={16} className="text-blue-600" />
-                          <span className="text-sm">{site}</span>
+                        <div className="flex items-center gap-2 flex-1 min-w-0 pr-2">
+                          <MapPin size={16} className="text-blue-600 flex-shrink-0" />
+                          <span className="text-sm break-words">{site}</span>
                         </div>
                         <button
                           type="button"
                           onClick={() => removeSiteAddress(index)}
-                          className="p-1 rounded-full hover:bg-red-100 text-red-600 transition-colors"
+                          className="p-1 rounded-full hover:bg-red-100 text-red-600 transition-colors flex-shrink-0"
                         >
                           <X size={16} />
                         </button>
@@ -291,11 +292,11 @@ const ManageCustomerForm: React.FC = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col md:flex-row gap-4 pt-6 border-t border-gray-200">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6 border-t border-gray-200">
             <button
               type="submit"
               disabled={submitting}
-              className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
             >
               {submitting ? (
                 <>
@@ -313,7 +314,7 @@ const ManageCustomerForm: React.FC = () => {
             <button
               type="button"
               onClick={() => navigate("/customers")}
-              className="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
             >
               Cancel
             </button>
