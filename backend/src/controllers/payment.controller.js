@@ -160,6 +160,26 @@ const getPaymentById = async (id, owner_id, include_inactive = false) => {
 };
 
 const updatePayment = async (id, owner_id, updateData) => {
+  // First, find the existing payment to check its collab_payment_status
+  const existingPayment = await Payment.findOne({ 
+    _id: id, 
+    owner_id, 
+    isActive: true 
+  });
+
+  if (!existingPayment) {
+    const err = new Error('Payment not found or is inactive');
+    err.status = 404;
+    throw err;
+  }
+
+  // Check if it's an approved collaborative payment
+  if (existingPayment.collab_payment_status === 'approved') {
+    const err = new Error('Cannot update an approved collaborative payment');
+    err.status = 400;
+    throw err;
+  }
+
   // Don't allow changing payment_type or owner_id or collab_owner_id or bunk_id
   const allowedUpdates = [
     'amount',
@@ -177,7 +197,16 @@ const updatePayment = async (id, owner_id, updateData) => {
   });
 
   const updatedPayment = await Payment.findOneAndUpdate(
-    { _id: id, owner_id, isActive: true },
+    { 
+      _id: id, 
+      owner_id, 
+      isActive: true,
+      // Add extra safety: also ensure it's not approved in the query
+      $or: [
+        { collab_payment_status: { $ne: 'approved' } },
+        { collab_payment_status: { $exists: false } }
+      ]
+    },
     filteredUpdates,
     { new: true, runValidators: true }
   )
@@ -187,8 +216,9 @@ const updatePayment = async (id, owner_id, updateData) => {
     .populate('bunk_id', 'bunk_name address');
 
   if (!updatedPayment) {
-    const err = new Error('Payment not found or update failed');
-    err.status = 404;
+    // This should rarely happen due to the previous check, but as safety
+    const err = new Error('Payment update failed');
+    err.status = 500;
     throw err;
   }
   return updatedPayment;
@@ -225,22 +255,55 @@ const updateCollabPaymentStatus = async (id, owner_id, collab_owner_id, status) 
 };
 
 const deletePayment = async (id, owner_id) => {
+  // First, find the payment to check its collab_payment_status
+  const existingPayment = await Payment.findOne({ 
+    _id: id, 
+    owner_id, 
+    isActive: true 
+  });
+
+  if (!existingPayment) {
+    const err = new Error('Payment not found or is inactive');
+    err.status = 404;
+    throw err;
+  }
+
+  // Check if it's an approved collaborative payment
+  if (existingPayment.collab_payment_status === 'approved') {
+    const err = new Error('Cannot delete an approved collaborative payment');
+    err.status = 400;
+    throw err;
+  }
+
+  // Soft delete the payment
   const deletedPayment = await Payment.findOneAndUpdate(
     { 
       _id: id, 
       owner_id, 
-      isActive: true
+      isActive: true,
+      // Add extra safety: also ensure it's not approved in the query
+      $or: [
+        { collab_payment_status: { $ne: 'approved' } },
+        { collab_payment_status: { $exists: false } }
+      ]
     },
     { isActive: false },
     { new: true }
   );
 
   if (!deletedPayment) {
-    const err = new Error('Payment not found');
-    err.status = 404;
+    // This should rarely happen due to the previous check, but as safety
+    const err = new Error('Payment deletion failed');
+    err.status = 500;
     throw err;
   }
-  return { message: 'Payment deleted successfully' };
+  
+  return { 
+    message: 'Payment deleted successfully',
+    payment_number: deletedPayment.payment_number,
+    payment_type: deletedPayment.payment_type,
+    collab_payment_status: deletedPayment.collab_payment_status
+  };
 };
 
 // Get all collaboration payments for a specific collab owner
@@ -643,20 +706,42 @@ const bulkSoftDeletePayments = async (paymentIds, owner_id) => {
       throw new Error('paymentIds must be a non-empty array');
     }
 
-    // Update active payments owned by user
+    // Update payments where: 
+    // - ID is in the list
+    // - Owner is current user
+    // - isActive is true
+    // - collab_payment_status is NOT "approved"
     const result = await Payment.updateMany(
       {
         _id: { $in: paymentIds },
         owner_id,
-        isActive: true
+        isActive: true,
+        $or: [
+          { collab_payment_status: { $ne: 'approved' } }, // Not approved
+          { collab_payment_status: { $exists: false } } // Doesn't exist (non-collaboration payments)
+        ]
       },
       { $set: { isActive: false } }
     );
 
+    // Get payments that couldn't be deleted (approved collaborative payments)
+    const notDeletedPayments = await Payment.find({
+      _id: { $in: paymentIds },
+      owner_id,
+      isActive: true,
+      collab_payment_status: 'approved'
+    }).select('payment_number collab_payment_status payment_type');
+
     return {
       success: true,
-      message: `Soft deleted ${result.modifiedCount} payment(s)`,
-      modifiedCount: result.modifiedCount
+      message: `Soft deleted ${result.modifiedCount} payment(s). ${notDeletedPayments.length} approved collaborative payment(s) cannot be deleted.`,
+      modifiedCount: result.modifiedCount,
+      notDeletedCount: notDeletedPayments.length,
+      notDeletedPayments: notDeletedPayments.map(payment => ({
+        payment_number: payment.payment_number,
+        collab_payment_status: payment.collab_payment_status,
+        payment_type: payment.payment_type
+      }))
     };
 
   } catch (error) {
