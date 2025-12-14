@@ -447,39 +447,55 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
   return (
     <div className="space-y-6">
       {/* Period Selector */}
-      <div className="bg-white rounded-xl border shadow-sm p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
+      <div className="bg-white rounded-xl border shadow-sm p-4 sm:p-6">
+        <div className="flex flex-col gap-4">
+          {/* Header Section */}
+          <div className="text-center sm:text-left">
             <h3 className="text-lg font-semibold text-gray-900">Salary Period</h3>
             <p className="text-sm text-gray-600">Select period for salary calculation</p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          {/* Controls Section */}
+          <div className="flex flex-col gap-3">
             <select
               value={period}
               onChange={(e) => setPeriod(e.target.value as any)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="all">All</option>  {/* 👈 NEW */}
+              <option value="all">All</option>
               <option value="current_month">Current Month</option>
               <option value="last_month">Last Month</option>
               <option value="custom">Custom Period</option>
             </select>
 
             {period === 'custom' && (
-              <div className="flex gap-2">
-                <input
-                  type="date"
-                  value={customDateRange.start_date}
-                  onChange={(e) => setCustomDateRange(prev => ({ ...prev, start_date: e.target.value }))}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-                <input
-                  type="date"
-                  value={customDateRange.end_date}
-                  onChange={(e) => setCustomDateRange(prev => ({ ...prev, end_date: e.target.value }))}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="date"
+                    value={customDateRange.start_date}
+                    onChange={(e) => setCustomDateRange(prev => ({ ...prev, start_date: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  {!customDateRange.start_date && (
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">
+                      Start Date
+                    </span>
+                  )}
+                </div>
+                <div className="relative flex-1">
+                  <input
+                    type="date"
+                    value={customDateRange.end_date}
+                    onChange={(e) => setCustomDateRange(prev => ({ ...prev, end_date: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  {!customDateRange.end_date && (
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">
+                      End Date
+                    </span>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -487,12 +503,12 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
 
         {/* Period Summary */}
         <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="text-center sm:text-left">
               <p className="text-sm text-gray-600">Selected Period</p>
               <p className="font-semibold text-gray-900">{getPeriodLabel()}</p>
             </div>
-            <div className="text-right">
+            <div className="text-center sm:text-right">
               <p className="text-sm text-gray-600">Attendance Days</p>
               <p className="font-semibold text-gray-900">
                 {salaryInfo.daysWorked} worked • {salaryInfo.absentDays} absent
@@ -655,9 +671,9 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
       <div className="bg-white rounded-xl border shadow-sm p-6">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold text-gray-900">Transaction History</h3>
-          <div className="text-sm text-gray-600">
+          {/* <div className="text-sm text-gray-600">
             {salary.advance_transactions.length + salary.bonus.length + salary.amountpaid.length} total transactions
-          </div>
+          </div> */}
         </div>
 
         <div className="space-y-6">

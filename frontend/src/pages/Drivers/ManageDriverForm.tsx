@@ -86,8 +86,8 @@ const ManageDriverForm: React.FC = () => {
     }
 
     // Validate that at least one salary type is provided
-    if ((!formData.salary_per_duty || formData.salary_per_duty <= 0) && 
-        (!formData.salary_per_trip || formData.salary_per_trip <= 0)) {
+    if ((!formData.salary_per_duty || formData.salary_per_duty <= 0) &&
+      (!formData.salary_per_trip || formData.salary_per_trip <= 0)) {
       newErrors.salary = "At least one salary type must be provided";
     }
 
@@ -103,14 +103,14 @@ const ManageDriverForm: React.FC = () => {
     if (name === "phone") {
       // Auto-format phone number
       let formattedValue = value;
-      
+
       if (!formattedValue.startsWith("+91-")) {
         formattedValue = "+91-" + formattedValue.replace(/\+91-?/g, "");
       }
-      
+
       const digits = formattedValue.slice(4).replace(/\D/g, "").slice(0, 10);
       formattedValue = "+91-" + digits;
-      
+
       setFormData((prev) => ({
         ...prev,
         [name]: formattedValue,
@@ -183,10 +183,11 @@ const ManageDriverForm: React.FC = () => {
       {/* Header section */}
       <div className="bg-white p-5 rounded-t-xl border shadow-md flex items-center gap-3">
         <BackButton />
-        <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-800">
-          <Users className="w-6 h-6 text-blue-600" />
-          {isEditMode ? "Edit Driver" : "Add Driver"}
-        </h2>
+        <div className="flex items-center justify-center lg:justify-start flex-1">
+          <h2 className="text-lg sm:text-2xl font-bold text-gray-800 text-center lg:text-left">
+            {isEditMode ? "Edit Driver" : "Add Driver"}
+          </h2>
+        </div>
       </div>
 
       {/* Form section */}

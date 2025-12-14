@@ -124,8 +124,8 @@ const ManageAttendanceForm = () => {
 
       setFormData({
         driver_id: typeof attendanceData.driver_id === 'object' ? attendanceData.driver_id._id : attendanceData.driver_id,
-        lorry_id: attendanceData.lorry_id && typeof attendanceData.lorry_id === 'object' 
-          ? attendanceData.lorry_id._id 
+        lorry_id: attendanceData.lorry_id && typeof attendanceData.lorry_id === 'object'
+          ? attendanceData.lorry_id._id
           : attendanceData.lorry_id || '',
         date: formattedDate,
         status: attendanceData.status,
@@ -294,6 +294,12 @@ const ManageAttendanceForm = () => {
 
     if (formData.salary_amount < 0) {
       newErrors.salary_amount = "Salary amount cannot be negative";
+    }
+
+    if (formData.status === 'tripduty') {
+      if (!formData.no_of_trips || formData.no_of_trips <= 0) {
+        newErrors.no_of_trips = "Please enter number of trips (must be greater than 0)";
+      }
     }
 
     if (formData.status === 'tripduty' && formData.no_of_trips < 0) {
@@ -501,11 +507,8 @@ const ManageAttendanceForm = () => {
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg flex-shrink-0">
-                {isEditMode ? <Edit className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" /> : <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />}
-              </div>
-              <div className="min-w-0">
+            <div className="flex items-center justify-center lg:justify-start flex-1 min-w-0">
+              <div className="text-center lg:text-left min-w-0">
                 <h1 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">
                   {isEditMode ? "Edit Attendance" : "Add Attendance"}
                 </h1>
@@ -662,15 +665,16 @@ const ManageAttendanceForm = () => {
                     <div className="flex gap-3 items-center">
                       <input
                         type="number"
-                        value={formData.no_of_trips}
+                        value={formData.no_of_trips || ''}
                         onChange={(e) => handleChange('no_of_trips', parseInt(e.target.value) || 0)}
                         className={`w-32 px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base ${errors.no_of_trips ? 'border-red-500' : 'border-gray-300'
                           }`}
                         min="0"
+                        placeholder="0"
                       />
-                      <span className="text-sm text-gray-600">
+                      {/* <span className="text-sm text-gray-600">
                         Found {trips.length} trip{trips.length !== 1 ? 's' : ''} for this date
-                      </span>
+                      </span> */}
                     </div>
                     {errors.no_of_trips && (
                       <p className="mt-1 text-sm text-red-600">{errors.no_of_trips}</p>
@@ -725,8 +729,8 @@ const ManageAttendanceForm = () => {
                         <div
                           key={option.value}
                           className={`p-3 sm:p-4 border-2 rounded-lg cursor-pointer transition-all ${isSelected
-                              ? `${config.color} border-current`
-                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                            ? `${config.color} border-current`
+                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                             }`}
                           onClick={() => handleStatusChange(option.value)}
                         >
