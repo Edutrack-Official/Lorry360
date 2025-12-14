@@ -1316,7 +1316,7 @@ const LorryTrips = () => {
                       </div>
 
                       {/* Action Menu for individual trip */}
-                      <div className="relative flex-shrink-0 z-10">
+                      <div className="relative flex-shrink-0">
                         <button
                           data-action-menu-btn={trip._id}
                           onClick={(e) => {
