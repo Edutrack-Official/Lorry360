@@ -1553,7 +1553,7 @@ const ProfilePage: React.FC = () => {
     <>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
         {/* Header */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-6 sticky top-0 z-30">
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-6 sticky top-0 z-10">
           <div className="flex items-center gap-3 mb-6">
             <BackButton className="mb-4" />
             <div className="flex items-center justify-center flex-1">
