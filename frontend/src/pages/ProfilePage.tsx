@@ -184,7 +184,7 @@
 //   const [logoUploading, setLogoUploading] = useState(false);
 //   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 //   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
-  
+
 //   // State for delete confirmation modal
 //   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 //   const [deletingLogo, setDeletingLogo] = useState(false);
@@ -211,20 +211,20 @@
 //       }
 
 //       console.log('Fetching profile for user ID:', userId);
-      
+
 //       const response = await api.get(`/users/${userId}`);
-      
+
 //       if (response.data.success) {
 //         const userData = response.data.data;
 //         console.log('User data received:', userData);
-        
+
 //         setUser(userData);
-        
+
 //         // Parse phone number to extract country code
 //         const phoneStr = userData.phone || '';
 //         let extractedCode = '+91';
 //         let phoneNumber = phoneStr;
-        
+
 //         if (phoneStr) {
 //           const match = phoneStr.match(/^(\+\d+)-(.+)$/);
 //           if (match) {
@@ -232,7 +232,7 @@
 //             phoneNumber = match[2];
 //           }
 //         }
-        
+
 //         setFormData({
 //           name: userData.name || '',
 //           phone: phoneNumber,
@@ -243,7 +243,7 @@
 //           state: userData.state || '',
 //           pincode: userData.pincode || ''
 //         });
-        
+
 //         if (userData.logo) {
 //           console.log('Setting logo preview:', userData.logo);
 //           setLogoPreview(userData.logo);
@@ -253,7 +253,7 @@
 //       }
 //     } catch (error: any) {
 //       console.error('Profile fetch error:', error);
-      
+
 //       if (error.response?.status === 401) {
 //         toast.error('Session expired. Please login again.');
 //         window.location.href = '/login';
@@ -275,7 +275,7 @@
 //       const phoneStr = user?.phone || '';
 //       let extractedCode = '+91';
 //       let phoneNumber = phoneStr;
-      
+
 //       if (phoneStr) {
 //         const match = phoneStr.match(/^(\+\d+)-(.+)$/);
 //         if (match) {
@@ -283,7 +283,7 @@
 //           phoneNumber = match[2];
 //         }
 //       }
-      
+
 //       // Reset form to original values
 //       setFormData({
 //         name: user?.name || '',
@@ -314,7 +314,7 @@
 //     try {
 //       // Combine country code and phone number
 //       const fullPhone = `${formData.countryCode}-${formData.phone}`;
-      
+
 //       // Prepare update data as JSON
 //       const updateData: any = {
 //         name: formData.name,
@@ -332,13 +332,13 @@
 //       }
 
 //       console.log('Updating profile with data:', updateData);
-      
+
 //       const response = await api.put(`/users/update/${user._id}`, updateData);
-      
+
 //       if (response.data.success) {
 //         const updatedUser = response.data.data;
 //         console.log('Profile update successful:', updatedUser);
-        
+
 //         setUser(updatedUser);
 //         toast.success('Profile updated successfully');
 //         setIsEditing(false);
@@ -347,7 +347,7 @@
 //       }
 //     } catch (error: any) {
 //       console.error('Profile update error:', error);
-      
+
 //       if (error.response?.status === 400) {
 //         const errorMsg = error.response?.data?.error;
 //         if (errorMsg?.includes('Phone must be in format')) {
@@ -383,13 +383,13 @@
 //     }
 
 //     setLogoUploading(true);
-    
+
 //     try {
 //       const logoFormData = new FormData();
 //       logoFormData.append('logo', file);
 
 //       console.log('Uploading logo for user:', user._id);
-      
+
 //       const response = await api.post(`/users/${user._id}/logo`, logoFormData, {
 //         headers: {
 //           'Content-Type': 'multipart/form-data'
@@ -399,9 +399,9 @@
 //       if (response.data.success) {
 //         const updatedUser = response.data.data;
 //         console.log('Logo upload successful:', updatedUser);
-        
+
 //         setUser(updatedUser);
-        
+
 //         if (updatedUser.logo) {
 //           setLogoPreview(updatedUser.logo);
 //         }
@@ -411,7 +411,7 @@
 //       }
 //     } catch (error: any) {
 //       console.error('Logo upload error:', error);
-      
+
 //       if (error.response?.status === 400) {
 //         const errorMsg = error.response?.data?.error;
 //         if (errorMsg?.includes('Invalid logo file type')) {
@@ -448,19 +448,19 @@
 //     setDeletingLogo(true);
 //     try {
 //       console.log('Deleting logo for user:', user._id);
-      
+
 //       const response = await api.delete(`/users/${user._id}/logo`);
-      
+
 //       if (response.data.success) {
 //         console.log('Logo delete successful');
-        
+
 //         // Fetch fresh user data after logo deletion
 //         const freshResponse = await api.get(`/users/${user._id}`);
-        
+
 //         if (freshResponse.data.success) {
 //           const freshUserData = freshResponse.data.data;
 //           console.log('Fresh user data after logo delete:', freshUserData);
-          
+
 //           setUser(freshUserData);
 //           setLogoPreview(null);
 //           toast.success('Logo removed successfully');
@@ -473,7 +473,7 @@
 //       }
 //     } catch (error: any) {
 //       console.error('Logo delete error:', error);
-      
+
 //       if (error.response?.status === 401) {
 //         toast.error('Session expired. Please login again.');
 //         window.location.href = '/login';
@@ -592,7 +592,7 @@
 //               <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
 //                 {/* Card Header with Gradient */}
 //                 <div className="h-24 sm:h-32 bg-gradient-to-r from-blue-500 to-blue-600"></div>
-                
+
 //                 {/* Profile Content */}
 //                 <div className="px-6 pb-6 -mt-16 sm:-mt-20">
 //                   {/* Avatar */}
@@ -612,7 +612,7 @@
 //                           <User className="h-12 w-12 sm:h-14  text-gray-400" />
 //                         )}
 //                       </div>
-                      
+
 //                       {/* Avatar Action Button */}
 //                       <div className="absolute bottom-0 right-0">
 //                         {logoPreview ? (
@@ -677,7 +677,7 @@
 //                         <p className="text-sm text-gray-900 truncate">{user.email}</p>
 //                       </div>
 //                     </div>
-                    
+
 //                     <div className="flex items-start gap-3">
 //                       <div className="p-2 bg-green-50 rounded-lg">
 //                         <Phone className="h-4 w-4 text-green-600" />
@@ -687,7 +687,7 @@
 //                         <p className="text-sm text-gray-900">{user.phone || 'N/A'}</p>
 //                       </div>
 //                     </div>
-                    
+
 //                     {user.role === 'owner' && user.company_name && (
 //                       <div className="flex items-start gap-3">
 //                         <div className="p-2 bg-purple-50 rounded-lg">
@@ -699,7 +699,7 @@
 //                         </div>
 //                       </div>
 //                     )}
-                    
+
 //                     <div className="flex items-start gap-3">
 //                       <div className="p-2 bg-amber-50 rounded-lg">
 //                         <Calendar className="h-4 w-4 text-amber-600" />
@@ -782,7 +782,7 @@
 //                               <span className="font-medium">{formData.countryCode}</span>
 //                               <ChevronDown className="h-4 w-4 text-gray-400" />
 //                             </button>
-                            
+
 //                             {/* Dropdown Menu */}
 //                             {showCountryDropdown && (
 //                               <>
@@ -817,7 +817,7 @@
 //                               </>
 //                             )}
 //                           </div>
-                          
+
 //                           {/* Phone Number Input */}
 //                           <input
 //                             type="tel"
@@ -1010,11 +1010,11 @@
 // export default ProfilePage;
 
 import React, { useState, useEffect } from 'react';
-import { 
-  User, 
-  Building, 
-  Mail, 
-  Phone, 
+import {
+  User,
+  Building,
+  Mail,
+  Phone,
   Calendar,
   Edit,
   Save,
@@ -1038,21 +1038,21 @@ import BackButton from '../components/BackButton';
 
 // Popular country codes
 const COUNTRY_CODES = [
-  { code: '+91', country: 'India'},
-//   { code: '+1', country: 'United States', flag: '🇺🇸' },
-//   { code: '+44', country: 'United Kingdom', flag: '🇬🇧' },
-//   { code: '+86', country: 'China', flag: '🇨🇳' },
-//   { code: '+81', country: 'Japan', flag: '🇯🇵' },
-//   { code: '+49', country: 'Germany', flag: '🇩🇪' },
-//   { code: '+33', country: 'France', flag: '🇫🇷' },
-//   { code: '+61', country: 'Australia', flag: '🇦🇺' },
-//   { code: '+971', country: 'UAE', flag: '🇦🇪' },
-//   { code: '+65', country: 'Singapore', flag: '🇸🇬' },
-//   { code: '+60', country: 'Malaysia', flag: '🇲🇾' },
-//   { code: '+92', country: 'Pakistan', flag: '🇵🇰' },
-//   { code: '+880', country: 'Bangladesh', flag: '🇧🇩' },
-//   { code: '+94', country: 'Sri Lanka', flag: '🇱🇰' },
-//   { code: '+977', country: 'Nepal', flag: '🇳🇵' },
+  { code: '+91', country: 'India' },
+  //   { code: '+1', country: 'United States', flag: '🇺🇸' },
+  //   { code: '+44', country: 'United Kingdom', flag: '🇬🇧' },
+  //   { code: '+86', country: 'China', flag: '🇨🇳' },
+  //   { code: '+81', country: 'Japan', flag: '🇯🇵' },
+  //   { code: '+49', country: 'Germany', flag: '🇩🇪' },
+  //   { code: '+33', country: 'France', flag: '🇫🇷' },
+  //   { code: '+61', country: 'Australia', flag: '🇦🇺' },
+  //   { code: '+971', country: 'UAE', flag: '🇦🇪' },
+  //   { code: '+65', country: 'Singapore', flag: '🇸🇬' },
+  //   { code: '+60', country: 'Malaysia', flag: '🇲🇾' },
+  //   { code: '+92', country: 'Pakistan', flag: '🇵🇰' },
+  //   { code: '+880', country: 'Bangladesh', flag: '🇧🇩' },
+  //   { code: '+94', country: 'Sri Lanka', flag: '🇱🇰' },
+  //   { code: '+977', country: 'Nepal', flag: '🇳🇵' },
 ];
 
 interface UserProfile {
@@ -1111,7 +1111,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
   return (
     <>
       {/* Backdrop */}
-      <div 
+      <div
         onClick={onClose}
         className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
       />
@@ -1200,7 +1200,7 @@ const ProfilePage: React.FC = () => {
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
-  
+
   // State for delete confirmation modal
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deletingLogo, setDeletingLogo] = useState(false);
@@ -1227,20 +1227,20 @@ const ProfilePage: React.FC = () => {
       }
 
       console.log('Fetching profile for user ID:', userId);
-      
+
       const response = await api.get(`/users/${userId}`);
-      
+
       if (response.data.success) {
         const userData = response.data.data;
         console.log('User data received:', userData);
-        
+
         setUser(userData);
-        
+
         // Parse phone number to extract country code
         const phoneStr = userData.phone || '';
         let extractedCode = '+91';
         let phoneNumber = phoneStr;
-        
+
         if (phoneStr) {
           const match = phoneStr.match(/^(\+\d+)-(.+)$/);
           if (match) {
@@ -1248,7 +1248,7 @@ const ProfilePage: React.FC = () => {
             phoneNumber = match[2];
           }
         }
-        
+
         setFormData({
           name: userData.name || '',
           phone: phoneNumber,
@@ -1260,7 +1260,7 @@ const ProfilePage: React.FC = () => {
           pincode: userData.pincode || '',
           gst_number: userData.gst_number || ''
         });
-        
+
         if (userData.logo) {
           console.log('Setting logo preview:', userData.logo);
           setLogoPreview(userData.logo);
@@ -1270,7 +1270,7 @@ const ProfilePage: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Profile fetch error:', error);
-      
+
       if (error.response?.status === 401) {
         toast.error('Session expired. Please login again.');
         window.location.href = '/login';
@@ -1292,7 +1292,7 @@ const ProfilePage: React.FC = () => {
       const phoneStr = user?.phone || '';
       let extractedCode = '+91';
       let phoneNumber = phoneStr;
-      
+
       if (phoneStr) {
         const match = phoneStr.match(/^(\+\d+)-(.+)$/);
         if (match) {
@@ -1300,7 +1300,7 @@ const ProfilePage: React.FC = () => {
           phoneNumber = match[2];
         }
       }
-      
+
       // Reset form to original values
       setFormData({
         name: user?.name || '',
@@ -1332,7 +1332,7 @@ const ProfilePage: React.FC = () => {
     try {
       // Combine country code and phone number
       const fullPhone = `${formData.countryCode}-${formData.phone}`;
-      
+
       // Prepare update data as JSON
       const updateData: any = {
         name: formData.name,
@@ -1351,13 +1351,13 @@ const ProfilePage: React.FC = () => {
       }
 
       console.log('Updating profile with data:', updateData);
-      
+
       const response = await api.put(`/users/update/${user._id}`, updateData);
-      
+
       if (response.data.success) {
         const updatedUser = response.data.data;
         console.log('Profile update successful:', updatedUser);
-        
+
         setUser(updatedUser);
         toast.success('Profile updated successfully');
         setIsEditing(false);
@@ -1366,7 +1366,7 @@ const ProfilePage: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Profile update error:', error);
-      
+
       if (error.response?.status === 400) {
         const errorMsg = error.response?.data?.error;
         if (errorMsg?.includes('Phone must be in format')) {
@@ -1402,13 +1402,13 @@ const ProfilePage: React.FC = () => {
     }
 
     setLogoUploading(true);
-    
+
     try {
       const logoFormData = new FormData();
       logoFormData.append('logo', file);
 
       console.log('Uploading logo for user:', user._id);
-      
+
       const response = await api.post(`/users/${user._id}/logo`, logoFormData, {
         headers: {
           'Content-Type': 'multipart/form-data'
@@ -1418,9 +1418,9 @@ const ProfilePage: React.FC = () => {
       if (response.data.success) {
         const updatedUser = response.data.data;
         console.log('Logo upload successful:', updatedUser);
-        
+
         setUser(updatedUser);
-        
+
         if (updatedUser.logo) {
           setLogoPreview(updatedUser.logo);
         }
@@ -1430,7 +1430,7 @@ const ProfilePage: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Logo upload error:', error);
-      
+
       if (error.response?.status === 400) {
         const errorMsg = error.response?.data?.error;
         if (errorMsg?.includes('Invalid logo file type')) {
@@ -1467,19 +1467,19 @@ const ProfilePage: React.FC = () => {
     setDeletingLogo(true);
     try {
       console.log('Deleting logo for user:', user._id);
-      
+
       const response = await api.delete(`/users/${user._id}/logo`);
-      
+
       if (response.data.success) {
         console.log('Logo delete successful');
-        
+
         // Fetch fresh user data after logo deletion
         const freshResponse = await api.get(`/users/${user._id}`);
-        
+
         if (freshResponse.data.success) {
           const freshUserData = freshResponse.data.data;
           console.log('Fresh user data after logo delete:', freshUserData);
-          
+
           setUser(freshUserData);
           setLogoPreview(null);
           toast.success('Logo removed successfully');
@@ -1492,7 +1492,7 @@ const ProfilePage: React.FC = () => {
       }
     } catch (error: any) {
       console.error('Logo delete error:', error);
-      
+
       if (error.response?.status === 401) {
         toast.error('Session expired. Please login again.');
         window.location.href = '/login';
@@ -1515,7 +1515,7 @@ const ProfilePage: React.FC = () => {
   };
 
   const getRoleBadge = (role: string) => {
-    return role === 'admin' 
+    return role === 'admin'
       ? 'bg-red-100 text-red-700 border-red-300'
       : 'bg-blue-100 text-blue-700 border-blue-300';
   };
@@ -1538,7 +1538,7 @@ const ProfilePage: React.FC = () => {
           <AlertCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-xl font-bold text-gray-900 mb-2">Profile not found</h3>
           <p className="text-gray-600 mb-6">Unable to load your profile information.</p>
-          <button 
+          <button
             onClick={() => window.location.href = '/login'}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-lg shadow-blue-600/30"
           >
@@ -1553,64 +1553,62 @@ const ProfilePage: React.FC = () => {
     <>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
-  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-    <BackButton className="mb-4" />
-    
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      {/* Title Section */}
-      <div className="flex-1 min-w-0">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 truncate">
-          Profile Settings
-        </h1>
-        <p className="text-sm text-gray-600 mt-1">
-          Manage your account information
-        </p>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-        {isEditing ? (
-          <>
-            <button
-              onClick={handleEditToggle}
-              disabled={isSaving}
-              className="flex-1 sm:flex-none sm:min-w-[100px] px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
-            >
-              <X className="h-4 w-4" />
-              <span className="hidden sm:inline">Cancel</span>
-            </button>
-            <button
-              onClick={handleSaveProfile}
-              disabled={isSaving}
-              className="flex-1 sm:flex-none sm:min-w-[100px] px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/30"
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Saving...</span>
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4" />
-                  <span>Save</span>
-                </>
-              )}
-            </button>
-          </>
-        ) : (
-          <button
-            onClick={handleEditToggle}
-            className="w-full sm:w-auto sm:min-w-[140px] px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/30"
-          >
-            <Edit className="h-4 w-4" />
-            <span>Edit Profile</span>
-          </button>
-        )}
-      </div>
-    </div>
-  </div>
-</div>
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-6 sticky top-0 z-50">
+          <div className="flex items-center gap-3 mb-6">
+            <BackButton className="mb-4" />
+            <div className="flex items-center justify-center flex-1">
+              {/* Title Section */}
+              <div >
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+                  Profile Settings
+                </h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Manage your account information
+                </p>
+              </div>
+            </div>
+          </div>
+          {/* Action Buttons */}
+              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                {isEditing ? (
+                  <>
+                    <button
+                      onClick={handleEditToggle}
+                      disabled={isSaving}
+                      className="flex-1 sm:flex-none sm:min-w-[100px] px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
+                    >
+                      <X className="h-4 w-4" />
+                      <span className="hidden sm:inline">Cancel</span>
+                    </button>
+                    <button
+                      onClick={handleSaveProfile}
+                      disabled={isSaving}
+                      className="flex-1 sm:flex-none sm:min-w-[100px] px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/30"
+                    >
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Saving...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4" />
+                          <span>Save</span>
+                        </>
+                      )}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={handleEditToggle}
+                    className="w-full sm:w-auto sm:min-w-[140px] px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/30"
+                  >
+                    <Edit className="h-4 w-4" />
+                    <span>Edit Profile</span>
+                  </button>
+                )}
+              </div>
+        </div>
         {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -1619,7 +1617,7 @@ const ProfilePage: React.FC = () => {
               <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
                 {/* Card Header with Gradient */}
                 <div className="h-24 sm:h-32 bg-gradient-to-r from-blue-500 to-blue-600"></div>
-                
+
                 {/* Profile Content */}
                 <div className="px-6 pb-6 -mt-16 sm:-mt-20">
                   {/* Avatar */}
@@ -1639,7 +1637,7 @@ const ProfilePage: React.FC = () => {
                           <User className="h-12 w-12 sm:h-14  text-gray-400" />
                         )}
                       </div>
-                      
+
                       {/* Avatar Action Button */}
                       <div className="absolute bottom-0 right-0">
                         {logoPreview ? (
@@ -1704,7 +1702,7 @@ const ProfilePage: React.FC = () => {
                         <p className="text-sm text-gray-900 truncate">{user.email}</p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-start gap-3">
                       <div className="p-2 bg-green-50 rounded-lg">
                         <Phone className="h-4 w-4 text-green-600" />
@@ -1714,7 +1712,7 @@ const ProfilePage: React.FC = () => {
                         <p className="text-sm text-gray-900">{user.phone || 'N/A'}</p>
                       </div>
                     </div>
-                    
+
                     {user.role === 'owner' && user.company_name && (
                       <div className="flex items-start gap-3">
                         <div className="p-2 bg-purple-50 rounded-lg">
@@ -1738,7 +1736,7 @@ const ProfilePage: React.FC = () => {
                         </div>
                       </div>
                     )}
-                    
+
                     <div className="flex items-start gap-3">
                       <div className="p-2 bg-amber-50 rounded-lg">
                         <Calendar className="h-4 w-4 text-amber-600" />
@@ -1815,20 +1813,20 @@ const ProfilePage: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => setShowCountryDropdown(!showCountryDropdown)}
-                              className="h-full px-3 py-3 border-2 border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm bg-white flex items-center gap-2 min-w-[110px]"
+                              className="h-full px-3 py-3 border-2 border-gray-200 rounded-xl hover:border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm bg-white flex items-center gap-2 "
                             >
                               <span className="font-medium">{formData.countryCode}</span>
                               <ChevronDown className="h-4 w-4 text-gray-400" />
                             </button>
-                            
+
                             {/* Dropdown Menu */}
                             {showCountryDropdown && (
                               <>
-                                <div 
-                                  className="fixed inset-0 z-10" 
+                                <div
+                                  className="fixed inset-0 z-10"
                                   onClick={() => setShowCountryDropdown(false)}
                                 />
-                                <div className="absolute top-full left-0 mt-2 w-64 bg-white border-2 border-gray-200 rounded-xl shadow-xl z-20 max-h-64 overflow-y-auto">
+                                <div className="absolute top-full left-0 mt-2 w-64 bg-white border-2 rounded-xl shadow-xl z-20 max-h-64 overflow-y-auto">
                                   {COUNTRY_CODES.map((country) => (
                                     <button
                                       key={country.code}
@@ -1837,9 +1835,8 @@ const ProfilePage: React.FC = () => {
                                         setFormData(prev => ({ ...prev, countryCode: country.code }));
                                         setShowCountryDropdown(false);
                                       }}
-                                      className={`w-full px-4 py-3 text-left hover:bg-blue-50 transition-colors flex items-center gap-3 ${
-                                        formData.countryCode === country.code ? 'bg-blue-50 text-blue-700' : ''
-                                      }`}
+                                      className={`py-3 text-left hover:bg-blue-50 transition-colors flex items-center gap-3 ${formData.countryCode === country.code ? 'bg-blue-50 text-blue-700' : ''
+                                        }`}
                                     >
                                       <div className="flex-1">
                                         <div className="font-medium text-sm">{country.country}</div>
@@ -1854,14 +1851,14 @@ const ProfilePage: React.FC = () => {
                               </>
                             )}
                           </div>
-                          
+
                           {/* Phone Number Input */}
                           <input
                             type="tel"
                             name="phone"
                             value={formData.phone}
                             onChange={handleInputChange}
-                            className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm"
+                            className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm w-20"
                             placeholder="9876543210"
                             required
                           />
@@ -2018,7 +2015,7 @@ const ProfilePage: React.FC = () => {
                   </div>
 
                   {/* Save button for mobile at bottom */}
-                  {isEditing && (
+                  {/* {isEditing && (
                     <div className="mt-8 pt-6 border-t border-gray-200 flex flex-col sm:flex-row gap-3 sm:hidden">
                       <button
                         onClick={handleEditToggle}
@@ -2046,7 +2043,7 @@ const ProfilePage: React.FC = () => {
                         )}
                       </button>
                     </div>
-                  )}
+                  )} */}
                 </div>
               </div>
             </div>
