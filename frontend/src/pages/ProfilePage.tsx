@@ -1555,10 +1555,9 @@ const ProfilePage: React.FC = () => {
         {/* Header */}
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6 sticky top-0 z-10">
           <div className="flex items-center gap-3 mb-6">
-            <BackButton className="mb-4" />
-            <div className="flex items-center justify-center flex-1">
-              {/* Title Section */}
-              <div >
+            <BackButton />
+            <div className="flex items-center justify-center lg:justify-start flex-1">
+              <div className="text-center lg:text-left">
                 <h2 className="text-lg sm:text-xl font-bold text-gray-900">
                   Profile Settings
                 </h2>
@@ -1569,45 +1568,45 @@ const ProfilePage: React.FC = () => {
             </div>
           </div>
           {/* Action Buttons */}
-              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                {isEditing ? (
-                  <>
-                    <button
-                      onClick={handleEditToggle}
-                      disabled={isSaving}
-                      className="flex-1 sm:flex-none sm:min-w-[100px] px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
-                    >
-                      <X className="h-4 w-4" />
-                      <span className="hidden sm:inline">Cancel</span>
-                    </button>
-                    <button
-                      onClick={handleSaveProfile}
-                      disabled={isSaving}
-                      className="flex-1 sm:flex-none sm:min-w-[100px] px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/30"
-                    >
-                      {isSaving ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>Saving...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Save className="h-4 w-4" />
-                          <span>Save</span>
-                        </>
-                      )}
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={handleEditToggle}
-                    className="w-full sm:w-auto sm:min-w-[140px] px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/30"
-                  >
-                    <Edit className="h-4 w-4" />
-                    <span>Edit Profile</span>
-                  </button>
-                )}
-              </div>
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            {isEditing ? (
+              <>
+                <button
+                  onClick={handleEditToggle}
+                  disabled={isSaving}
+                  className="flex-1 sm:flex-none sm:min-w-[100px] px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all"
+                >
+                  <X className="h-4 w-4" />
+                  <span className="hidden sm:inline">Cancel</span>
+                </button>
+                <button
+                  onClick={handleSaveProfile}
+                  disabled={isSaving}
+                  className="flex-1 sm:flex-none sm:min-w-[100px] px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/30"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                      <span>Save</span>
+                    </>
+                  )}
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={handleEditToggle}
+                className="w-full sm:w-auto sm:min-w-[140px] px-5 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-600/30"
+              >
+                <Edit className="h-4 w-4" />
+                <span>Edit Profile</span>
+              </button>
+            )}
+          </div>
         </div>
         {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">

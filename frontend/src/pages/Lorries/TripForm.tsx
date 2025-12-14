@@ -427,7 +427,7 @@ const TripForm = () => {
     e.preventDefault();
 
     if (!validateForm()) {
-toast.error("Please complete all required fields");
+      toast.error("Please complete all required fields");
       return;
     }
 
@@ -494,11 +494,8 @@ toast.error("Please complete all required fields");
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
           <div className="flex items-center gap-3 mb-6">
             <BackButton />
-            <div className="flex items-center justify-center flex-1">
-              {/* <div className="p-2 bg-blue-100 rounded-lg">
-              <Truck className="h-6 w-6 text-blue-600" />
-            </div> */}
-              <div>
+            <div className="flex items-center justify-center lg:justify-start flex-1">
+              <div className="text-center lg:text-left">
                 <h2 className="text-lg sm:text-xl font-bold text-gray-900">
                   {isEditMode ? 'Edit Trip' : 'Create New Trip'}
                 </h2>
