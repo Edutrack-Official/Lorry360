@@ -271,13 +271,15 @@ const ExpenseForm = () => {
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
           <div className="flex items-center gap-3 mb-6">
             <BackButton />
+            <div className="flex items-center justify-center flex-1">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">
                 {isEditing ? 'Edit Expense' : 'Add New Expense'}
-              </h1>
-              <p className="text-gray-600">
+              </h2>
+                <p className="text-xs text-gray-500 mt-0.5">
                 {isEditing ? 'Update expense details' : 'Add a new expense for the lorry'}
               </p>
+            </div>
             </div>
           </div>
 
