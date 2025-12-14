@@ -353,7 +353,7 @@ const CrusherPaymentForm = () => {
           </div>
 
           {/* Crusher Info Card */}
-          {crusher && (
+          {/* {crusher && (
             <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
               <div className="flex items-start gap-3">
                 <Building className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
@@ -368,7 +368,7 @@ const CrusherPaymentForm = () => {
                 </div>
               </div>
             </div>
-          )}
+          )} */}
         </div>
 
         {/* Payment Form */}
