@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Download, 
-  FileText, 
+import {
+  Download,
+  FileText,
   User,
   Calendar,
   Search,
@@ -40,7 +40,7 @@ const InvoiceGenerator = () => {
     const today = new Date();
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(today.getDate() - 30);
-    
+
     setFromDate(thirtyDaysAgo.toISOString().split('T')[0]);
     setToDate(today.toISOString().split('T')[0]);
   }, []);
@@ -60,11 +60,11 @@ const InvoiceGenerator = () => {
     try {
       const res = await api.get('/collaborations/active');
       console.log("Collaboration fetch response:", res.data.data?.collaborations);
-      
+
       const filteredCollaborations = (res.data.data?.collaborations || []).filter(collab => {
         return collab.from_owner_id?._id === currentUserId || collab.to_owner_id?._id === currentUserId;
       });
-      
+
       setCollaborations(filteredCollaborations);
     } catch (error) {
       console.error('Error fetching collaborations:', error);
@@ -74,7 +74,7 @@ const InvoiceGenerator = () => {
 
   const getPartnerInfo = (collab) => {
     if (!currentUserId) return { partnerId: null, partnerName: '', partnerCompany: '', collaborationId: '' };
-    
+
     if (collab.from_owner_id?._id === currentUserId) {
       return {
         partnerId: collab.to_owner_id?._id,
@@ -94,7 +94,7 @@ const InvoiceGenerator = () => {
 
   const generateInvoice = async (id = null, collaborationId = null) => {
     let requestUrl = '';
-    
+
     if (invoiceType === 'customer') {
       const customer = id || selectedCustomer;
       if (!customer || !fromDate || !toDate) {
@@ -105,36 +105,36 @@ const InvoiceGenerator = () => {
     } else {
       const collaboration = collaborationId || selectedCollaborationId;
       const partnerId = id || selectedCollaboration;
-      
+
       if (!partnerId || !collaboration || !fromDate || !toDate) {
         toast.error('Please select collaboration partner and date range');
         return;
       }
-      
+
       requestUrl = `/trips/collaboration-invoice-data?partner_owner_id=${partnerId}&collaboration_id=${collaboration}&from_date=${fromDate}&to_date=${toDate}&include_inactive=${includeInactive}`;
     }
 
     setLoading(true);
     try {
-      const res = await api.get(requestUrl);    
+      const res = await api.get(requestUrl);
       if (res.data.success) {
         setInvoiceData(res.data.data);
 
-  await downloadPDF(
-    res.data.data,
-    invoiceType === 'customer' ? res.data.data?.customer?.name : null,
-    invoiceType === 'collaboration' ? res.data.data?.partner?.name : null
-  );
+        await downloadPDF(
+          res.data.data,
+          invoiceType === 'customer' ? res.data.data?.customer?.name : null,
+          invoiceType === 'collaboration' ? res.data.data?.partner?.name : null
+        );
 
-  toast.success(`${invoiceType === 'customer' ? 'Customer' : 'Collaboration'} invoice downloaded successfully!`);
+        toast.success(`${invoiceType === 'customer' ? 'Customer' : 'Collaboration'} invoice downloaded successfully!`);
 
       } else {
         toast.error(res.data.error || 'Failed to generate invoice');
       }
     } catch (error) {
       console.error('Error generating invoice:', error);
-      if(error.response?.data?.error){
-        toast.error(error.response.data.error); 
+      if (error.response?.data?.error) {
+        toast.error(error.response.data.error);
       }
     }
     setLoading(false);
@@ -146,159 +146,159 @@ const InvoiceGenerator = () => {
   const getSupplierPhone = () => invoiceData?.supplier?.phone || '';
   const getSupplierGST = () => invoiceData?.supplier?.gst_number || '';
   const getSupplierLogo = () => invoiceData?.supplier?.logo || '';
-  
+
   const getCustomerName = () => invoiceData?.customer?.name || '';
   const getCustomerAddress = () => invoiceData?.customer?.address || '';
   const getCustomerPhone = () => invoiceData?.customer?.phone || '';
-  
+
   const getPartnerName = () => invoiceData?.partner?.name || '';
   const getPartnerAddress = () => invoiceData?.partner?.full_address || '';
   const getPartnerPhone = () => invoiceData?.partner?.phone || '';
   const getPartnerGST = () => invoiceData?.partner?.gst_number || '';
-  
+
   const getInvoiceNumber = () => invoiceData?.invoice_details?.invoice_number || '';
   const getInvoicePeriod = () => invoiceData?.invoice_details?.period || '';
   const getOpeningBalanceDate = () => invoiceData?.invoice_details?.opening_balance_date || '';
-  
+
   const getTableHeaders = () => invoiceData?.table_data?.headers || [];
   const getTableRows = () => invoiceData?.table_data?.rows || [];
-  
+
   const getSummary = () => invoiceData?.table_data?.summary || {};
   const getFinancialSummary = () => invoiceData?.financial_summary || {};
   const getAdditionalInfo = () => invoiceData?.additional_info || {};
-  
+
   const isCollaboration = () => invoiceData?.invoice_details?.is_collaboration || false;
 
 
 
-const generateAllInvoices = async () => {
-  if (!fromDate || !toDate) {
-    toast.error('Please select date range');
-    return;
-  }
-
-  if (invoiceType === 'customer') {
-    if (customers.length === 0) {
-      toast.error('No customers found');
+  const generateAllInvoices = async () => {
+    if (!fromDate || !toDate) {
+      toast.error('Please select date range');
       return;
     }
 
-    const localFilteredCustomers = customers.filter(customer =>
-      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.phone.includes(searchTerm)
-    );
-    
-    const customersToProcess = localFilteredCustomers.length > 0 ? localFilteredCustomers : customers;
-    
-    await processAllItems(customersToProcess, 'customer');
-  } else {
-    if (collaborations.length === 0) {
-      toast.error('No active collaborations found');
-      return;
-    }
-
-    await processAllItems(collaborations, 'collaboration');
-  }
-};
-
-const processAllItems = async (items, type) => {
-  setLoadingAll(true);
-  setCurrentProgress({ current: 0, total: items.length });
-  
-  let successCount = 0;
-  let failCount = 0;
-
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-    setCurrentProgress({ current: i + 1, total: items.length });
-
-    try {
-      let id, collaborationId, partnerName = '', customerName = '';
-      
-      if (type === 'customer') {
-        id = item._id;
-        customerName = item.name || '';
-      } else {
-        const partnerInfo = getPartnerInfo(item);
-        id = partnerInfo.partnerId;
-        collaborationId = partnerInfo.collaborationId;
-        partnerName = partnerInfo.partnerName || '';
-        
-        // For collaborations, we need to use the partner name as the "customer" name in the PDF
-        customerName = partnerName;
+    if (invoiceType === 'customer') {
+      if (customers.length === 0) {
+        toast.error('No customers found');
+        return;
       }
-      
-      const res = await api.get(
-        type === 'customer' 
-          ? `/trips/invoice-data?customer_id=${id}&from_date=${fromDate}&to_date=${toDate}`
-          : `/trips/collaboration-invoice-data?partner_owner_id=${id}&collaboration_id=${collaborationId}&from_date=${fromDate}&to_date=${toDate}&include_inactive=${includeInactive}`
+
+      const localFilteredCustomers = customers.filter(customer =>
+        customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.phone.includes(searchTerm)
       );
-      
-      if (res.data.success && res.data.data) {
-        // Ensure we're passing the correct data to downloadPDF
-        const pdfSuccess = await downloadPDF(
-          res.data.data, 
-          type === 'customer' ? customerName : null, // For customer invoices
-          type === 'collaboration' ? partnerName : null // For collaboration invoices
+
+      const customersToProcess = localFilteredCustomers.length > 0 ? localFilteredCustomers : customers;
+
+      await processAllItems(customersToProcess, 'customer');
+    } else {
+      if (collaborations.length === 0) {
+        toast.error('No active collaborations found');
+        return;
+      }
+
+      await processAllItems(collaborations, 'collaboration');
+    }
+  };
+
+  const processAllItems = async (items, type) => {
+    setLoadingAll(true);
+    setCurrentProgress({ current: 0, total: items.length });
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      setCurrentProgress({ current: i + 1, total: items.length });
+
+      try {
+        let id, collaborationId, partnerName = '', customerName = '';
+
+        if (type === 'customer') {
+          id = item._id;
+          customerName = item.name || '';
+        } else {
+          const partnerInfo = getPartnerInfo(item);
+          id = partnerInfo.partnerId;
+          collaborationId = partnerInfo.collaborationId;
+          partnerName = partnerInfo.partnerName || '';
+
+          // For collaborations, we need to use the partner name as the "customer" name in the PDF
+          customerName = partnerName;
+        }
+
+        const res = await api.get(
+          type === 'customer'
+            ? `/trips/invoice-data?customer_id=${id}&from_date=${fromDate}&to_date=${toDate}`
+            : `/trips/collaboration-invoice-data?partner_owner_id=${id}&collaboration_id=${collaborationId}&from_date=${fromDate}&to_date=${toDate}&include_inactive=${includeInactive}`
         );
-        
-        if (pdfSuccess) {
-          successCount++;
+
+        if (res.data.success && res.data.data) {
+          // Ensure we're passing the correct data to downloadPDF
+          const pdfSuccess = await downloadPDF(
+            res.data.data,
+            type === 'customer' ? customerName : null, // For customer invoices
+            type === 'collaboration' ? partnerName : null // For collaboration invoices
+          );
+
+          if (pdfSuccess) {
+            successCount++;
+          } else {
+            failCount++;
+          }
         } else {
           failCount++;
+          console.error(`No data returned for ${type}:`, res.data);
         }
-      } else {
+
+        // Small delay between items to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+      } catch (error) {
+        console.error(`Error generating ${type} invoice:`, error);
         failCount++;
-        console.error(`No data returned for ${type}:`, res.data);
       }
-
-      // Small delay between items to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-    } catch (error) {
-      console.error(`Error generating ${type} invoice:`, error);
-      failCount++;
     }
-  }
 
-  setLoadingAll(false);
-  setCurrentProgress({ current: 0, total: 0 });
+    setLoadingAll(false);
+    setCurrentProgress({ current: 0, total: 0 });
 
-  if (successCount > 0) {
-    toast.success(`Successfully generated ${successCount} ${type} ${successCount === 1 ? 'invoice' : 'invoices'}`);
-  }
-  if (failCount > 0) {
-    toast.error(`No data found for ${failCount} ${type} ${failCount === 1 ? 'invoice' : 'invoices'}`);
-  }
-};
+    if (successCount > 0) {
+      toast.success(`Successfully generated ${successCount} ${type} ${successCount === 1 ? 'invoice' : 'invoices'}`);
+    }
+    if (failCount > 0) {
+      toast.error(`No data found for ${failCount} ${type} ${failCount === 1 ? 'invoice' : 'invoices'}`);
+    }
+  };
 
-// Also update the downloadPDF function to handle the data properly
-const downloadPDF = async (invoiceData, customerName = null, partnerName = null) => {
-  if (!invoiceData) {
-    toast.error('No invoice data available');
-    return false;
-  }
+  // Also update the downloadPDF function to handle the data properly
+  const downloadPDF = async (invoiceData, customerName = null, partnerName = null) => {
+    if (!invoiceData) {
+      toast.error('No invoice data available');
+      return false;
+    }
 
-  try {
-    const html2pdf = (await import('html2pdf.js')).default;
+    try {
+      const html2pdf = (await import('html2pdf.js')).default;
 
-    let invoiceContent = '';
-    
-    // Determine if it's a collaboration invoice
-    const isCollaborationInvoice = invoiceData?.invoice_details?.is_collaboration || 
-                                  invoiceData?.is_collaboration || false;
-    
-    // Get safe values
-    const supplierName = invoiceData?.supplier?.name || '';
-    const partnerNameFromData = invoiceData?.partner?.name || '';
-    const customerNameFromData = invoiceData?.customer?.name || '';
-    
-    // Use provided names or fall back to data names
-    const finalPartnerName = partnerName || partnerNameFromData;
-    const finalCustomerName = customerName || customerNameFromData;
-    
-    if (isCollaborationInvoice) {
-      invoiceContent = `
+      let invoiceContent = '';
+
+      // Determine if it's a collaboration invoice
+      const isCollaborationInvoice = invoiceData?.invoice_details?.is_collaboration ||
+        invoiceData?.is_collaboration || false;
+
+      // Get safe values
+      const supplierName = invoiceData?.supplier?.name || '';
+      const partnerNameFromData = invoiceData?.partner?.name || '';
+      const customerNameFromData = invoiceData?.customer?.name || '';
+
+      // Use provided names or fall back to data names
+      const finalPartnerName = partnerName || partnerNameFromData;
+      const finalCustomerName = customerName || customerNameFromData;
+
+      if (isCollaborationInvoice) {
+        invoiceContent = `
         <div style="font-family: Arial, sans-serif; color: #000; width: 100%; box-sizing: border-box;">
           <!-- Header Section -->
           <div style="margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 15px; page-break-inside: avoid; display: flex; justify-content: space-between; align-items: flex-start;">
@@ -368,9 +368,9 @@ const downloadPDF = async (invoiceData, customerName = null, partnerName = null)
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px;">
             <thead style="display: table-header-group;">
               <tr style="background-color: #f8f9fa;">
-                ${(invoiceData?.table_data?.headers || []).map(header => 
-                  `<th style="border: 1px solid #000; padding: 10px 8px; text-align: left; font-weight: bold; font-size: 13px;">${header}</th>`
-                ).join('')}
+                ${(invoiceData?.table_data?.headers || []).map(header =>
+          `<th style="border: 1px solid #000; padding: 10px 8px; text-align: left; font-weight: bold; font-size: 13px;">${header}</th>`
+        ).join('')}
               </tr>
             </thead>
             <tbody>
@@ -415,8 +415,8 @@ const downloadPDF = async (invoiceData, customerName = null, partnerName = null)
           </div>
         </div>
       `;
-    } else {
-      invoiceContent = `
+      } else {
+        invoiceContent = `
         <div style="font-family: Arial, sans-serif; color: #000; width: 100%; box-sizing: border-box;">
           <!-- Header Section -->
           <div style="margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 15px; page-break-inside: avoid; display: flex; justify-content: space-between; align-items: flex-start;">
@@ -480,9 +480,9 @@ const downloadPDF = async (invoiceData, customerName = null, partnerName = null)
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px;">
             <thead style="display: table-header-group;">
               <tr style="background-color: #f8f9fa;">
-                ${(invoiceData?.table_data?.headers || []).map(header => 
-                  `<th style="border: 1px solid #000; padding: 10px 8px; text-align: left; font-weight: bold; font-size: 13px;">${header}</th>`
-                ).join('')}
+                ${(invoiceData?.table_data?.headers || []).map(header =>
+          `<th style="border: 1px solid #000; padding: 10px 8px; text-align: left; font-weight: bold; font-size: 13px;">${header}</th>`
+        ).join('')}
               </tr>
             </thead>
             <tbody>
@@ -518,42 +518,42 @@ const downloadPDF = async (invoiceData, customerName = null, partnerName = null)
           </div>
         </div>
       `;
-    }
-
-    const element = document.createElement('div');
-    element.innerHTML = invoiceContent;
-
-    const opt = {
-      margin: [10, 10, 10, 10],
-      filename: isCollaborationInvoice 
-        ? `Collaboration_Statement_${finalPartnerName}_${fromDate}_to_${toDate}.pdf`
-        : `Invoice_${finalCustomerName}_${fromDate}_to_${toDate}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { 
-        scale: 2,
-        useCORS: true,
-        letterRendering: true
-      },
-      jsPDF: { 
-        unit: 'mm', 
-        format: 'a4', 
-        orientation: isCollaborationInvoice ? 'landscape' : 'landscape'
-      },
-      pagebreak: { 
-        mode: ['css', 'legacy'],
-        avoid: 'tr'
       }
-    };
 
-    await html2pdf().set(opt).from(element).save();
-    
-    return true;
-  } catch (error) {
-    console.error('Error generating PDF:', error);
-    toast.error('Failed to generate PDF');
-    return false;
-  }
-};
+      const element = document.createElement('div');
+      element.innerHTML = invoiceContent;
+
+      const opt = {
+        margin: [10, 10, 10, 10],
+        filename: isCollaborationInvoice
+          ? `Collaboration_Statement_${finalPartnerName}_${fromDate}_to_${toDate}.pdf`
+          : `Invoice_${finalCustomerName}_${fromDate}_to_${toDate}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          letterRendering: true
+        },
+        jsPDF: {
+          unit: 'mm',
+          format: 'a4',
+          orientation: isCollaborationInvoice ? 'landscape' : 'landscape'
+        },
+        pagebreak: {
+          mode: ['css', 'legacy'],
+          avoid: 'tr'
+        }
+      };
+
+      await html2pdf().set(opt).from(element).save();
+
+      return true;
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF');
+      return false;
+    }
+  };
 
 
 
@@ -612,24 +612,24 @@ const downloadPDF = async (invoiceData, customerName = null, partnerName = null)
       </div>
 
       {/* Invoice Type Selection */}
-      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <FileText className="h-5 w-5 text-blue-600" />
+      <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm">
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center gap-2">
+          <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
           Select Invoice Type
         </h2>
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <button
             onClick={() => {
               setInvoiceType('customer');
               resetInvoice();
             }}
-            className={`px-4 py-2 rounded-lg border ${invoiceType === 'customer' 
-              ? 'bg-blue-600 text-white border-blue-600' 
+            className={`w-full sm:w-auto px-4 py-3 sm:py-2 rounded-lg border ${invoiceType === 'customer'
+              ? 'bg-blue-600 text-white border-blue-600'
               : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center sm:justify-start gap-2">
               <User className="h-4 w-4" />
-              Customer Invoice
+              <span className="text-sm sm:text-base">Customer Invoice</span>
             </div>
           </button>
           <button
@@ -637,13 +637,13 @@ const downloadPDF = async (invoiceData, customerName = null, partnerName = null)
               setInvoiceType('collaboration');
               resetInvoice();
             }}
-            className={`px-4 py-2 rounded-lg border ${invoiceType === 'collaboration' 
-              ? 'bg-blue-600 text-white border-blue-600' 
+            className={`w-full sm:w-auto px-4 py-3 sm:py-2 rounded-lg border ${invoiceType === 'collaboration'
+              ? 'bg-blue-600 text-white border-blue-600'
               : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center sm:justify-start gap-2">
               <Building className="h-4 w-4" />
-              Collaboration Statement
+              <span className="text-sm sm:text-base">Collaboration Statement</span>
             </div>
           </button>
         </div>
@@ -666,7 +666,7 @@ const downloadPDF = async (invoiceData, customerName = null, partnerName = null)
               </>
             )}
           </h2>
-          
+
           {/* Search Box */}
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -685,11 +685,10 @@ const downloadPDF = async (invoiceData, customerName = null, partnerName = null)
                 <div
                   key={customer._id}
                   onClick={() => setSelectedCustomer(customer._id)}
-                  className={`p-4 border rounded-lg mb-2 cursor-pointer transition-all ${
-                    selectedCustomer === customer._id
+                  className={`p-4 border rounded-lg mb-2 cursor-pointer transition-all ${selectedCustomer === customer._id
                       ? 'border-blue-500 bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   <h3 className="font-semibold text-gray-900">{customer.name}</h3>
                   <p className="text-sm text-gray-600">{customer.phone}</p>
@@ -710,22 +709,20 @@ const downloadPDF = async (invoiceData, customerName = null, partnerName = null)
                   <div
                     key={collab._id}
                     onClick={() => handleCollaborationSelect(collab)}
-                    className={`p-4 border rounded-lg mb-2 cursor-pointer transition-all ${
-                      selectedCollaboration === partnerInfo.partnerId
+                    className={`p-4 border rounded-lg mb-2 cursor-pointer transition-all ${selectedCollaboration === partnerInfo.partnerId
                         ? 'border-blue-500 bg-blue-50'
                         : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                      }`}
                   >
                     <h3 className="font-semibold text-gray-900">{partnerInfo.partnerName}</h3>
                     {partnerInfo.partnerCompany && (
                       <p className="text-sm text-gray-600">{partnerInfo.partnerCompany}</p>
                     )}
                     <div className="flex items-center justify-between mt-2">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        collabStatus === 'active' 
-                          ? 'bg-green-100 text-green-800' 
+                      <span className={`px-2 py-1 text-xs rounded-full ${collabStatus === 'active'
+                          ? 'bg-green-100 text-green-800'
                           : 'bg-gray-100 text-gray-800'
-                      }`}>
+                        }`}>
                         {collabStatus}
                       </span>
                       <span className="text-xs text-gray-500">
@@ -745,7 +742,7 @@ const downloadPDF = async (invoiceData, customerName = null, partnerName = null)
             <Calendar className="h-5 w-5 text-blue-600" />
             Select Date Range
           </h2>
-          
+
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -771,7 +768,7 @@ const downloadPDF = async (invoiceData, customerName = null, partnerName = null)
               />
             </div>
 
-           
+
 
             <button
               onClick={() => generateInvoice()}
@@ -820,7 +817,7 @@ const downloadPDF = async (invoiceData, customerName = null, partnerName = null)
                   <span>{currentProgress.current} / {currentProgress.total}</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
+                  <div
                     className="bg-purple-600 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${(currentProgress.current / currentProgress.total) * 100}%` }}
                   ></div>
@@ -830,7 +827,7 @@ const downloadPDF = async (invoiceData, customerName = null, partnerName = null)
           </div>
         </div>
       </div>
-  
+
 
     </div>
   );
