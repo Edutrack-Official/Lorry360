@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { registerForPush } from '../utils/push';
 import { API_BASE } from "../api/client";
 
 interface User {
@@ -80,6 +81,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     initializeAuth();
   }, [logout]);
+
+  useEffect(() => {
+  if (user && token) {
+    registerForPush(axios).catch((err) => {
+      console.error("Push registration failed:", err);
+    });
+  }
+}, [user, token]);
 
   // Axios response interceptor for 401 and token refresh
   useEffect(() => {

@@ -1,83 +1,29 @@
-// const connectDB = require("../utils/db");
-// const Reminder = require("../models/reminder.model");
-// const User = require("../models/user.model");
-// const sendWhatsapp = require("./sendWhatsapp");
 
-// async function reminderScheduler() {
-
-//   console.log("⏰ Reminder Scheduler Started...");
-//   await connectDB();
-
-//   const now = new Date();
-//   const previousMinute = new Date(now);
-//   previousMinute.setMinutes(previousMinute.getMinutes() - 1);
-
-//   const reminders = await Reminder.find({
-//     date: { $lte: now, $gte: previousMinute },
-//     done: false,
-//     whatsappSent: false,
-//     sendWhatsapp: true
-//   });
-
-//   console.log(`📌 Reminders Found: ${reminders.length}`);
-
-//   for (const reminder of reminders) {
-
-//     try {
-//       const user = await User.findById(reminder.owner_id);
-
-//       if (!user || !user.phone) {
-//         console.warn("⚠️ User not found or phone missing:", reminder.owner_id);
-//         continue;
-//       }
-
-//       const formattedDate = new Date(reminder.date).toLocaleString("en-IN", {
-//         dateStyle: "medium",
-//         timeStyle: "short"
-//       });
-
-//       await sendWhatsapp(
-//         user.phone,
-//         user.name || "Customer",
-//         reminder.note,
-//         formattedDate
-//       );
-
-//       // ✅ Mark as Sent
-//       reminder.whatsappSent = true;
-//       reminder.whatsappSentAt = new Date();
-//       await reminder.save();
-
-//       console.log("✅ WhatsApp Sent to:", user.phone);
-
-//     } catch (error) {
-//       console.error("❌ WhatsApp Failed:", error.message);
-//     }
-//   }
-// }
-
-// module.exports = reminderScheduler;
+process.env.TZ = "Asia/Kolkata";
 
 const connectDB = require("../utils/db");
 const Reminder = require("../models/reminder.model");
-const User = require("../models/user.model");
-const sendWhatsapp = require("./sendWhatsapp");
+const PushSubscription = require("../models/pushSubscription.model");
+const webpush = require("web-push");
+
+webpush.setVapidDetails(
+  "mailto:support@luma.app",
+  process.env.VAPID_PUBLIC_KEY,
+  process.env.VAPID_PRIVATE_KEY
+);
 
 async function reminderScheduler() {
-
   console.log("⏰ Daily Reminder Scheduler Started...");
   await connectDB();
 
   const now = new Date();
 
-  // Today 00:00:00
   const startOfDay = new Date(
     now.getFullYear(),
     now.getMonth(),
     now.getDate()
   );
 
-  // Today 23:59:59
   const endOfDay = new Date(
     now.getFullYear(),
     now.getMonth(),
@@ -95,35 +41,34 @@ async function reminderScheduler() {
   console.log(`📌 Today's Reminders Found: ${reminders.length}`);
 
   for (const reminder of reminders) {
-
     try {
-      const user = await User.findById(reminder.owner_id);
-
-      if (!user || !user.phone) {
-        console.warn("⚠️ User missing phone:", reminder.owner_id);
-        continue;
-      }
-
-      const formattedDate = new Date(reminder.date).toLocaleString("en-IN", {
-        dateStyle: "medium",
-        timeStyle: "short"
+      const sub = await PushSubscription.findOne({
+        owner_id: reminder.owner_id
       });
 
-      await sendWhatsapp(
-        user.phone,
-        user.name || "Customer",
-        reminder.note,
-        formattedDate
-      );
+      if (!sub) continue;
 
+   await webpush.sendNotification(
+    sub.subscription,
+    JSON.stringify({
+      title: "🔔 Luma Reminder",
+      body: `${reminder.note}\n\n— Team Luma App`,
+
+      vibrate: [200, 100, 200],   
+
+      data: {
+        url: "/reminders"
+      }
+    })
+  );
       reminder.whatsappSent = true;
       reminder.whatsappSentAt = new Date();
       await reminder.save();
 
-      console.log("✅ WhatsApp Sent to:", user.phone);
+      console.log("✅ Push Sent:", reminder.owner_id);
 
-    } catch (error) {
-      console.error("❌ WhatsApp Failed:", error.message);
+    } catch (err) {
+      console.error("❌ Push Failed:", err.message);
     }
   }
 }

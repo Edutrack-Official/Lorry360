@@ -508,18 +508,18 @@ const ManageReminderForm: React.FC = () => {
                 </p>
               </div>
 
-              {/* WhatsApp Notification Toggle */}
+              {/* Push Notification Toggle */}
               <div className="border-t border-gray-200 pt-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <MessageCircle className="h-4 w-4 text-blue-600" />
                       <label className="text-sm font-semibold text-gray-900">
-                        WhatsApp Notification
+                        Push Notification
                       </label>
                     </div>
                     <p className="text-xs text-gray-500">
-                      Send a WhatsApp notification on the reminder date
+                      Send a Push notification on the reminder date
                     </p>
                   </div>
                   <button
@@ -541,7 +541,7 @@ const ManageReminderForm: React.FC = () => {
                   <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <p className="text-xs text-blue-700 flex items-start gap-1">
                       <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                      A WhatsApp message will be sent on the reminder date to notify you
+                      A Push message will be sent on the reminder date to notify you
                     </p>
                   </div>
                 )}

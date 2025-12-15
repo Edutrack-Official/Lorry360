@@ -326,7 +326,7 @@ const deleteReminder = async (id, owner_id) => {
 
 /**
  * Toggle reminder done status
- * ⛔ LOCKED if: whatsappSent = true
+ * ✅ CAN mark as done even if WhatsApp sent
  * ⛔ Cannot mark as NOT done once done = true
  */
 const toggleReminderStatus = async (id, owner_id, done) => {
@@ -339,21 +339,16 @@ const toggleReminderStatus = async (id, owner_id, done) => {
     throw err;
   }
 
-  // ⛔ Cannot change status if WhatsApp was sent
-  if (existingReminder.whatsappSent) {
-    const err = new Error('Cannot change status: WhatsApp notification has been sent');
-    err.status = 403;
-    throw err;
-  }
+  const isDoneValue = done === true || done === 'true';
 
   // ⛔ Cannot mark as NOT done once it's done
-  const isDoneValue = done === true || done === 'true';
   if (existingReminder.done && !isDoneValue) {
     const err = new Error('Cannot mark as pending: Reminder has already been completed');
     err.status = 403;
     throw err;
   }
 
+  // ✅ Allow marking as done even if WhatsApp was sent
   const updatedReminder = await Reminder.findOneAndUpdate(
     { _id: id, owner_id },
     { done: isDoneValue },
