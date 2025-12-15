@@ -21,6 +21,7 @@ import toast from "react-hot-toast";
 import { FaPlus } from "react-icons/fa6";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "../../api/client";
+import DeleteConfirmationModal from "../../components/DeleteConfirmationModal"; // Import the modal
 
 interface Customer {
   _id: string;
@@ -45,6 +46,15 @@ const Customers = () => {
   const [searchText, setSearchText] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
   const [showActionMenu, setShowActionMenu] = useState<string | null>(null);
+  
+  // Delete state variables
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedCustomerDelete, setSelectedCustomerDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
   const navigate = useNavigate();
 
   const fetchCustomers = async () => {
@@ -73,6 +83,30 @@ const Customers = () => {
       fetchCustomers();
     } catch (error: any) {
       toast.error(error.response?.data?.error || "Failed to update status");
+    }
+  };
+
+  // Delete functions
+  const handleDeleteClick = (id: string, name: string) => {
+    setSelectedCustomerDelete({ id, name });
+    setDeleteModalOpen(true);
+    setShowActionMenu(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedCustomerDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      await api.delete(`/customers/delete/${selectedCustomerDelete.id}`);
+      toast.success("Customer deleted successfully");
+      setDeleteModalOpen(false);
+      setSelectedCustomerDelete(null);
+      fetchCustomers();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || "Failed to delete customer");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -258,7 +292,10 @@ const Customers = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer active:scale-98"
-                onClick={() => navigate(`/customers/${customer._id}/trips`)}
+                onClick={(e) => {
+                  if ((e.target as HTMLElement).closest('button, a, input')) return;
+                  navigate(`/customers/${customer._id}/trips`);
+                }}
               >
                 <div className="p-4 sm:p-5">
                   {/* Header */}
@@ -269,7 +306,7 @@ const Customers = () => {
                       </h3>
                     </div>
 
-                    {/* Action Menu */}
+                    {/* Action Menu - Updated with Delete option */}
                     <div className="relative ml-2">
                       <button
                         onClick={(e) => {
@@ -301,7 +338,7 @@ const Customers = () => {
                               <Edit className="h-4 w-4 text-gray-500" />
                               Edit Customer
                             </button>
-                            <button
+                            {/* <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleToggleStatus(customer._id, customer.isActive);
@@ -310,8 +347,7 @@ const Customers = () => {
                             >
                               <Power className="h-4 w-4 text-gray-500" />
                               {customer.isActive ? "Deactivate" : "Activate"}
-                            </button>
-                            <div className="border-t border-gray-100 my-1"></div>
+                            </button> */}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -321,6 +357,18 @@ const Customers = () => {
                             >
                               <User className="h-4 w-4 text-gray-500" />
                               View Details
+                            </button>
+                            <div className="border-t border-gray-100 my-1"></div>
+                            {/* Delete option - added like crushers */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteClick(customer._id, customer.name);
+                              }}
+                              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Delete Customer
                             </button>
                           </motion.div>
                         )}
@@ -457,7 +505,6 @@ const Customers = () => {
                       <label className="text-sm font-medium text-gray-700">Current Status</label>
                       <div className="mt-1">
                         <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border ${getStatusConfig(selectedCustomer.isActive).color}`}>
-                          {/* <StatusIcon className="h-4 w-4" /> */}
                           {selectedCustomer.isActive ? "Active" : "Inactive"}
                         </span>
                       </div>
@@ -516,6 +563,12 @@ const Customers = () => {
                     {selectedCustomer.isActive ? "Deactivate" : "Activate"}
                   </button>
                   <button
+                    onClick={() => handleDeleteClick(selectedCustomer._id, selectedCustomer.name)}
+                    className="flex-1 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                  >
+                    Delete Customer
+                  </button>
+                  <button
                     onClick={() => setSelectedCustomer(null)}
                     className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
                   >
@@ -527,6 +580,23 @@ const Customers = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Delete Confirmation Modal - Same as crushers */}
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setSelectedCustomerDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Delete Customer"
+        message={`Are you sure you want to delete this customer?`}
+        isLoading={isDeleting}
+        itemName={selectedCustomerDelete ? 
+          `Customer: ${selectedCustomerDelete.name}`
+          : ""
+        }
+      />
     </div>
   );
 };

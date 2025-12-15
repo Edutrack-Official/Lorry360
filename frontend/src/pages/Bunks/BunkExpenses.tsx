@@ -141,7 +141,7 @@ const BunkExpenses = () => {
             </div>
             <div className="text-sm text-gray-600">Total Amount</div>
           </div>
-          <div className="text-center">
+          {/* <div className="text-center">
             <div className="text-2xl font-bold text-blue-600">
               {expenses.reduce((sum, expense) => sum + (expense.fuel_quantity || 0), 0).toFixed(2)}L
             </div>
@@ -152,7 +152,7 @@ const BunkExpenses = () => {
               ₹{(expenses.reduce((sum, expense) => sum + (expense.fuel_price_per_liter || 0), 0) / expenses.length).toFixed(2)}
             </div>
             <div className="text-sm text-gray-600">Avg Price/L</div>
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -209,7 +209,7 @@ const BunkExpenses = () => {
               </div>
 
               {/* Fuel Details */}
-              <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
+              {/* <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
                 {expense.fuel_quantity && (
                   <div>
                     <span className="text-gray-600">Fuel Quantity:</span>
@@ -227,10 +227,10 @@ const BunkExpenses = () => {
                     </span>
                   </div>
                 )}
-              </div>
+              </div> */}
 
               {/* Odometer Readings */}
-              {(expense.odometer_reading || expense.previous_odometer_reading) && (
+              {/* {(expense.odometer_reading || expense.previous_odometer_reading) && (
                 <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
                   {expense.previous_odometer_reading && (
                     <div>
@@ -249,7 +249,7 @@ const BunkExpenses = () => {
                     </div>
                   )}
                 </div>
-              )}
+              )} */}
 
               {/* Description */}
               {expense.description && (
@@ -339,7 +339,7 @@ const BunkExpenses = () => {
                 </div>
 
                 {/* Fuel Details */}
-                <div className="bg-blue-50 p-4 rounded-lg">
+                {/* <div className="bg-blue-50 p-4 rounded-lg">
                   <h3 className="font-medium text-gray-900 mb-2">Fuel Details</h3>
                   <div className="grid grid-cols-2 gap-3">
                     {selectedExpense.fuel_quantity && (
@@ -355,7 +355,7 @@ const BunkExpenses = () => {
                       </div>
                     )}
                   </div>
-                </div>
+                </div> */}
 
                 {/* Payment Info */}
                 <div className="bg-green-50 p-4 rounded-lg">
