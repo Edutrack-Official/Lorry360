@@ -369,7 +369,7 @@ const Bunks = () => {
               <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
                 No bunks found
               </h3>
-              <p className="text-gray-500 mb-6">
+              {/* <p className="text-gray-500 mb-6">
                 {searchText ? 'Try adjusting your search' : 'Get started by adding your first fuel bunk'}
               </p>
               <Link
@@ -378,7 +378,7 @@ const Bunks = () => {
               >
                 <Plus className="h-4 w-4" />
                 Add First Bunk
-              </Link>
+              </Link> */}
             </div>
           </div>
         )}

@@ -358,7 +358,7 @@ const BunkPaymentForm = () => {
           </div>
 
           {/* Bunk Info Card */}
-          {bunk && (
+          {/* {bunk && (
             <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
               <div className="flex items-start gap-3">
                 <Building2 className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
@@ -382,10 +382,10 @@ const BunkPaymentForm = () => {
                 </div>
               </div>
             </div>
-          )}
+          )} */}
 
           {/* Payment Stats */}
-          {!isEditMode && bunk && (
+          {/* {!isEditMode && bunk && (
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="bg-white p-4 rounded-lg border border-gray-200">
                 <div className="flex items-center justify-between">
@@ -423,7 +423,7 @@ const BunkPaymentForm = () => {
                 </div>
               </div>
             </div>
-          )}
+          )} */}
         </div>
 
         {/* Payment Form */}
@@ -458,12 +458,12 @@ const BunkPaymentForm = () => {
                     <p className="text-xs text-gray-500">
                       Pending amount: <span className="font-semibold">{formatCurrency(paymentStats.pendingAmount)}</span>
                     </p>
-                    <p className="text-xs text-gray-500">
+                    {/* <p className="text-xs text-gray-500">
                       Total fuel expenses: <span className="font-semibold">{formatCurrency(paymentStats.totalExpenseAmount)}</span>
                     </p>
                     <p className="text-xs text-gray-500">
                       Total payments: <span className="font-semibold">{formatCurrency(paymentStats.totalPayments)}</span>
-                    </p>
+                    </p> */}
                   </div>
                 )}
               </div>
