@@ -934,7 +934,8 @@ const CollaborationDetailsPage = () => {
   const [activeMainTab, setActiveMainTab] = useState<'trips' | 'payments'>('trips');
   const [activeTripsTab, setActiveTripsTab] = useState<'my-trips' | 'partner-trips'>('my-trips');
   const [activePaymentsTab, setActivePaymentsTab] = useState<'my-payments' | 'partner-payments'>('my-payments');
-  
+  const [showInvoiceGenerator, setShowInvoiceGenerator] = useState(false);
+
   const [myTrips, setMyTrips] = useState<Trip[]>([]);
   const [partnerTrips, setPartnerTrips] = useState<Trip[]>([]);
   const [myPayments, setMyPayments] = useState<Payment[]>([]);

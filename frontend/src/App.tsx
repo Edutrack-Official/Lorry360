@@ -58,6 +58,7 @@ import BunkExpenses from './pages/Bunks/BunkExpenses';
 import BunkPayments from './pages/Bunks/BunkPayments';
 import BunkPaymentForm from './pages/Bunks/BunkPaymentForm';
 import ProfilePage from './pages/ProfilePage';
+import CollaborationInvoiceGenerator from './pages/CollaborationInvoiceGenerator';
 
 
 
@@ -112,6 +113,8 @@ function App() {
                       <Route path="/lorries/edit/:id" element={<OwnerRoute><ManageLorryForm /></OwnerRoute>} />
                       <Route path="/invoice" element={<OwnerRoute><InvoiceGenerator /></OwnerRoute>} />
                       <Route path="/proinvoice" element={<OwnerRoute><ProformaInvoiceGenerator /></OwnerRoute>} />
+
+
 
                       <Route path="/reminders" element={<OwnerRoute><Reminders /></OwnerRoute>} />
                       <Route path="/reminders/edit/:id" element={<OwnerRoute><ManageReminderForm /></OwnerRoute>} />

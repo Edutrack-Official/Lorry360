@@ -249,7 +249,7 @@ const Crushers = () => {
                                 <Pencil className="h-4 w-4 text-gray-500" />
                                 Edit Crusher
                               </button>
-                              <button
+                              {/* <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   navigate(`/crushers/${crusher._id}/trips`);
@@ -258,7 +258,7 @@ const Crushers = () => {
                               >
                                 <Eye className="h-4 w-4 text-gray-500" />
                                 View Trips
-                              </button>
+                              </button> */}
                               <div className="border-t border-gray-100 my-1"></div>
                               <button
                                 onClick={(e) => {

@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Save, 
-  CreditCard, 
-  Calendar, 
-  Building, 
-  FileText, 
+import {
+  ArrowLeft,
+  Save,
+  CreditCard,
+  Calendar,
+  Building,
+  FileText,
   X,
   AlertCircle,
   Banknote,
@@ -67,7 +67,7 @@ const CrusherPaymentForm = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const isEditMode = !!paymentId;
-  
+
   const [formData, setFormData] = useState<PaymentFormData>({
     payment_type: 'to_crusher',
     crusher_id: crusherId || searchParams.get('crusher') || '',
@@ -94,14 +94,14 @@ const CrusherPaymentForm = () => {
             try {
               const paymentRes = await api.get(`/payments/${paymentId}`);
               const paymentData = paymentRes.data.data;
-              
+
               // Set form data from existing payment
               setFormData({
                 payment_type: paymentData.payment_type || 'to_crusher',
                 crusher_id: paymentData.crusher_id || '',
                 amount: paymentData.amount || 0,
-                payment_date: paymentData.payment_date ? 
-                  new Date(paymentData.payment_date).toISOString().split('T')[0] : 
+                payment_date: paymentData.payment_date ?
+                  new Date(paymentData.payment_date).toISOString().split('T')[0] :
                   new Date().toISOString().split('T')[0],
                 payment_mode: paymentData.payment_mode || 'cash',
                 notes: paymentData.notes || ''
@@ -171,7 +171,7 @@ const CrusherPaymentForm = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    
+
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -184,7 +184,7 @@ const CrusherPaymentForm = () => {
 
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
+
     if (value === '') {
       setFormData(prev => ({
         ...prev,
@@ -227,7 +227,7 @@ const CrusherPaymentForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       toast.error("Please fix the form errors");
       return;
@@ -251,20 +251,20 @@ const CrusherPaymentForm = () => {
         await api.post("/payments/create", submissionData);
         toast.success("Payment recorded successfully");
       }
-      
+
       // Navigate back to payments list
       const targetCrusherId = crusherId || formData.crusher_id;
       navigate(`/crushers/${targetCrusherId}/payments`);
-      
+
     } catch (error: any) {
       console.error('Payment submission error:', error);
-      let errorMessage = error.response?.data?.error || 
+      let errorMessage = error.response?.data?.error ||
         (isEditMode ? "Failed to update payment" : "Failed to record payment");
-      
+
       if (errorMessage.includes('crusher_id') && errorMessage.includes('required')) {
         errorMessage = "Crusher information is missing. Please refresh the page and try again.";
       }
-      
+
       toast.error(errorMessage);
     } finally {
       setSubmitting(false);
@@ -337,15 +337,15 @@ const CrusherPaymentForm = () => {
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
-            <div className="p-2 bg-orange-100 rounded-lg flex-shrink-0">
+            {/* <div className="p-2 bg-orange-100 rounded-lg flex-shrink-0">
               <CreditCard className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
-            </div>
+            </div> */}
             <div className="min-w-0 flex-1">
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
                 {isEditMode ? 'Edit Payment' : 'Crusher Payments'}
               </h1>
               <p className="text-sm sm:text-base text-gray-600 truncate">
-                {isEditMode 
+                {isEditMode
                   ? `Edit payment for ${crusher?.name || 'Crusher'}`
                   : `Manage payments to ${crusher?.name || 'Crusher'}`}
               </p>
@@ -353,7 +353,7 @@ const CrusherPaymentForm = () => {
           </div>
 
           {/* Crusher Info Card */}
-          {crusher && (
+          {/* {crusher && (
             <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
               <div className="flex items-start gap-3">
                 <Building className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
@@ -368,7 +368,7 @@ const CrusherPaymentForm = () => {
                 </div>
               </div>
             </div>
-          )}
+          )} */}
         </div>
 
         {/* Payment Form */}
@@ -376,7 +376,7 @@ const CrusherPaymentForm = () => {
           <h3 className="text-lg font-bold text-gray-900 mb-6">
             {isEditMode ? 'Edit Payment' : 'Record New Payment'}
           </h3>
-          
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4 sm:space-y-6">
               {/* Amount */}
@@ -438,11 +438,10 @@ const CrusherPaymentForm = () => {
                         key={mode.value}
                         type="button"
                         onClick={() => setFormData(prev => ({ ...prev, payment_mode: mode.value }))}
-                        className={`p-3 rounded-lg border transition-all ${
-                          formData.payment_mode === mode.value
+                        className={`p-3 rounded-lg border transition-all ${formData.payment_mode === mode.value
                             ? 'border-orange-500 bg-orange-50 text-orange-700 ring-2 ring-orange-200'
                             : 'border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400'
-                        }`}
+                          }`}
                       >
                         <div className="flex flex-col items-center gap-1.5 sm:flex-row sm:gap-2">
                           <IconComponent className="h-5 w-5" />
@@ -483,11 +482,15 @@ const CrusherPaymentForm = () => {
               <button
                 type="submit"
                 disabled={submitting || (!isEditMode && paymentStats.pendingAmount <= 0)}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:bg-orange-400 disabled:cursor-not-allowed transition-colors flex-1 sm:flex-none"
+                className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg transition-colors flex-1 sm:flex-none font-medium
+      ${submitting || (!isEditMode && paymentStats.pendingAmount <= 0)
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-60'
+                    : 'bg-orange-600 text-white hover:bg-orange-700 active:bg-orange-800'
+                  }`}
               >
                 {submitting ? (
                   <>
-                    <Save className="h-4 w-4" />
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-500"></div>
                     {isEditMode ? 'Updating...' : 'Recording...'}
                   </>
                 ) : (
@@ -497,7 +500,7 @@ const CrusherPaymentForm = () => {
                   </>
                 )}
               </button>
-              
+
               <button
                 type="button"
                 onClick={() => {
@@ -505,7 +508,7 @@ const CrusherPaymentForm = () => {
                   navigate(`/crushers/${targetCrusherId}/payments`);
                 }}
                 disabled={submitting}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex-1 sm:flex-none disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 active:bg-gray-300 transition-colors flex-1 sm:flex-none disabled:opacity-50 font-medium"
               >
                 <X className="h-4 w-4" />
                 Cancel

@@ -15,27 +15,23 @@ import {
   Plus,
   Users,
   Building,
-  Filter,
   X,
   Loader2,
   CheckCircle,
   Clock,
-  TrendingUp,
   Copy,
   CheckSquare,
   Square,
-  CalendarDays,
-  RefreshCw,
   ChevronDown,
   DollarSign,
-  TrendingDown,
-  AlertTriangle,
   Filter as FilterIcon,
-  ChevronUp
+  ChevronRight,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import DeleteConfirmationModal from "../../components/DeleteConfirmationModal";
+import CloneTripModal from "../../components/CloneTripModal";
+import PriceChangeModal from "../../components/PriceChangeModal";
 
 interface Trip {
   _id: string;
@@ -67,6 +63,7 @@ interface Trip {
   cloned_from?: string;
   clone_count?: number;
   isActive?: boolean;
+  collab_trip_status?: 'pending' | 'approved' | 'rejected';
 }
 
 interface Lorry {
@@ -75,630 +72,6 @@ interface Lorry {
   nick_name?: string;
   status: string;
 }
-
-interface CloneTripModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onClone: (data: {
-    times: number;
-    resetStatus: boolean;
-    resetDate: boolean;
-    newTripDate?: string;
-  }) => Promise<void>;
-  selectedTrips: Array<{ id: string; tripNumber: string }>;
-}
-
-const CloneTripModal: React.FC<CloneTripModalProps> = ({
-  isOpen,
-  onClose,
-  onClone,
-  selectedTrips = []
-}) => {
-  const [cloneCount, setCloneCount] = useState<string>("1");
-  const [resetStatus, setResetStatus] = useState(true);
-  const [resetDate, setResetDate] = useState(false);
-  const [newTripDate, setNewTripDate] = useState<string>("");
-  const [isCloning, setIsCloning] = useState(false);
-
-  useEffect(() => {
-    if (resetDate && !newTripDate) {
-      const today = new Date().toISOString().split('T')[0];
-      setNewTripDate(today);
-    }
-  }, [resetDate, newTripDate]);
-
-  if (!isOpen) return null;
-
-  const handleClone = async () => {
-    const count = parseInt(cloneCount);
-
-    if (isNaN(count) || count < 1 || count > 100) {
-      toast.error('Please enter a valid number between 1 and 100');
-      return;
-    }
-
-    if (resetDate && !newTripDate) {
-      toast.error('Please select a date when reset date is enabled');
-      return;
-    }
-
-    const cloneData = {
-      times: count,
-      resetStatus,
-      resetDate,
-      newTripDate: resetDate ? newTripDate : undefined
-    };
-
-    setIsCloning(true);
-    try {
-      await onClone(cloneData);
-      onClose();
-      setCloneCount("1");
-      setResetStatus(true);
-      setResetDate(false);
-      setNewTripDate("");
-    } catch (error) {
-      console.error('Clone failed:', error);
-    } finally {
-      setIsCloning(false);
-    }
-  };
-
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNewTripDate(e.target.value);
-  };
-
-  const handleCloneCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-
-    if (value === "") {
-      setCloneCount("");
-      return;
-    }
-
-    if (/^\d*$/.test(value)) {
-      const num = parseInt(value);
-      if (!isNaN(num) && num >= 1 && num <= 100) {
-        setCloneCount(value);
-      } else if (value === "") {
-        setCloneCount("");
-      }
-    }
-  };
-
-  const handleIncrement = () => {
-    const current = parseInt(cloneCount) || 1;
-    if (current < 100) {
-      setCloneCount((current + 1).toString());
-    }
-  };
-
-  const handleDecrement = () => {
-    const current = parseInt(cloneCount) || 1;
-    if (current > 1) {
-      setCloneCount((current - 1).toString());
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-md bg-white rounded-xl shadow-2xl">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-50 rounded-lg">
-                  <Copy className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Clone {selectedTrips.length} Selected Trip{selectedTrips.length > 1 ? 's' : ''}
-                  </h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Create multiple copies of selected trips with new trip numbers.
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="h-5 w-5 text-gray-500" />
-              </button>
-            </div>
-          </div>
-
-          <div className="px-6 py-5">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Number of copies for each selected trip
-                </label>
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1">
-                    <div className="flex items-center border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
-                      <button
-                        type="button"
-                        onClick={handleDecrement}
-                        disabled={parseInt(cloneCount) <= 1}
-                        className="px-3 py-3 text-gray-500 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
-                      >
-                        <span className="text-lg">−</span>
-                      </button>
-
-                      <input
-                        type="text"
-                        value={cloneCount}
-                        onChange={handleCloneCountChange}
-                        onBlur={() => {
-                          if (!cloneCount || isNaN(parseInt(cloneCount)) || parseInt(cloneCount) < 1) {
-                            setCloneCount("1");
-                          }
-                        }}
-                        className="flex-1 w-full px-2 py-3 text-center border-0 focus:ring-0 focus:outline-none"
-                        placeholder="Enter number"
-                      />
-
-                      <button
-                        type="button"
-                        onClick={handleIncrement}
-                        disabled={parseInt(cloneCount) >= 100}
-                        className="px-3 py-3 text-gray-500 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
-                      >
-                        <span className="text-lg">+</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Maximum 100 copies at a time. Each copy will have a new trip number.
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <RefreshCw className="h-5 w-5 text-gray-600" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Reset Status</p>
-                    <p className="text-xs text-gray-500">Set all cloned trips to "Scheduled" status</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setResetStatus(!resetStatus)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${resetStatus ? 'bg-blue-600' : 'bg-gray-200'}`}
-                >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${resetStatus ? 'translate-x-6' : 'translate-x-1'}`} />
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <CalendarDays className="h-5 w-5 text-gray-600" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Reset Trip Date</p>
-                    <p className="text-xs text-gray-500">Set new trip date for all cloned trips</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setResetDate(!resetDate)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${resetDate ? 'bg-blue-600' : 'bg-gray-200'}`}
-                >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${resetDate ? 'translate-x-6' : 'translate-x-1'}`} />
-                </button>
-              </div>
-
-              {resetDate && (
-                <div className="p-3 border border-gray-200 rounded-lg">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    New Trip Date
-                  </label>
-                  <div className="relative">
-                    <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <input
-                      type="date"
-                      value={newTripDate}
-                      onChange={handleDateChange}
-                      className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    This date will be applied to all cloned trips.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
-            <div className="flex items-center justify-end gap-3">
-              <button
-                onClick={onClose}
-                disabled={isCloning}
-                className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleClone}
-                disabled={isCloning || !cloneCount}
-                className="px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {isCloning ? (
-                  <>
-                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Cloning...
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4" />
-                    Clone {cloneCount || "1"} {parseInt(cloneCount) === 1 ? 'Time' : 'Times'}
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-interface PriceChangeModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onApply: (data: {
-    update_customer_amount: boolean;
-    extra_amount: number;
-  }) => Promise<void>;
-  selectedTrips: Array<{ id: string; tripNumber: string }>;
-  tripsData: Trip[];
-}
-
-const PriceChangeModal: React.FC<PriceChangeModalProps> = ({
-  isOpen,
-  onClose,
-  onApply,
-  selectedTrips = [],
-  tripsData = []
-}) => {
-  const [updateCustomerAmount, setUpdateCustomerAmount] = useState(false);
-  const [extraAmount, setExtraAmount] = useState<string>("0");
-  const [isApplying, setIsApplying] = useState(false);
-
-  const getDateRange = () => {
-    if (selectedTrips.length === 0 || tripsData.length === 0) {
-      return { earliest: null, latest: null };
-    }
-
-    const selectedTripsData = tripsData.filter(trip =>
-      selectedTrips.some(selected => selected.id === trip._id)
-    );
-
-    if (selectedTripsData.length === 0) return { earliest: null, latest: null };
-
-    const dates = selectedTripsData.map(trip => new Date(trip.trip_date));
-    const earliest = new Date(Math.min(...dates.map(d => d.getTime())));
-    const latest = new Date(Math.max(...dates.map(d => d.getTime())));
-
-    return { earliest, latest };
-  };
-
-  const getMaterialSummary = () => {
-    if (selectedTrips.length === 0 || tripsData.length === 0) {
-      return [];
-    }
-
-    const selectedTripsData = tripsData.filter(trip =>
-      selectedTrips.some(selected => selected.id === trip._id)
-    );
-
-    const materialMap: Record<string, {
-      count: number;
-      totalUnits: number;
-      totalCrusherAmount: number;
-      crushers: Set<string>;
-    }> = {};
-
-    selectedTripsData.forEach(trip => {
-      if (!materialMap[trip.material_name]) {
-        materialMap[trip.material_name] = {
-          count: 0,
-          totalUnits: 0,
-          totalCrusherAmount: 0,
-          crushers: new Set()
-        };
-      }
-
-      materialMap[trip.material_name].count += 1;
-      materialMap[trip.material_name].totalUnits += trip.no_of_unit_crusher;
-      materialMap[trip.material_name].totalCrusherAmount += trip.crusher_amount;
-      materialMap[trip.material_name].crushers.add(trip.crusher_id.name);
-    });
-
-    return Object.entries(materialMap).map(([material, data]) => ({
-      material,
-      count: data.count,
-      totalUnits: data.totalUnits,
-      totalCrusherAmount: data.totalCrusherAmount,
-      crushers: Array.from(data.crushers).join(', ')
-    }));
-  };
-
-  const handleApply = async () => {
-    const extra = parseFloat(extraAmount);
-    if (isNaN(extra) || extra < 0) {
-      toast.error('Please enter a valid extra amount');
-      return;
-    }
-
-    if (extra > 1000000) {
-      toast.error('Extra amount cannot exceed ₹10,00,000');
-      return;
-    }
-
-    setIsApplying(true);
-    try {
-      await onApply({
-        update_customer_amount: updateCustomerAmount,
-        extra_amount: extra
-      });
-      onClose();
-      setUpdateCustomerAmount(false);
-      setExtraAmount("0");
-    } catch (error) {
-      console.error('Price change failed:', error);
-    } finally {
-      setIsApplying(false);
-    }
-  };
-
-  const handleExtraAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-
-    if (value === "") {
-      setExtraAmount("");
-      return;
-    }
-
-    if (/^\d*\.?\d*$/.test(value)) {
-      setExtraAmount(value);
-    }
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
-
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  };
-
-  const { earliest, latest } = getDateRange();
-  const materialSummary = getMaterialSummary();
-  const totalCrusherAmount = materialSummary.reduce((sum, item) => sum + item.totalCrusherAmount, 0);
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative w-full max-w-2xl bg-white rounded-xl shadow-2xl">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-50 rounded-lg">
-                  <DollarSign className="h-5 w-5 text-green-600" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Apply Price Change to {selectedTrips.length} Trip{selectedTrips.length > 1 ? 's' : ''}
-                  </h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Update trip prices based on current crusher material rates
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="h-5 w-5 text-gray-500" />
-              </button>
-            </div>
-          </div>
-
-          <div className="px-6 py-5 max-h-[60vh] overflow-y-auto">
-            <div className="space-y-6">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <Package className="h-5 w-5 text-blue-600" />
-                  <h4 className="font-semibold text-blue-900">Selected Trips Summary</h4>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-xs text-blue-600 mb-1">Total Trips</p>
-                    <p className="font-bold text-lg text-blue-900">{selectedTrips.length}</p>
-                  </div>
-
-                  {earliest && latest && (
-                    <div>
-                      <p className="text-xs text-blue-600 mb-1">Date Range</p>
-                      <p className="font-medium text-blue-900">
-                        {earliest.getTime() === latest.getTime()
-                          ? formatDate(earliest)
-                          : `${formatDate(earliest)} - ${formatDate(latest)}`
-                        }
-                      </p>
-                    </div>
-                  )}
-
-                  <div>
-                    <p className="text-xs text-blue-600 mb-1">Total Crusher Amount</p>
-                    <p className="font-bold text-lg text-blue-900">
-                      {formatCurrency(totalCrusherAmount)}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-xs text-blue-600 mb-1">Materials</p>
-                    <p className="font-medium text-blue-900">
-                      {materialSummary.length} type{materialSummary.length > 1 ? 's' : ''}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {materialSummary.length > 0 && (
-                <div className="border border-gray-200 rounded-lg overflow-hidden">
-                  <div className="bg-gray-50 px-4 py-3 border-b">
-                    <h4 className="font-semibold text-gray-900">Material Breakdown</h4>
-                  </div>
-                  <div className="divide-y divide-gray-200 max-h-40 overflow-y-auto">
-                    {materialSummary.map((item, index) => (
-                      <div key={index} className="px-4 py-3">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-medium text-gray-900">{item.material}</p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {item.count} trip{item.count > 1 ? 's' : ''} • {item.totalUnits} units • {item.crushers}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-medium text-gray-900">{formatCurrency(item.totalCrusherAmount)}</p>
-                            <p className="text-xs text-gray-500">
-                              {formatCurrency(item.totalCrusherAmount / item.count)} avg.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-medium text-amber-900 mb-1">Important Note</p>
-                    <p className="text-sm text-amber-800">
-                      This will update all selected trips with current crusher material prices. Each trip's rate per unit will be updated to match the current price in the crusher's material list.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <TrendingUp className="h-5 w-5 text-gray-600" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Update Customer Amount</p>
-                    <p className="text-xs text-gray-500">
-                      Add price difference to customer amount along with extra amount
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    setUpdateCustomerAmount(!updateCustomerAmount);
-                    if (!updateCustomerAmount) {
-                      setExtraAmount("0");
-                    }
-                  }}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${updateCustomerAmount ? 'bg-blue-600' : 'bg-gray-200'}`}
-                >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${updateCustomerAmount ? 'translate-x-6' : 'translate-x-1'}`} />
-                </button>
-              </div>
-
-              {updateCustomerAmount && (
-                <div className="p-4 border border-gray-200 rounded-lg">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <TrendingDown className="h-5 w-5 text-gray-600" />
-                      <label className="text-sm font-medium text-gray-900">
-                        Extra Amount to Add
-                      </label>
-                    </div>
-                    <span className="text-xs text-gray-500">Per trip</span>
-                  </div>
-
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₹</span>
-                    <input
-                      type="text"
-                      value={extraAmount}
-                      onChange={handleExtraAmountChange}
-                      onBlur={() => {
-                        if (!extraAmount || extraAmount === "" || parseFloat(extraAmount) < 0) {
-                          setExtraAmount("0");
-                        }
-                      }}
-                      className="w-full pl-8 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="0.00"
-                    />
-                  </div>
-
-                  <p className="text-xs text-gray-500 mt-2">
-                    This amount will be added to customer amount for each selected trip.
-                    Total extra amount: ₹{(parseFloat(extraAmount) * selectedTrips.length).toLocaleString('en-IN')}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">
-                <span className="font-medium">Total trips affected:</span> {selectedTrips.length}
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={onClose}
-                  disabled={isApplying}
-                  className="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleApply}
-                  disabled={isApplying}
-                  className="px-4 py-2.5 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  {isApplying ? (
-                    <>
-                      <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Applying...
-                    </>
-                  ) : (
-                    <>
-                      <DollarSign className="h-4 w-4" />
-                      Apply Price Change
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const LorryTrips = () => {
   const { lorryId } = useParams<{ lorryId: string }>();
@@ -791,7 +164,51 @@ const LorryTrips = () => {
     }
   }, [lorryId]);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Close bulk actions dropdown when clicking outside
+      if (showBulkActions) {
+        const bulkActionsBtn = document.querySelector('[data-bulk-actions-btn]');
+        const bulkActionsMenu = document.querySelector('[data-bulk-actions-menu]');
+        
+        if (
+          bulkActionsBtn &&
+          !bulkActionsBtn.contains(event.target as Node) &&
+          bulkActionsMenu &&
+          !bulkActionsMenu.contains(event.target as Node)
+        ) {
+          setShowBulkActions(false);
+        }
+      }
+      
+      // Close individual action menu when clicking outside
+      if (showActionMenu) {
+        const actionBtn = document.querySelector(`[data-action-menu-btn="${showActionMenu}"]`);
+        const actionMenu = document.querySelector(`[data-action-menu="${showActionMenu}"]`);
+        
+        if (
+          actionBtn &&
+          !actionBtn.contains(event.target as Node) &&
+          actionMenu &&
+          !actionMenu.contains(event.target as Node)
+        ) {
+          setShowActionMenu(null);
+        }
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showBulkActions, showActionMenu]);
+
   const handleDeleteClick = (tripId: string, tripNumber: string, driverName?: string, material?: string) => {
+    // Check if trip is approved
+    const trip = trips.find(t => t._id === tripId);
+    if (trip?.collab_trip_status === 'approved') {
+      toast.error('This trip is approved and cannot be deleted');
+      return;
+    }
+    
     setSelectedTrip({ id: tripId, tripNumber, driverName, material });
     setDeleteModalOpen(true);
     setShowActionMenu(null);
@@ -799,6 +216,15 @@ const LorryTrips = () => {
 
   const handleConfirmDelete = async () => {
     if (!selectedTrip) return;
+
+    // Check if trip is approved
+    const trip = trips.find(t => t._id === selectedTrip.id);
+    if (trip?.collab_trip_status === 'approved') {
+      toast.error('This trip is approved and cannot be deleted');
+      setDeleteModalOpen(false);
+      setSelectedTrip(null);
+      return;
+    }
 
     setIsDeleting(true);
     try {
@@ -829,9 +255,25 @@ const LorryTrips = () => {
   const handleConfirmBulkDelete = async () => {
     if (selectedTrips.length === 0) return;
 
+    // Filter out trips that are approved
+    const deletableTrips = selectedTrips.filter(tripItem => {
+      const trip = trips.find(t => t._id === tripItem.id);
+      return trip?.collab_trip_status !== 'approved';
+    });
+
+    if (deletableTrips.length === 0) {
+      toast.error('Selected trips are approved and cannot be deleted');
+      setBulkDeleteModalOpen(false);
+      return;
+    }
+
+    if (deletableTrips.length !== selectedTrips.length) {
+      toast.error(`Some trips are approved. Only ${deletableTrips.length} trip(s) can be deleted.`);
+    }
+
     setIsDeleting(true);
     try {
-      const tripIds = selectedTrips.map(trip => trip.id);
+      const tripIds = deletableTrips.map(trip => trip.id);
       const response = await api.post('/trips/bulk-soft-delete', {
         tripIds
       });
@@ -853,8 +295,27 @@ const LorryTrips = () => {
       return;
     }
 
+    // Filter out approved trips if trying to change from completed status
+    const updatableTrips = selectedTrips.filter(tripItem => {
+      const trip = trips.find(t => t._id === tripItem.id);
+      // Allow status updates for approved trips only if they're not completed
+      if (trip?.collab_trip_status === 'approved' && trip.status === 'completed') {
+        return false;
+      }
+      return true;
+    });
+
+    if (updatableTrips.length === 0) {
+      toast.error('Selected trips are approved and completed, status cannot be changed');
+      return;
+    }
+
+    if (updatableTrips.length !== selectedTrips.length) {
+      toast.error(`Some approved completed trips cannot be updated. Updating ${updatableTrips.length} trip(s).`);
+    }
+
     try {
-      const tripIds = selectedTrips.map(t => t.id);
+      const tripIds = updatableTrips.map(t => t.id);
       const response = await api.post('/trips/bulk-update-status', {
         tripIds,
         status
@@ -916,6 +377,14 @@ const LorryTrips = () => {
   };
 
   const handleStatusUpdate = async (tripId: string, newStatus: string) => {
+    // Check if trip is approved and completed
+    const trip = trips.find(t => t._id === tripId);
+    if (trip?.collab_trip_status === 'approved' && trip.status === 'completed') {
+      toast.error('This trip is approved and completed, status cannot be changed');
+      setShowActionMenu(null);
+      return;
+    }
+    
     try {
       await api.patch(`/trips/status/${tripId}`, { status: newStatus });
       toast.success(`Trip status updated`);
@@ -1196,18 +665,6 @@ const LorryTrips = () => {
       driverFilter;
   };
 
-  useEffect(() => {
-    const handleClickOutside = () => {
-      setShowActionMenu(null);
-      if (showBulkActions) {
-        setShowBulkActions(false);
-      }
-    };
-
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, [showBulkActions]);
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -1288,97 +745,221 @@ const LorryTrips = () => {
           </button>
 
           {/* Bulk Actions Dropdown */}
-          {selectedTrips.length > 0 && (
-            <div className="relative flex-shrink-0">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowBulkActions(!showBulkActions);
-                }}
-                className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs sm:text-sm font-medium whitespace-nowrap"
-              >
-                <span>{selectedTrips.length} Selected</span>
-                <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4" />
-              </button>
+        {selectedTrips.length > 0 && (
+  <div className="relative flex-shrink-0">
+    <button
+      data-bulk-actions-btn
+      onClick={(e) => {
+        e.stopPropagation();
+        setShowBulkActions(!showBulkActions);
+      }}
+      className="flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs sm:text-sm font-medium whitespace-nowrap shadow-sm"
+    >
+      <span>{selectedTrips.length} Selected</span>
+      <ChevronDown
+        className={`h-3 w-3 sm:h-4 sm:w-4 transition-transform duration-200 ${
+          showBulkActions ? "rotate-180" : ""
+        }`}
+      />
+    </button>
 
-              <AnimatePresence>
-                {showBulkActions && (
-                  <>
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="fixed inset-0 z-40 bg-black/20 sm:hidden"
-                      onClick={() => setShowBulkActions(false)}
-                    />
+    <AnimatePresence>
+      {showBulkActions && (
+        <>
+          {/* Backdrop overlay */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[99] bg-black/50"
+            onClick={() => setShowBulkActions(false)}
+          />
 
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                      className="absolute left-0 top-full mt-2 z-50 w-56 bg-white rounded-lg shadow-2xl border border-gray-200 py-2 max-h-[calc(100vh-200px)] overflow-y-auto"
-                      onClick={(e) => e.stopPropagation()}
+          {/* Centered Modal Popup */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -20 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="w-full max-w-md bg-white rounded-xl shadow-2xl border border-gray-200 max-h-[80vh] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Copy className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Bulk Actions
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {selectedTrips.length} trip
+                        {selectedTrips.length > 1 ? "s" : ""} selected
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowBulkActions(false)}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <X className="h-5 w-5 text-gray-500" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Body */}
+              <div className="overflow-y-auto max-h-[60vh]">
+                <div className="p-4 space-y-1">
+                  {/* Clone Action */}
+                  <button
+                    onClick={() => {
+                      setShowBulkActions(false);
+                      handleBulkClone();
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors rounded-lg"
+                  >
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-50">
+                      <Copy className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-medium text-gray-900">Clone Selected</p>
+                      <p className="text-xs text-gray-500">
+                        Create copies of selected trips
+                      </p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                  </button>
+
+                  {/* Price Change Action */}
+                  <button
+                    onClick={() => {
+                      setShowBulkActions(false);
+                      handleBulkPriceChange();
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-green-50 transition-colors rounded-lg"
+                  >
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-50">
+                      <DollarSign className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-medium text-gray-900">
+                        Apply Price Change
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Update trip prices with current rates
+                      </p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
+                  </button>
+
+                  {/* Status Update Section */}
+                  <div className="pt-2">
+                    <div className="px-4 py-2">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Update Status
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setShowBulkActions(false);
+                        handleBulkStatusUpdate("completed");
+                      }}
+                      className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-emerald-50 transition-colors rounded-lg"
                     >
-                      <button
-                        onClick={() => {
-                          setShowBulkActions(false);
-                          handleBulkClone();
-                        }}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-blue-600 hover:bg-blue-50"
-                      >
-                        <Copy className="h-4 w-4" />
-                        <span>Clone Selected</span>
-                      </button>
+                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-50">
+                        <CheckCircle className="h-5 w-5 text-emerald-600" />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="font-medium text-gray-900">
+                          Mark as Completed
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Update selected trips to completed status
+                        </p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                    </button>
+                  </div>
 
-                      <button
-                        onClick={() => {
-                          setShowBulkActions(false);
-                          handleBulkPriceChange();
-                        }}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-green-600 hover:bg-green-50 border-t border-gray-200"
-                      >
-                        <DollarSign className="h-4 w-4" />
-                        <span>Apply Price Change</span>
-                      </button>
+                  {/* Danger Zone */}
+                  <div className="pt-2">
+                    <div className="px-4 py-2">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Danger Zone
+                      </p>
+                    </div>
 
-                      <button
-                        onClick={() => {
-                          setShowBulkActions(false);
-                          handleBulkStatusUpdate('completed');
-                        }}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-green-600 hover:bg-green-50"
-                      >
-                        <CheckCircle className="h-4 w-4" />
-                        <span>Mark as Completed</span>
-                      </button>
+                    <button
+                      onClick={() => {
+                        setShowBulkActions(false);
+                        handleBulkDeleteClick();
+                      }}
+                      className="flex items-center gap-3 w-full px-4 py-3 text-sm text-red-700 hover:bg-red-50 transition-colors rounded-lg"
+                    >
+                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-red-50">
+                        <Trash2 className="h-5 w-5 text-red-600" />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="font-medium text-red-900">
+                          Delete Selected
+                        </p>
+                        <p className="text-xs text-red-600">
+                          Permanently remove selected trips
+                        </p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                    </button>
 
-                      <button
-                        onClick={() => {
-                          setShowBulkActions(false);
-                          handleBulkDeleteClick();
-                        }}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 border-t border-gray-200"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span>Delete Selected</span>
-                      </button>
+                    <button
+                      onClick={() => {
+                        setShowBulkActions(false);
+                        handleClearSelection();
+                      }}
+                      className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors rounded-lg"
+                    >
+                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gray-50">
+                        <X className="h-5 w-5 text-gray-600" />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="font-medium text-gray-900">
+                          Clear Selection
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Deselect all trips
+                        </p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                    </button>
+                  </div>
+                </div>
+              </div>
 
-                      <button
-                        onClick={() => {
-                          setShowBulkActions(false);
-                          handleClearSelection();
-                        }}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 border-t border-gray-200"
-                      >
-                        <X className="h-4 w-4" />
-                        <span>Clear Selection</span>
-                      </button>
-                    </motion.div>
-                  </>
-                )}
-              </AnimatePresence>
+              {/* Modal Footer */}
+              <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+                <div className="flex items-center justify-end gap-3">
+                  <button
+                    onClick={() => setShowBulkActions(false)}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
             </div>
-          )}
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  </div>
+)}
 
           {/* Select All Button */}
           <button
@@ -1683,6 +1264,7 @@ const LorryTrips = () => {
               const StatusIcon = statusConfig.icon;
               const DestIcon = destination.icon;
               const isSelected = selectedTrips.some(t => t.id === trip._id);
+              const isApproved = trip.collab_trip_status === 'approved';
 
               return (
                 <motion.div
@@ -1713,6 +1295,12 @@ const LorryTrips = () => {
                                 Clone
                               </span>
                             )}
+                            {/* {isApproved && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                                <CheckCircle className="h-3 w-3" />
+                                Approved
+                              </span>
+                            )} */}
                           </div>
                           <div className="flex items-center gap-2 flex-wrap mt-1">
                             <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium border ${statusConfig.color}`}>
@@ -1728,8 +1316,9 @@ const LorryTrips = () => {
                       </div>
 
                       {/* Action Menu for individual trip */}
-                      <div className="relative flex-shrink-0 z-10">
+                      <div className="relative flex-shrink-0">
                         <button
+                          data-action-menu-btn={trip._id}
                           onClick={(e) => {
                             e.stopPropagation();
                             setShowActionMenu(showActionMenu === trip._id ? null : trip._id);
@@ -1743,14 +1332,7 @@ const LorryTrips = () => {
                           {showActionMenu === trip._id && (
                             <>
                               <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                className="fixed inset-0 z-40 bg-black/20 sm:hidden"
-                                onClick={() => setShowActionMenu(null)}
-                              />
-
-                              <motion.div
+                                data-action-menu={trip._id}
                                 initial={{ opacity: 0, scale: 0.95, y: -10 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.95, y: -10 }}
@@ -1770,7 +1352,7 @@ const LorryTrips = () => {
                                     <button
                                       key={status}
                                       onClick={() => handleStatusUpdate(trip._id, status)}
-                                      disabled={isCurrentStatus}
+                                      disabled={isCurrentStatus || (isApproved && trip.status === 'completed')}
                                       className={`flex items-center gap-3 w-full px-4 py-2.5 text-sm transition-colors ${isCurrentStatus
                                         ? 'bg-gray-50 text-gray-400 cursor-not-allowed'
                                         : 'text-gray-700 hover:bg-gray-50'
@@ -1792,16 +1374,19 @@ const LorryTrips = () => {
                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</p>
                                   </div>
 
-                                  <button
-                                    onClick={() => {
-                                      setShowActionMenu(null);
-                                      navigate(`/trips/edit/${trip._id}`);
-                                    }}
-                                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
-                                  >
-                                    <Edit className="h-4 w-4 flex-shrink-0" />
-                                    <span>Edit Trip</span>
-                                  </button>
+                                  {/* Conditionally show Edit button */}
+                                  {!isApproved && (
+                                    <button
+                                      onClick={() => {
+                                        setShowActionMenu(null);
+                                        navigate(`/trips/edit/${trip._id}`);
+                                      }}
+                                      className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                                    >
+                                      <Edit className="h-4 w-4 flex-shrink-0" />
+                                      <span>Edit Trip</span>
+                                    </button>
+                                  )}
 
                                   <button
                                     onClick={() => {
@@ -1826,13 +1411,23 @@ const LorryTrips = () => {
                                     <span>Clone and Edit</span>
                                   </button>
 
-                                  <button
-                                    onClick={() => handleDeleteClick(trip._id, trip.trip_number, trip.driver_id.name, trip.material_name)}
-                                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
-                                  >
-                                    <Trash2 className="h-4 w-4 flex-shrink-0" />
-                                    <span>Delete Trip</span>
-                                  </button>
+                                  {/* Conditionally show Delete button */}
+                                  {!isApproved && (
+                                    <button
+                                      onClick={() => handleDeleteClick(trip._id, trip.trip_number, trip.driver_id.name, trip.material_name)}
+                                      className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50"
+                                    >
+                                      <Trash2 className="h-4 w-4 flex-shrink-0" />
+                                      <span>Delete Trip</span>
+                                    </button>
+                                  )}
+
+                                  {/* Show message if trip is approved */}
+                                  {isApproved && (
+                                    <div className="px-4 py-2.5 text-xs text-gray-500 italic">
+                                      This trip is approved and cannot be edited or deleted.
+                                    </div>
+                                  )}
                                 </div>
                               </motion.div>
                             </>

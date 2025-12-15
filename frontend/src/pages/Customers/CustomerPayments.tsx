@@ -355,7 +355,7 @@ const CustomerPayments = () => {
             </div>
 
             {/* Payment Type Filter */}
-            <div>
+            {/* <div>
               <p className="text-xs font-medium text-gray-700 mb-2">Payment Type</p>
               <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
                 {['all', 'from_customer', 'to_customer'].map((type) => (
@@ -372,7 +372,7 @@ const CustomerPayments = () => {
                   </button>
                 ))}
               </div>
-            </div>
+            </div> */}
 
             {/* Date Range Filter */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -417,7 +417,7 @@ const CustomerPayments = () => {
       )}
 
       {/* Payments List */}
-      <div className="p-4 sm:p-6">
+      <div className="p-2 sm:p-4">
         {filteredPayments.length > 0 ? (
           <div className="space-y-4">
             {filteredPayments.map((payment) => {

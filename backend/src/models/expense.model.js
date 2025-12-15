@@ -44,7 +44,7 @@ const expenseSchema = new mongoose.Schema({
   payment_mode: {
     type: String,
     required: true,
-    enum: ['cash', 'bank', 'upi'],
+    enum: ['cash', 'bank', 'upi','credit'],
     default: 'cash'
   },
   

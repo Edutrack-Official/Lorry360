@@ -5,7 +5,7 @@ const Crusher = require('../models/crusher.model');
 const Lorry = require('../models/lorry.model');
 const User = require('../models/user.model');
 const Payment = require('../models/payment.model');
-
+const Collaboration = require('../models/collaboration.model');
 const createTrip = async (tripData) => {
   const {
     owner_id,
@@ -345,12 +345,21 @@ const updateTrip = async (id, owner_id, updateData) => {
     owner_id,
     isActive: true // Added: Only update active trips
   });
+
+
   
   if (!existingTrip) {
     const err = new Error('Trip not found or is inactive');
     err.status = 404;
     throw err;
   }
+
+  if(existingTrip.collab_trip_status == 'approved') {
+    const err = new Error('Cannot update an approved collaborative trip');
+    err.status = 400;
+    throw err;
+  }
+
 
   // Check final state
   const finalCustomerId = processedData.customer_id !== undefined 
@@ -426,6 +435,26 @@ const deleteTrip = async (id, owner_id) => {
 };
 
 const updateTripStatus = async (id, owner_id, status) => {
+  // First, find the existing trip to check its collab_trip_status
+  const existingTrip = await Trip.findOne({ 
+    _id: id, 
+    owner_id,
+    isActive: true 
+  });
+
+  if (!existingTrip) {
+    const err = new Error('Trip not found or is inactive');
+    err.status = 404;
+    throw err;
+  }
+
+  // Check if it's an approved collaborative trip
+  if (existingTrip.collab_trip_status === 'approved') {
+    const err = new Error('Cannot update an approved collaborative trip');
+    err.status = 400;
+    throw err;
+  }
+
   const updateData = { status };
   
   // Set timestamps based on status
@@ -449,7 +478,7 @@ const updateTripStatus = async (id, owner_id, status) => {
     { 
       _id: id, 
       owner_id,
-      isActive: true // Added: Only update status of active trips
+      isActive: true 
     },
     updateData,
     { new: true, runValidators: true }
@@ -460,11 +489,6 @@ const updateTripStatus = async (id, owner_id, status) => {
     .populate('customer_id', 'name phone')
     .populate('collab_owner_id', 'name company_name phone');
 
-  if (!updatedTrip) {
-    const err = new Error('Trip not found, is inactive, or status update failed');
-    err.status = 404;
-    throw err;
-  }
   return updatedTrip;
 };
 // Get trip statistics with collaborative support
@@ -1240,6 +1264,7 @@ const processBatch = async (batchTripIds, owner_id, times, options) => {
       delete tripDataObj.trip_number;
       delete tripDataObj.createdAt;
       delete tripDataObj.updatedAt;
+      delete tripDataObj.collab_trip_status;
       
       // Handle status and timestamps
       if (options.resetStatus) {
@@ -1358,7 +1383,6 @@ const processBatch = async (batchTripIds, owner_id, times, options) => {
   }
 };
 
-
 const bulkSoftDeleteTrips = async (tripIds, owner_id) => {
   try {
     // Validate input
@@ -1370,21 +1394,38 @@ const bulkSoftDeleteTrips = async (tripIds, owner_id) => {
     // - ID is in the list
     // - Owner is current user
     // - isActive is true
-    // - status is NOT "approved"
+    // - collab_trip_status is NOT "approved" (checking for null or other values)
     const result = await Trip.updateMany(
       {
         _id: { $in: tripIds },
         owner_id,
         isActive: true,
-        status: { $ne: 'approved' }
+        $or: [
+          { collab_trip_status: { $exists: false } }, // No collab_trip_status field
+          { collab_trip_status: { $eq: null } }, // collab_trip_status is null
+          { collab_trip_status: { $ne: 'approved' } } // collab_trip_status exists but not 'approved'
+        ]
       },
       { $set: { isActive: false } }
     );
 
+    // Get trips that couldn't be deleted (approved collaborative trips)
+    const notDeletedTrips = await Trip.find({
+      _id: { $in: tripIds },
+      owner_id,
+      isActive: true,
+      collab_trip_status: 'approved'
+    }).select('trip_number collab_trip_status');
+
     return {
       success: true,
       message: `Soft deleted ${result.modifiedCount} trip(s)`,
-      modifiedCount: result.modifiedCount
+      modifiedCount: result.modifiedCount,
+      notDeletedCount: notDeletedTrips.length,
+      notDeletedTrips: notDeletedTrips.map(trip => ({
+        trip_number: trip.trip_number,
+        collab_trip_status: trip.collab_trip_status
+      }))
     };
 
   } catch (error) {
@@ -1392,6 +1433,327 @@ const bulkSoftDeleteTrips = async (tripIds, owner_id) => {
     throw error;
   }
 };
+
+// const updateTripPricesForMultipleTrips = async (owner_id, tripData) => {
+//   try {
+//     const { tripIds, update_customer_amount, extra_amount = 0 } = tripData;
+
+//     // Validate inputs
+//     if (!owner_id || !tripIds || !Array.isArray(tripIds) || tripIds.length === 0) {
+//       throw new Error('owner_id and tripIds array are required');
+//     }
+
+//     if (typeof update_customer_amount !== 'boolean') {
+//       throw new Error('update_customer_amount must be boolean');
+//     }
+
+//     if (extra_amount && typeof extra_amount !== 'number') {
+//       throw new Error('extra_amount must be a number');
+//     }
+
+//     // Fetch trips in a single query
+//     const trips = await Trip.find({
+//       _id: { $in: tripIds },
+//       owner_id,
+//       isActive: true
+//     })
+//     .populate('crusher_id', 'materials');
+
+//     if (trips.length === 0) {
+//       return {
+//         success: false,
+//         message: 'No active trips found for the provided IDs',
+//         updated_count: 0
+//       };
+//     }
+
+//     // Process trips
+//     const updatedTrips = [];
+//     const failedTrips = [];
+//     const summary = {
+//       total_trips_processed: trips.length,
+//       total_trips_updated: 0,
+//       total_crusher_amount_change: 0,
+//       total_customer_amount_change: 0,
+//       total_extra_amount_added: 0,
+//       trips_by_status: {}
+//     };
+
+//     // Group trips by crusher_id for batch processing
+//     const tripsByCrusher = {};
+    
+//     trips.forEach(trip => {
+//       if (!trip.crusher_id) {
+//         failedTrips.push({
+//           trip_id: trip._id,
+//           trip_number: trip.trip_number,
+//           error: 'Crusher information missing',
+//           reason: 'CRUSHER_NOT_FOUND'
+//         });
+//         return;
+//       }
+
+//       if (!trip.crusher_id.materials || trip.crusher_id.materials.length === 0) {
+//         failedTrips.push({
+//           trip_id: trip._id,
+//           trip_number: trip.trip_number,
+//           error: 'No materials defined for crusher',
+//           reason: 'NO_MATERIALS_DEFINED'
+//         });
+//         return;
+//       }
+
+//       const crusherId = trip.crusher_id._id.toString();
+//       if (!tripsByCrusher[crusherId]) {
+//         tripsByCrusher[crusherId] = {
+//           crusher: trip.crusher_id,
+//           trips: []
+//         };
+//       }
+//       tripsByCrusher[crusherId].trips.push(trip);
+//     });
+
+//     // Process each crusher group
+//     for (const [crusherId, crusherGroup] of Object.entries(tripsByCrusher)) {
+//       const { crusher, trips: crusherTrips } = crusherGroup;
+
+//       // Create a map of material name to current price
+//       const materialPriceMap = {};
+//       crusher.materials.forEach(material => {
+//         materialPriceMap[material.material_name.toLowerCase()] = material.price_per_unit;
+//       });
+
+//       // Process each trip in this crusher group
+//       for (const trip of crusherTrips) {
+//         try {
+//           const materialNameLower = trip.material_name.toLowerCase();
+//           const currentMaterialPrice = materialPriceMap[materialNameLower];
+
+//           if (!currentMaterialPrice) {
+//             failedTrips.push({
+//               trip_id: trip._id,
+//               trip_number: trip.trip_number,
+//               error: `Material "${trip.material_name}" not found in crusher's materials`,
+//               reason: 'MATERIAL_NOT_FOUND'
+//             });
+//             continue;
+//           }
+
+//           // Skip if price is already the same
+//           if (trip.rate_per_unit === currentMaterialPrice) {
+//             updatedTrips.push({
+//               trip_id: trip._id,
+//               trip_number: trip.trip_number,
+//               material_name: trip.material_name,
+//               old_rate_per_unit: trip.rate_per_unit,
+//               new_rate_per_unit: currentMaterialPrice,
+//               status: 'NO_CHANGE',
+//               message: 'Rate per unit already matches current price'
+//             });
+//             summary.total_trips_processed++; // Still counts as processed
+//             continue;
+//           }
+
+//           // Calculate new crusher amount
+//           const oldCrusherAmount = trip.crusher_amount;
+//           const newCrusherAmount = trip.no_of_unit_crusher * currentMaterialPrice;
+//           const crusherAmountDiff = newCrusherAmount - oldCrusherAmount;
+
+//           // Calculate new customer amount based on configuration
+//           let newCustomerAmount = trip.customer_amount;
+//           let customerAmountDiff = 0;
+//           let newProfit = trip.profit;
+
+//           if (update_customer_amount) {
+//             // Add BOTH the price difference AND extra amount to customer
+//             customerAmountDiff = crusherAmountDiff + extra_amount;
+//             newCustomerAmount = trip.customer_amount + customerAmountDiff;
+//             newProfit = newCustomerAmount - newCrusherAmount;
+//           } else {
+//             // Only update profit based on new crusher amount
+//             newProfit = trip.customer_amount - newCrusherAmount;
+//           }
+
+//           // Prepare update object
+//           const updateData = {
+//             rate_per_unit: currentMaterialPrice,
+//             crusher_amount: newCrusherAmount,
+//             profit: newProfit
+//           };
+
+//           if (update_customer_amount) {
+//             updateData.customer_amount = newCustomerAmount;
+//           }
+
+//           // Update the trip
+//           const updatedTrip = await Trip.findByIdAndUpdate(
+//             trip._id,
+//             updateData,
+//             { new: true, runValidators: true }
+//           )
+//           .populate('crusher_id', 'name materials')
+//           .populate('customer_id', 'name phone')
+//           .populate('collab_owner_id', 'name company_name');
+
+//           updatedTrips.push({
+//             trip_id: trip._id,
+//             trip_number: trip.trip_number,
+//             material_name: trip.material_name,
+//             old_rate_per_unit: trip.rate_per_unit,
+//             new_rate_per_unit: currentMaterialPrice,
+//             old_crusher_amount: oldCrusherAmount,
+//             new_crusher_amount: newCrusherAmount,
+//             crusher_amount_diff: crusherAmountDiff,
+//             old_customer_amount: trip.customer_amount,
+//             new_customer_amount: newCustomerAmount,
+//             customer_amount_diff: customerAmountDiff,
+//             breakdown: {
+//               price_change_diff: crusherAmountDiff,
+//               extra_amount_added: update_customer_amount ? extra_amount : 0,
+//               total_added_to_customer: update_customer_amount ? crusherAmountDiff + extra_amount : 0
+//             },
+//             old_profit: trip.profit,
+//             new_profit: newProfit,
+//             units: trip.no_of_unit_crusher,
+//             status: trip.status,
+//             update_customer_amount: update_customer_amount,
+//             extra_amount_applied: update_customer_amount ? extra_amount : 0,
+//             updated_at: new Date().toISOString()
+//           });
+
+//           // Update summary
+//           summary.total_trips_updated++;
+//           summary.total_crusher_amount_change += crusherAmountDiff;
+//           summary.total_customer_amount_change += customerAmountDiff;
+//           if (update_customer_amount) {
+//             summary.total_extra_amount_added += extra_amount;
+//           }
+
+//           // Track by status
+//           const statusKey = trip.status;
+//           if (!summary.trips_by_status[statusKey]) {
+//             summary.trips_by_status[statusKey] = 0;
+//           }
+//           summary.trips_by_status[statusKey]++;
+
+//         } catch (error) {
+//           failedTrips.push({
+//             trip_id: trip._id,
+//             trip_number: trip.trip_number,
+//             error: error.message,
+//             reason: 'UPDATE_ERROR'
+//           });
+//         }
+//       }
+//     }
+
+//     // Calculate averages
+//     if (summary.total_trips_updated > 0) {
+//       summary.average_crusher_amount_change = summary.total_crusher_amount_change / summary.total_trips_updated;
+//       summary.average_customer_amount_change = summary.total_customer_amount_change / summary.total_trips_updated;
+//       summary.average_extra_amount_per_trip = summary.total_extra_amount_added / summary.total_trips_updated;
+//     } else {
+//       summary.average_crusher_amount_change = 0;
+//       summary.average_customer_amount_change = 0;
+//       summary.average_extra_amount_per_trip = 0;
+//     }
+
+//     // Prepare final response
+//     const response = {
+//       success: true,
+//       summary: {
+//         ...summary,
+//         trips_updated_successfully: updatedTrips.length,
+//         trips_failed: failedTrips.length,
+//         success_rate: summary.total_trips_updated / trips.length * 100,
+//         configuration: {
+//           update_customer_amount: update_customer_amount,
+//           extra_amount_per_trip: extra_amount,
+//           total_extra_amount: update_customer_amount ? extra_amount * summary.total_trips_updated : 0
+//         }
+//       },
+//       updated_trips: updatedTrips,
+//       failed_trips: failedTrips
+//     };
+
+//     // Additional grouping for easier analysis
+//     response.breakdown = {
+//       by_material: {},
+//       by_crusher: {},
+//       price_changes: {
+//         increased: [],
+//         decreased: [],
+//         unchanged: []
+//       }
+//     };
+
+//     // Group updated trips by material
+//     updatedTrips.forEach(trip => {
+//       // By material
+//       const materialKey = trip.material_name;
+//       if (!response.breakdown.by_material[materialKey]) {
+//         response.breakdown.by_material[materialKey] = {
+//           trips_count: 0,
+//           total_crusher_amount_change: 0,
+//           total_customer_amount_change: 0,
+//           total_extra_amount_added: 0,
+//           average_rate_change: 0,
+//           trips: []
+//         };
+//       }
+//       response.breakdown.by_material[materialKey].trips_count++;
+//       response.breakdown.by_material[materialKey].total_crusher_amount_change += trip.crusher_amount_diff;
+//       response.breakdown.by_material[materialKey].total_customer_amount_change += trip.customer_amount_diff;
+//       response.breakdown.by_material[materialKey].total_extra_amount_added += trip.extra_amount_applied;
+//       response.breakdown.by_material[materialKey].trips.push(trip.trip_number);
+
+//       // Track price changes
+//       if (trip.crusher_amount_diff > 0) {
+//         response.breakdown.price_changes.increased.push({
+//           trip_number: trip.trip_number,
+//           material: trip.material_name,
+//           old_rate: trip.old_rate_per_unit,
+//           new_rate: trip.new_rate_per_unit,
+//           price_increase: trip.crusher_amount_diff,
+//           extra_amount: trip.extra_amount_applied,
+//           total_customer_increase: trip.customer_amount_diff
+//         });
+//       } else if (trip.crusher_amount_diff < 0) {
+//         response.breakdown.price_changes.decreased.push({
+//           trip_number: trip.trip_number,
+//           material: trip.material_name,
+//           old_rate: trip.old_rate_per_unit,
+//           new_rate: trip.new_rate_per_unit,
+//           price_decrease: Math.abs(trip.crusher_amount_diff),
+//           extra_amount: trip.extra_amount_applied,
+//           total_customer_increase: trip.customer_amount_diff
+//         });
+//       } else {
+//         response.breakdown.price_changes.unchanged.push({
+//           trip_number: trip.trip_number,
+//           extra_amount: trip.extra_amount_applied,
+//           customer_increase: trip.customer_amount_diff
+//         });
+//       }
+//     });
+
+//     // Calculate average rate change per material
+//     Object.keys(response.breakdown.by_material).forEach(material => {
+//       const materialData = response.breakdown.by_material[material];
+//       materialData.average_rate_change = materialData.total_crusher_amount_change / materialData.trips_count;
+//       materialData.average_customer_change = materialData.total_customer_amount_change / materialData.trips_count;
+//       materialData.average_extra_amount = materialData.total_extra_amount_added / materialData.trips_count;
+//     });
+
+//     return response;
+
+//   } catch (error) {
+//     console.error('Error in updateTripPricesForMultipleTrips:', error);
+//     throw error;
+//   }
+// };
+
+// Add this function before module.exports
 
 const updateTripPricesForMultipleTrips = async (owner_id, tripData) => {
   try {
@@ -1507,7 +1869,9 @@ const updateTripPricesForMultipleTrips = async (owner_id, tripData) => {
               old_rate_per_unit: trip.rate_per_unit,
               new_rate_per_unit: currentMaterialPrice,
               status: 'NO_CHANGE',
-              message: 'Rate per unit already matches current price'
+              message: 'Rate per unit already matches current price',
+              customer_amount_updated: false,
+              reason: 'No price change needed'
             });
             summary.total_trips_processed++; // Still counts as processed
             continue;
@@ -1518,19 +1882,38 @@ const updateTripPricesForMultipleTrips = async (owner_id, tripData) => {
           const newCrusherAmount = trip.no_of_unit_crusher * currentMaterialPrice;
           const crusherAmountDiff = newCrusherAmount - oldCrusherAmount;
 
-          // Calculate new customer amount based on configuration
+          // Determine if we can update customer amount
+          // Only update customer_amount when customer_id exists and collab_owner_id is null
+          const canUpdateCustomerAmount = update_customer_amount && 
+                                          trip.customer_id && 
+                                          !trip.collab_owner_id;
+          
+          // Calculate new customer amount and profit
           let newCustomerAmount = trip.customer_amount;
           let customerAmountDiff = 0;
           let newProfit = trip.profit;
+          let extraAmountApplied = 0;
+          let customerUpdateApplied = false;
 
-          if (update_customer_amount) {
+          if (canUpdateCustomerAmount) {
             // Add BOTH the price difference AND extra amount to customer
             customerAmountDiff = crusherAmountDiff + extra_amount;
             newCustomerAmount = trip.customer_amount + customerAmountDiff;
             newProfit = newCustomerAmount - newCrusherAmount;
+            extraAmountApplied = extra_amount;
+            customerUpdateApplied = true;
           } else {
             // Only update profit based on new crusher amount
             newProfit = trip.customer_amount - newCrusherAmount;
+            
+            // If customer_id doesn't exist or collab_owner_id exists, don't update customer_amount
+            if (update_customer_amount && !trip.customer_id) {
+              customerAmountDiff = 0; // No change to customer
+              extraAmountApplied = 0; // No extra amount added
+            } else if (update_customer_amount && trip.collab_owner_id) {
+              customerAmountDiff = 0; // No change to customer for collaboration trips
+              extraAmountApplied = 0; // No extra amount added for collaboration trips
+            }
           }
 
           // Prepare update object
@@ -1540,7 +1923,8 @@ const updateTripPricesForMultipleTrips = async (owner_id, tripData) => {
             profit: newProfit
           };
 
-          if (update_customer_amount) {
+          // Only update customer_amount if conditions are met
+          if (canUpdateCustomerAmount) {
             updateData.customer_amount = newCustomerAmount;
           }
 
@@ -1566,17 +1950,26 @@ const updateTripPricesForMultipleTrips = async (owner_id, tripData) => {
             old_customer_amount: trip.customer_amount,
             new_customer_amount: newCustomerAmount,
             customer_amount_diff: customerAmountDiff,
+            customer_amount_updated: customerUpdateApplied,
+            customer_amount_update_reason: customerUpdateApplied 
+              ? 'Customer amount updated' 
+              : (trip.collab_owner_id 
+                  ? 'Skipped: Collaboration trip (collab_owner_id exists)' 
+                  : !trip.customer_id 
+                    ? 'Skipped: No customer assigned (customer_id is null)' 
+                    : 'Skipped: update_customer_amount is false'),
             breakdown: {
               price_change_diff: crusherAmountDiff,
-              extra_amount_added: update_customer_amount ? extra_amount : 0,
-              total_added_to_customer: update_customer_amount ? crusherAmountDiff + extra_amount : 0
+              extra_amount_added: extraAmountApplied,
+              total_added_to_customer: customerAmountDiff
             },
             old_profit: trip.profit,
             new_profit: newProfit,
             units: trip.no_of_unit_crusher,
             status: trip.status,
-            update_customer_amount: update_customer_amount,
-            extra_amount_applied: update_customer_amount ? extra_amount : 0,
+            trip_type: trip.collab_owner_id ? 'collaboration' : (trip.customer_id ? 'regular' : 'no_customer'),
+            update_customer_amount_requested: update_customer_amount,
+            extra_amount_applied: extraAmountApplied,
             updated_at: new Date().toISOString()
           });
 
@@ -1584,7 +1977,7 @@ const updateTripPricesForMultipleTrips = async (owner_id, tripData) => {
           summary.total_trips_updated++;
           summary.total_crusher_amount_change += crusherAmountDiff;
           summary.total_customer_amount_change += customerAmountDiff;
-          if (update_customer_amount) {
+          if (customerUpdateApplied) {
             summary.total_extra_amount_added += extra_amount;
           }
 
@@ -1628,7 +2021,13 @@ const updateTripPricesForMultipleTrips = async (owner_id, tripData) => {
         configuration: {
           update_customer_amount: update_customer_amount,
           extra_amount_per_trip: extra_amount,
-          total_extra_amount: update_customer_amount ? extra_amount * summary.total_trips_updated : 0
+          total_extra_amount: summary.total_extra_amount_added,
+          customer_amount_update_conditions: 'Only updated when customer_id exists AND collab_owner_id is null'
+        },
+        trip_types_breakdown: {
+          regular_trips: updatedTrips.filter(t => t.trip_type === 'regular').length,
+          collaboration_trips: updatedTrips.filter(t => t.trip_type === 'collaboration').length,
+          trips_without_customer: updatedTrips.filter(t => t.trip_type === 'no_customer').length
         }
       },
       updated_trips: updatedTrips,
@@ -1638,7 +2037,11 @@ const updateTripPricesForMultipleTrips = async (owner_id, tripData) => {
     // Additional grouping for easier analysis
     response.breakdown = {
       by_material: {},
-      by_crusher: {},
+      by_trip_type: {
+        regular: [],
+        collaboration: [],
+        no_customer: []
+      },
       price_changes: {
         increased: [],
         decreased: [],
@@ -1646,7 +2049,7 @@ const updateTripPricesForMultipleTrips = async (owner_id, tripData) => {
       }
     };
 
-    // Group updated trips by material
+    // Group updated trips
     updatedTrips.forEach(trip => {
       // By material
       const materialKey = trip.material_name;
@@ -1656,6 +2059,7 @@ const updateTripPricesForMultipleTrips = async (owner_id, tripData) => {
           total_crusher_amount_change: 0,
           total_customer_amount_change: 0,
           total_extra_amount_added: 0,
+          customer_updates_applied: 0,
           average_rate_change: 0,
           trips: []
         };
@@ -1664,34 +2068,53 @@ const updateTripPricesForMultipleTrips = async (owner_id, tripData) => {
       response.breakdown.by_material[materialKey].total_crusher_amount_change += trip.crusher_amount_diff;
       response.breakdown.by_material[materialKey].total_customer_amount_change += trip.customer_amount_diff;
       response.breakdown.by_material[materialKey].total_extra_amount_added += trip.extra_amount_applied;
-      response.breakdown.by_material[materialKey].trips.push(trip.trip_number);
+      if (trip.customer_amount_updated) {
+        response.breakdown.by_material[materialKey].customer_updates_applied++;
+      }
+      response.breakdown.by_material[materialKey].trips.push({
+        trip_number: trip.trip_number,
+        customer_updated: trip.customer_amount_updated
+      });
+
+      // By trip type
+      response.breakdown.by_trip_type[trip.trip_type].push({
+        trip_number: trip.trip_number,
+        customer_amount_updated: trip.customer_amount_updated,
+        customer_amount_diff: trip.customer_amount_diff
+      });
 
       // Track price changes
       if (trip.crusher_amount_diff > 0) {
         response.breakdown.price_changes.increased.push({
           trip_number: trip.trip_number,
           material: trip.material_name,
+          trip_type: trip.trip_type,
           old_rate: trip.old_rate_per_unit,
           new_rate: trip.new_rate_per_unit,
           price_increase: trip.crusher_amount_diff,
           extra_amount: trip.extra_amount_applied,
-          total_customer_increase: trip.customer_amount_diff
+          total_customer_increase: trip.customer_amount_diff,
+          customer_amount_updated: trip.customer_amount_updated
         });
       } else if (trip.crusher_amount_diff < 0) {
         response.breakdown.price_changes.decreased.push({
           trip_number: trip.trip_number,
           material: trip.material_name,
+          trip_type: trip.trip_type,
           old_rate: trip.old_rate_per_unit,
           new_rate: trip.new_rate_per_unit,
           price_decrease: Math.abs(trip.crusher_amount_diff),
           extra_amount: trip.extra_amount_applied,
-          total_customer_increase: trip.customer_amount_diff
+          total_customer_increase: trip.customer_amount_diff,
+          customer_amount_updated: trip.customer_amount_updated
         });
       } else {
         response.breakdown.price_changes.unchanged.push({
           trip_number: trip.trip_number,
+          trip_type: trip.trip_type,
           extra_amount: trip.extra_amount_applied,
-          customer_increase: trip.customer_amount_diff
+          customer_increase: trip.customer_amount_diff,
+          customer_amount_updated: trip.customer_amount_updated
         });
       }
     });
@@ -1702,6 +2125,7 @@ const updateTripPricesForMultipleTrips = async (owner_id, tripData) => {
       materialData.average_rate_change = materialData.total_crusher_amount_change / materialData.trips_count;
       materialData.average_customer_change = materialData.total_customer_amount_change / materialData.trips_count;
       materialData.average_extra_amount = materialData.total_extra_amount_added / materialData.trips_count;
+      materialData.customer_update_rate = (materialData.customer_updates_applied / materialData.trips_count) * 100;
     });
 
     return response;
@@ -1712,7 +2136,6 @@ const updateTripPricesForMultipleTrips = async (owner_id, tripData) => {
   }
 };
 
-// Add this function before module.exports
 const bulkUpdateTripStatus = async (owner_id, statusData) => {
   try {
     const { tripIds, status } = statusData;
@@ -1925,7 +2348,507 @@ const updateCollabTripStatus = async (tripId, collabOwnerId, requestingUserId, s
   }
 };
 
+const getCollaborationInvoiceData = async (owner_id, partner_owner_id, from_date, to_date) => {
+  try {
+    console.log("Fetching collaboration invoice data for:", { 
+      owner_id, 
+      partner_owner_id, 
+      from_date, 
+      to_date 
+    });
 
+    // 1. Get current user (owner) details for company header
+    const currentOwner = await User.findById(owner_id).select('name company_name address city state pincode phone logo gst_number');
+    
+    if (!currentOwner) {
+      const err = new Error('Current owner not found');
+      err.status = 404;
+      throw err;
+    }
+
+    // 2. Get partner owner details
+    const partnerOwner = await User.findById(partner_owner_id).select('name company_name address city state pincode phone logo gst_number');
+    
+    if (!partnerOwner) {
+      const err = new Error('Partner owner not found');
+      err.status = 404;
+      throw err;
+    }
+
+    // 3. Check if collaboration exists and is active
+    const collaboration = await Collaboration.findOne({
+      $or: [
+        { from_owner_id: owner_id, to_owner_id: partner_owner_id, status: 'active' },
+        { from_owner_id: partner_owner_id, to_owner_id: owner_id, status: 'active' }
+      ]
+    });
+
+    if (!collaboration) {
+      const err = new Error('Active collaboration not found between the owners');
+      err.status = 404;
+      throw err;
+    }
+
+    // 4. Fetch trips done by CURRENT USER for PARTNER (I worked for partner)
+    const myTrips = await Trip.find({
+      owner_id: owner_id,
+      collab_owner_id: partner_owner_id,
+      isActive: true,
+      status: 'completed',
+      collab_trip_status: 'approved',
+      trip_date: { 
+        $gte: new Date(from_date), 
+        $lte: new Date(to_date) 
+      }
+    })
+      .populate('customer_id', 'name')
+      .populate('lorry_id', 'registration_number nick_name')
+      .populate('driver_id', 'name phone')
+      .populate('crusher_id', 'name')
+      .sort({ trip_date: 1 });
+
+    // 5. Fetch trips done by PARTNER for CURRENT USER (Partner worked for me)
+    const partnerTrips = await Trip.find({
+      owner_id: partner_owner_id,
+      collab_owner_id: owner_id,
+      isActive: true,
+      status: 'completed',
+      collab_trip_status: 'approved',
+      trip_date: { 
+        $gte: new Date(from_date), 
+        $lte: new Date(to_date) 
+      }
+    })
+      .populate('customer_id', 'name')
+      .populate('lorry_id', 'registration_number nick_name')
+      .populate('driver_id', 'name phone')
+      .populate('crusher_id', 'name')
+      .sort({ trip_date: 1 });
+
+    // 6. Fetch payments made by CURRENT USER to PARTNER (I paid partner)
+    const myPayments = await Payment.find({
+      owner_id: owner_id,
+      payment_type: 'to_collab_owner',
+      collab_owner_id: partner_owner_id,
+      isActive: true,
+      collab_payment_status: 'approved',
+      payment_date: { 
+        $gte: new Date(from_date), 
+        $lte: new Date(to_date) 
+      }
+    })
+      .populate('customer_id', 'name')
+      .sort({ payment_date: 1 });
+
+    // 7. Fetch payments made by PARTNER to CURRENT USER (Partner paid me)
+    const partnerPayments = await Payment.find({
+      owner_id: partner_owner_id,
+      payment_type: 'to_collab_owner',
+      collab_owner_id: owner_id,
+      isActive: true,
+      collab_payment_status: 'approved',
+      payment_date: { 
+        $gte: new Date(from_date), 
+        $lte: new Date(to_date) 
+      }
+    })
+      .populate('customer_id', 'name')
+      .sort({ payment_date: 1 });
+
+    // 8. Group trips by material, quantity, location, price AND customer_amount (exact match)
+    const groupTrips = (trips) => {
+      const grouped = {};
+      
+      trips.forEach(trip => {
+        const tripDate = trip.trip_date.toISOString().split('T')[0];
+        const groupKey = `${tripDate}_${trip.material_name}_${trip.no_of_unit_customer}_${trip.location}_${trip.rate_per_unit}_${trip.customer_amount}`;
+        
+        if (!grouped[groupKey]) {
+          grouped[groupKey] = {
+            date: tripDate,
+            material_name: trip.material_name,
+            quantity: trip.no_of_unit_customer,
+            location: trip.location,
+            rate_per_unit: trip.rate_per_unit,
+            customer_amount: trip.customer_amount,
+            no_of_loads: 0,
+            total_amount: 0,
+            trips: []
+          };
+        }
+        
+        grouped[groupKey].no_of_loads += 1;
+        grouped[groupKey].total_amount += trip.customer_amount;
+        grouped[groupKey].trips.push(trip);
+        
+        if (new Date(tripDate) < new Date(grouped[groupKey].date)) {
+          grouped[groupKey].date = tripDate;
+        }
+      });
+
+      return Object.values(grouped).sort((a, b) => new Date(a.date) - new Date(b.date));
+    };
+
+    const myGroupedTrips = groupTrips(myTrips);
+    const partnerGroupedTrips = groupTrips(partnerTrips);
+
+    // 9. Calculate opening balance (all previous active trips and payments)
+    const previousMyTrips = await Trip.find({
+      owner_id: owner_id,
+      collab_owner_id: partner_owner_id,
+      isActive: true,
+      status: 'completed',
+      collab_trip_status: 'approved',
+      trip_date: { $lt: new Date(from_date) }
+    });
+
+    const previousPartnerTrips = await Trip.find({
+      owner_id: partner_owner_id,
+      collab_owner_id: owner_id,
+      isActive: true,
+      status: 'completed',
+      collab_trip_status: 'approved',
+      trip_date: { $lt: new Date(from_date) }
+    });
+
+    const previousMyPayments = await Payment.find({
+      owner_id: owner_id,
+      payment_type: 'to_collab_owner',
+      collab_owner_id: partner_owner_id,
+      isActive: true,
+      collab_payment_status: 'approved',
+      payment_date: { $lt: new Date(from_date) }
+    });
+
+    const previousPartnerPayments = await Payment.find({
+      owner_id: partner_owner_id,
+      payment_type: 'to_collab_owner',
+      collab_owner_id: owner_id,
+      isActive: true,
+      collab_payment_status: 'approved',
+      payment_date: { $lt: new Date(from_date) }
+    });
+
+    // Calculate previous amounts
+    const previousMyTripsAmount = previousMyTrips.reduce((sum, trip) => sum + (trip.customer_amount || 0), 0);
+    const previousPartnerTripsAmount = previousPartnerTrips.reduce((sum, trip) => sum + (trip.customer_amount || 0), 0);
+    const previousMyPaymentsAmount = previousMyPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+    const previousPartnerPaymentsAmount = previousPartnerPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+
+    // CORRECTED: Opening Balance from CURRENT USER's perspective
+    // What partner owes me = (My trips for partner) - (Partner trips for me)
+    // Adjusted for payments = What partner owes me - (My payments to partner) + (Partner payments to me)
+    const openingBalance = (previousMyTripsAmount - previousPartnerTripsAmount) - 
+                          (previousMyPaymentsAmount - previousPartnerPaymentsAmount);
+
+    // 10. Create table rows
+    const tableRows = [];
+    let currentBalance = openingBalance;
+
+    // Add opening balance row
+    const fromDateObj = new Date(from_date);
+    const previousDay = new Date(fromDateObj);
+    previousDay.setDate(fromDateObj.getDate() - 1);
+    
+    const openingBalanceRow = {
+      s_no: '',
+      date: '',
+      particular: `BALANCE AS OF ${previousDay.toLocaleDateString('en-IN')}`,
+      quantity: '',
+      location: '',
+      price: '',
+      no_of_loads: '',
+      total_amount: '',
+      amount_received: '',
+      balance: `₹${openingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      is_balance_row: true,
+      is_opening_balance: true
+    };
+    tableRows.push(openingBalanceRow);
+
+    // Combine all transactions and sort by date
+    const allTransactions = [];
+
+    // My trips - Partner owes me (increases balance)
+    myGroupedTrips.forEach(group => {
+      allTransactions.push({
+        type: 'my_trip',
+        date: group.date,
+        data: group,
+        sortDate: new Date(group.date)
+      });
+    });
+
+    // Partner trips - I owe partner (decreases balance)
+    partnerGroupedTrips.forEach(group => {
+      allTransactions.push({
+        type: 'partner_trip',
+        date: group.date,
+        data: group,
+        sortDate: new Date(group.date)
+      });
+    });
+
+    // My payments to partner - I paid partner (decreases balance)
+    myPayments.forEach(payment => {
+      allTransactions.push({
+        type: 'my_payment',
+        date: payment.payment_date,
+        data: payment,
+        sortDate: new Date(payment.payment_date)
+      });
+    });
+
+    // Partner payments to me - Partner paid me (increases balance)
+    partnerPayments.forEach(payment => {
+      allTransactions.push({
+        type: 'partner_payment',
+        date: payment.payment_date,
+        data: payment,
+        sortDate: new Date(payment.payment_date)
+      });
+    });
+
+    // Sort all transactions by date
+    allTransactions.sort((a, b) => a.sortDate - b.sortDate);
+
+    // Generate table rows with running balance
+    allTransactions.forEach((transaction, index) => {
+      let row = {};
+
+      if (transaction.type === 'my_trip') {
+        const group = transaction.data;
+        
+        // My trip: Partner needs to pay me → Increases what partner owes me
+        row = {
+          s_no: tableRows.length,
+          date: transaction.date,
+          particular: `[TRIP TO ${partnerOwner.name}] ${group.material_name}`,
+          quantity: `${group.quantity} Unit`,
+          location: group.location,
+          price: `₹${group.customer_amount.toLocaleString('en-IN')}`,
+          no_of_loads: group.no_of_loads,
+          total_amount: `₹${group.total_amount.toLocaleString('en-IN')}`,
+          amount_received: '-',
+          balance: `₹${(currentBalance + group.total_amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          section: 'my_trips',
+          transaction_type: 'my_trip',
+          is_grouped: true
+        };
+
+        currentBalance += group.total_amount;
+
+      } else if (transaction.type === 'partner_trip') {
+        const group = transaction.data;
+        
+        // Partner trip: I need to pay partner → Decreases what partner owes me
+        row = {
+          s_no: tableRows.length,
+          date: transaction.date,
+          particular: `[TRIP FROM ${partnerOwner.name}] ${group.material_name}`,
+          quantity: `${group.quantity} Unit`,
+          location: group.location,
+          price: `₹${group.customer_amount.toLocaleString('en-IN')}`,
+          no_of_loads: group.no_of_loads,
+          total_amount: `₹${group.total_amount.toLocaleString('en-IN')}`,
+          amount_received: '-',
+          balance: `₹${(currentBalance - group.total_amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          section: 'partner_trips',
+          transaction_type: 'partner_trip',
+          is_grouped: true
+        };
+
+        currentBalance -= group.total_amount;
+
+      } 
+      else
+       if (transaction.type === 'my_payment') {
+  const payment = transaction.data;
+  
+  // My payment: I paid partner → Reduces what I owe → INCREASES balance (+)
+  row = {
+    s_no: tableRows.length,
+    date: transaction.date.toISOString().split('T')[0],
+    particular: `[PAID TO ${partnerOwner.name}] ${payment.notes || 'Payment'}`,
+    quantity: '-',
+    location: '-',
+    price: '-',
+    no_of_loads: '-',
+    total_amount: '-',
+    amount_received: `₹${payment.amount.toLocaleString('en-IN')}`,
+    balance: `₹${(currentBalance + payment.amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    section: 'my_payments',
+    transaction_type: 'my_payment',
+    is_payment: true
+  };
+
+  currentBalance += payment.amount; // ADD payment amount (reduce my debt)
+
+} else if (transaction.type === 'partner_payment') {
+  const payment = transaction.data;
+  
+  // Partner payment: Partner paid me → Reduces what partner owes me → DECREASES balance (-)
+  row = {
+    s_no: tableRows.length,
+    date: transaction.date.toISOString().split('T')[0],
+    particular: `[RECEIVED FROM ${partnerOwner.name}] ${payment.notes || 'Payment'}`,
+    quantity: '-',
+    location: '-',
+    price: '-',
+    no_of_loads: '-',
+    total_amount: '-',
+    amount_received: `₹${payment.amount.toLocaleString('en-IN')}`,
+    balance: `₹${(currentBalance - payment.amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    section: 'partner_payments',
+    transaction_type: 'partner_payment',
+    is_payment: true
+  };
+
+  currentBalance -= payment.amount; // SUBTRACT payment amount (reduce partner's debt)
+}
+
+      tableRows.push(row);
+    });
+
+    // Add closing balance row
+    const closingBalanceRow = {
+      s_no: '',
+      date: '',
+      particular: `BALANCE AS OF ${new Date(to_date).toLocaleDateString('en-IN')}`,
+      quantity: '',
+      location: '',
+      price: '',
+      no_of_loads: '',
+      total_amount: '',
+      amount_received: '',
+      balance: `₹${currentBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      is_balance_row: true,
+      is_closing_balance: true
+    };
+    tableRows.push(closingBalanceRow);
+
+    // 11. Calculate totals
+    const totalMyTripsAmount = myTrips.reduce((sum, trip) => sum + (trip.customer_amount || 0), 0);
+    const totalPartnerTripsAmount = partnerTrips.reduce((sum, trip) => sum + (trip.customer_amount || 0), 0);
+    const totalMyPaymentsAmount = myPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+    const totalPartnerPaymentsAmount = partnerPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
+    
+    // Calculate net amounts
+    const netTripAmount = totalMyTripsAmount - totalPartnerTripsAmount;
+    const netPaymentAmount = totalPartnerPaymentsAmount - totalMyPaymentsAmount; // Partner payments minus my payments
+    
+    // Determine who needs to pay based on FINAL balance
+    let whoOwes = '';
+    let amountOwed = Math.abs(currentBalance);
+    
+    if (currentBalance > 0) {
+      // Positive balance means partner owes me
+      whoOwes = `${partnerOwner.name} needs to pay ${currentOwner.name}`;
+    } else if (currentBalance < 0) {
+      // Negative balance means I owe partner
+      whoOwes = `${currentOwner.name} needs to pay ${partnerOwner.name}`;
+      amountOwed = Math.abs(currentBalance);
+    } else {
+      whoOwes = 'All settled up';
+      amountOwed = 0;
+    }
+
+    // 12. Prepare invoice data structure
+    const invoiceData = {
+      supplier: {
+        name: currentOwner.company_name || currentOwner.name,
+        address: currentOwner.address,
+        city: currentOwner.city,
+        state: currentOwner.state,
+        pincode: currentOwner.pincode,
+        phone: currentOwner.phone,
+        full_address: `${currentOwner.address}, ${currentOwner.city}, ${currentOwner.state} - ${currentOwner.pincode}`,
+        logo: currentOwner.logo || null,
+        gst_number: currentOwner.gst_number || null
+      },
+      
+      partner: {
+        name: partnerOwner.name,
+        address: partnerOwner.address,
+        city: partnerOwner.city,
+        state: partnerOwner.state,
+        pincode: partnerOwner.pincode,
+        phone: partnerOwner.phone,
+        full_address: `${partnerOwner.address}, ${partnerOwner.city}, ${partnerOwner.state} - ${partnerOwner.pincode}`,
+        logo: partnerOwner.logo || null,
+        gst_number: partnerOwner.gst_number || null,
+        is_partner: true
+      },
+      
+      invoice_details: {
+        invoice_number: `COL-INV-${Date.now()}`,
+        date: new Date().toISOString().split('T')[0],
+        from_date: from_date,
+        to_date: to_date,
+        period: `${new Date(from_date).toLocaleDateString('en-IN')} to ${new Date(to_date).toLocaleDateString('en-IN')}`,
+        opening_balance_date: previousDay.toISOString().split('T')[0],
+        closing_balance_date: to_date,
+        is_collaboration: true,
+        type: 'collaboration_statement'
+      },
+      
+      table_data: {
+        headers: [
+          'S.No', 'Date', 'Particular', 'Quantity', 'Location', 
+          'Price', 'No of Loads', 'Total Amount', 'Transaction Amount', 'Balance'
+        ],
+        rows: tableRows,
+        summary: {
+          opening_balance: `₹${openingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          total_my_trips: myTrips.length,
+          total_partner_trips: partnerTrips.length,
+          total_my_payments: myPayments.length,
+          total_partner_payments: partnerPayments.length,
+          total_my_trips_amount: `₹${totalMyTripsAmount.toLocaleString('en-IN')}`,
+          total_partner_trips_amount: `₹${totalPartnerTripsAmount.toLocaleString('en-IN')}`,
+          total_my_payments_amount: `₹${totalMyPaymentsAmount.toLocaleString('en-IN')}`,
+          total_partner_payments_amount: `₹${totalPartnerPaymentsAmount.toLocaleString('en-IN')}`,
+          net_trip_amount: `₹${netTripAmount.toLocaleString('en-IN')}`,
+          net_payment_amount: `₹${netPaymentAmount.toLocaleString('en-IN')}`,
+          closing_balance: `₹${currentBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          who_needs_to_pay: whoOwes,
+          amount_to_pay: `₹${amountOwed.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        }
+      },
+      
+      financial_summary: {
+        opening_balance: openingBalance,
+        total_my_trips: totalMyTripsAmount,
+        total_partner_trips: totalPartnerTripsAmount,
+        total_my_payments: totalMyPaymentsAmount,
+        total_partner_payments: totalPartnerPaymentsAmount,
+        net_trip_amount: netTripAmount,
+        net_payment_amount: netPaymentAmount,
+        closing_balance: currentBalance,
+        amount_payable: amountOwed,
+        who_owes: currentBalance > 0 ? 'partner' : 'you'
+      },
+      
+      additional_info: {
+        notes: 'All amounts in Indian Rupees',
+        calculation_note: `Balance = (Your trips - Partner trips) - (Your payments - Partner payments)`,
+        positive_balance_note: 'Positive balance means partner needs to pay you',
+        negative_balance_note: 'Negative balance means you need to pay partner'
+      }
+    };
+
+    console.log("Collaboration invoice data generated successfully");
+    console.log("Final balance:", currentBalance);
+    console.log("Who owes:", whoOwes);
+    console.log("Amount:", amountOwed);
+
+    return invoiceData;
+
+  } catch (error) {
+    console.error('Error fetching collaboration invoice data:', error);
+    throw error;
+  }
+};
 
 module.exports = {
   createTrip,
@@ -1946,5 +2869,6 @@ module.exports = {
   bulkSoftDeleteTrips,
   updateTripPricesForMultipleTrips,
   bulkUpdateTripStatus,
-  updateCollabTripStatus  
+  updateCollabTripStatus ,
+  getCollaborationInvoiceData
 };

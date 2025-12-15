@@ -1,4 +1,7 @@
 const Expense = require('../models/expense.model');
+const {
+  createPayment,
+} = require('./payment.controller');
 
 const createExpense = async (expenseData) => {
   const {
@@ -41,6 +44,33 @@ const createExpense = async (expenseData) => {
   });
 
   await newExpense.save();
+
+  // If it's a fuel expense with non-credit payment, create a payment
+  if (category === 'fuel' && payment_mode !== 'credit' && finalBunkId) {
+    try {
+      const paymentData = {
+        owner_id,
+        payment_type: 'to_bunk', // Bunk payment type
+        bunk_id: finalBunkId,
+        amount,
+        payment_date: date || new Date(),
+        payment_mode,
+        notes: description,
+        // Note: No customer_id, crusher_id, or collab_owner_id for bunk payments
+      };
+
+      // Create payment for bunk
+      await createPayment(paymentData);
+      console.log(`Payment created for fuel expense ${newExpense._id}`);
+    } catch (paymentError) {
+      // Log the error but don't fail the expense creation
+      console.error('Failed to create payment for fuel expense:', paymentError);
+      // Optionally, you could add this to the expense document:
+      newExpense.payment_creation_error = paymentError.message;
+      await newExpense.save();
+    }
+  }
+
   return newExpense;
 };
 

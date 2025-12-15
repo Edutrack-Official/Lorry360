@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { Profiler, useEffect, useState } from "react";
 import { useParams, Link, useNavigate, Outlet } from "react-router-dom";
 import api from "../../api/client";
-import { IndianRupee, Trash2 } from "lucide-react";
+import { Building, IndianRupee, MapPin, Phone, Trash2, User2 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import {
   User,
@@ -55,7 +55,7 @@ const CustomerDetails = () => {
   const { customerId } = useParams<{ customerId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -86,8 +86,8 @@ const CustomerDetails = () => {
       const res = await api.get(`/trips/customer/${customerId}`);
       const customerTrips = (res.data.data?.trips || []).filter(
         (trip: any) => trip.status === "completed"
-      );    
-    setTrips(customerTrips);
+      );
+      setTrips(customerTrips);
     } catch (error: any) {
       console.error("Failed to fetch trips:", error);
       toast.error("Failed to fetch trips");
@@ -128,10 +128,10 @@ const CustomerDetails = () => {
   };
 
   const getStatusBadge = (isActive: boolean) => {
-    const config = isActive 
+    const config = isActive
       ? { color: "bg-green-100 text-green-800 border-green-200", icon: "✅", label: "Active" }
       : { color: "bg-red-100 text-red-800 border-red-200", icon: "⏸️", label: "Inactive" };
-    
+
     return (
       <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium border ${config.color}`}>
         <span>{config.icon}</span>
@@ -204,7 +204,7 @@ const CustomerDetails = () => {
       {/* Header */}
       <div className="bg-white p-4 sm:p-6 rounded-xl border shadow-sm">
         {/* Title Section */}
-        <div className="flex items-start gap-3 mb-6">
+        <div className="flex items-center gap-3 mb-6">
           <button
             onClick={() => navigate("/customers")}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
@@ -212,15 +212,25 @@ const CustomerDetails = () => {
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 break-words flex-1 min-w-0">
-            {customer.name}
-          </h1>
+
+          <div className="flex items-center justify-center lg:justify-start flex-1 min-w-0">
+            <div className="text-center lg:text-left min-w-0 max-w-full">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center justify-center lg:justify-start gap-2">
+                <User className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
+                  <span className="truncate">{customer.name}</span>
+              </h1>
+              {/* <div className=" text-[12px] text-gray-600">
+                
+                <p className="truncate">{customer.phone}</p>
+                <p className="line-clamp-2">{customer.address}</p>
+              </div> */}
+            </div>
+          </div>
         </div>
 
         {/* Stats Section - Scrollable on Mobile */}
         <div className="border-t border-gray-200 pt-6 -mx-4 px-4 sm:mx-0 sm:px-0">
-          <div 
+          <div
             className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide sm:grid sm:grid-cols-3 lg:grid-cols-6 sm:gap-6 sm:overflow-visible"
             style={{
               scrollbarWidth: 'none',
@@ -279,11 +289,10 @@ const CustomerDetails = () => {
           <nav className="flex px-4 sm:px-6 min-w-max">
             <Link
               to={`/customers/${customerId}/trips`}
-              className={`py-4 px-4 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 whitespace-nowrap ${
-                activeTab === 'trips'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+              className={`py-4 px-4 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'trips'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
             >
               <Package className="h-4 w-4 flex-shrink-0" />
               <span>Trips</span>
@@ -294,11 +303,10 @@ const CustomerDetails = () => {
 
             <Link
               to={`/customers/${customerId}/payments`}
-              className={`py-4 px-4 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 whitespace-nowrap ${
-                activeTab === 'payments'
-                  ? 'border-green-500 text-green-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+              className={`py-4 px-4 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 whitespace-nowrap ${activeTab === 'payments'
+                ? 'border-green-500 text-green-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
             >
               <IndianRupee className="h-4 w-4 flex-shrink-0" />
               <span>Payments</span>

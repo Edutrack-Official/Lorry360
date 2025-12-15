@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate, Outlet } from "react-router-dom";
 import api from "../../api/client";
-import { IndianRupee } from "lucide-react";
+import { IndianRupee, User2 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import {
   Building,
@@ -61,7 +61,7 @@ const CrusherDetails = () => {
   const { crusherId } = useParams<{ crusherId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const [crusher, setCrusher] = useState<Crusher | null>(null);
   const [trips, setTrips] = useState<Trip[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -88,19 +88,19 @@ const CrusherDetails = () => {
     }
   };
 
-const fetchTrips = async () => {
-  try {
-    const res = await api.get(`/trips/crusher/${crusherId}`); // Use the same endpoint
- const crusherTrips = (res.data.data?.trips || []).filter(
-              (trip: any) => trip.status === "completed"
-            );
-            
-            setTrips(crusherTrips);
-  } catch (error: any) {
-    console.error("Failed to fetch trips:", error);
-    toast.error("Failed to fetch trips");
-  }
-};
+  const fetchTrips = async () => {
+    try {
+      const res = await api.get(`/trips/crusher/${crusherId}`); // Use the same endpoint
+      const crusherTrips = (res.data.data?.trips || []).filter(
+        (trip: any) => trip.status === "completed"
+      );
+
+      setTrips(crusherTrips);
+    } catch (error: any) {
+      console.error("Failed to fetch trips:", error);
+      toast.error("Failed to fetch trips");
+    }
+  };
 
   const fetchPayments = async () => {
     try {
@@ -136,10 +136,10 @@ const fetchTrips = async () => {
   };
 
   const getStatusBadge = (isActive: boolean) => {
-    const config = isActive 
+    const config = isActive
       ? { color: "bg-green-100 text-green-800 border-green-200", icon: "✅", label: "Active" }
       : { color: "bg-red-100 text-red-800 border-red-200", icon: "⏸️", label: "Inactive" };
-    
+
     return (
       <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium border ${config.color}`}>
         <span>{config.icon}</span>
@@ -210,18 +210,21 @@ const fetchTrips = async () => {
       {/* Header */}
       <div className="bg-white p-4 sm:p-5 md:p-6 rounded-xl border shadow-sm">
         <div className="flex flex-col gap-4">
-          <div className="flex items-start gap-3">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => navigate("/crushers")}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
-            
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">
-                {crusher.name}
-              </h1>
+
+            <div className="flex items-center justify-center lg:justify-start flex-1 min-w-0">
+              <div className="text-center lg:text-left min-w-0 max-w-full">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center justify-center lg:justify-start gap-2">
+                  <User2 className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
+                  <span className="truncate">{crusher.name}</span>
+                </h1>
+              </div>
             </div>
           </div>
         </div>
@@ -286,11 +289,10 @@ const fetchTrips = async () => {
           <nav className="flex space-x-4 sm:space-x-8 px-4 sm:px-6 min-w-max ">
             <Link
               to={`/crushers/${crusherId}/trips`}
-              className={`py-3 sm:py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 whitespace-nowrap ${
-                activeTab === 'trips'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+              className={`py-3 sm:py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 whitespace-nowrap ${activeTab === 'trips'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
             >
               <Package className="h-4 w-4 flex-shrink-0" />
               <span>Trips</span>
@@ -300,11 +302,10 @@ const fetchTrips = async () => {
             </Link>
             <Link
               to={`/crushers/${crusherId}/payments`}
-              className={`py-3 sm:py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 whitespace-nowrap ${
-                activeTab === 'payments'
-                  ? 'border-green-500 text-green-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+              className={`py-3 sm:py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 whitespace-nowrap ${activeTab === 'payments'
+                ? 'border-green-500 text-green-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
             >
               <IndianRupee className="h-4 w-4 flex-shrink-0" />
               <span>Payments</span>

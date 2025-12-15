@@ -83,12 +83,12 @@ interface Collaboration {
 }
 
 const TripForm = () => {
-    const { user } = useAuth();
+  const { user } = useAuth();
   const { tripId } = useParams();
   const [searchParams] = useSearchParams();
   const lorryId = searchParams.get('lorry');
   const navigate = useNavigate();
-  
+
   const [formData, setFormData] = useState<FormData>({
     lorry_id: lorryId || "",
     driver_id: "",
@@ -119,7 +119,7 @@ const TripForm = () => {
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [selectedCustomerAddresses, setSelectedCustomerAddresses] = useState<string[]>([]);
-  const [availableMaterials, setAvailableMaterials] = useState<Array<{material_name: string; price_per_unit: number}>>([]);
+  const [availableMaterials, setAvailableMaterials] = useState<Array<{ material_name: string; price_per_unit: number }>>([]);
   const [lorryName, setLorryName] = useState("");
   const [isCustomMaterial, setIsCustomMaterial] = useState(false);
   const [destinationType, setDestinationType] = useState<'customer' | 'collaborative'>('customer');
@@ -164,17 +164,17 @@ const TripForm = () => {
 
         // Fetch active collaborations
         const collabResponse = await api.get('/collaborations/active');
-        
+
         setCollaborations(collabResponse.data.data?.collaborations || []);
 
         if (isEditMode) {
           const tripRes = await api.get(`/trips/${tripId}`);
           const tripData = tripRes.data.data;
-          
+
           // Determine destination type
           const isCollaborative = !!tripData.collab_owner_id;
           setDestinationType(isCollaborative ? 'collaborative' : 'customer');
-          
+
           setFormData({
             lorry_id: tripData.lorry_id?._id || lorryId || "",
             driver_id: tripData.driver_id?._id || "",
@@ -237,7 +237,7 @@ const TripForm = () => {
           ...(customer.site_addresses || [])
         ].filter(addr => addr && addr.trim() !== '');
         setSelectedCustomerAddresses(addresses);
-        
+
         if (addresses.length > 0 && !formData.location) {
           setFormData(prev => ({ ...prev, location: addresses[0] }));
         }
@@ -253,7 +253,7 @@ const TripForm = () => {
       const crusher = formOptions.crushers.find(c => c._id === formData.crusher_id);
       if (crusher) {
         setAvailableMaterials(crusher.materials || []);
-        
+
         // Check if current material exists in new crusher's materials
         if (formData.material_name) {
           const materialExists = crusher.materials.some(m => m.material_name === formData.material_name);
@@ -272,9 +272,9 @@ const TripForm = () => {
     if (!isEditMode && formData.material_name && availableMaterials.length > 0 && !isCustomMaterial) {
       const material = availableMaterials.find(m => m.material_name === formData.material_name);
       if (material) {
-        setFormData(prev => ({ 
-          ...prev, 
-          rate_per_unit: material.price_per_unit 
+        setFormData(prev => ({
+          ...prev,
+          rate_per_unit: material.price_per_unit
         }));
       }
     }
@@ -290,7 +290,7 @@ const TripForm = () => {
 
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
+
     // Allow empty value (user can delete 0)
     if (value === '') {
       setFormData(prev => ({
@@ -315,7 +315,7 @@ const TripForm = () => {
 
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    
+
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -333,22 +333,22 @@ const TripForm = () => {
 
   const handleMaterialSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const { value } = e.target;
-    setFormData(prev => ({ 
-      ...prev, 
-      material_name: value 
+    setFormData(prev => ({
+      ...prev,
+      material_name: value
     }));
-    
+
     // Auto-populate rate when material is selected from dropdown
     if (value && availableMaterials.length > 0) {
       const material = availableMaterials.find(m => m.material_name === value);
       if (material) {
-        setFormData(prev => ({ 
-          ...prev, 
-          rate_per_unit: material.price_per_unit 
+        setFormData(prev => ({
+          ...prev,
+          rate_per_unit: material.price_per_unit
         }));
       }
     }
-    
+
     setIsCustomMaterial(false);
   };
 
@@ -378,19 +378,19 @@ const TripForm = () => {
   };
 
   // Get collaborative partners from active collaborations
-const getCollaborativePartners = (currentUserId: any) => {
+  const getCollaborativePartners = (currentUserId: any) => {
     const allPartners = collaborations.flatMap(collab => [
-        collab.from_owner_id,
-        collab.to_owner_id
-    ]).filter(partner => 
-        partner && partner._id && partner._id !== currentUserId
+      collab.from_owner_id,
+      collab.to_owner_id
+    ]).filter(partner =>
+      partner && partner._id && partner._id !== currentUserId
     );
 
     // Remove duplicates
-    return allPartners.filter((partner, index, self) => 
-        index === self.findIndex(p => p._id === partner._id)
+    return allPartners.filter((partner, index, self) =>
+      index === self.findIndex(p => p._id === partner._id)
     );
-};
+  };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -399,17 +399,17 @@ const getCollaborativePartners = (currentUserId: any) => {
     if (!formData.driver_id) newErrors.driver_id = "Driver is required";
     if (!formData.crusher_id) newErrors.crusher_id = "Crusher is required";
     if (!formData.material_name) newErrors.material_name = "Material is required";
-    
+
     // Validate destination based on type
     if (destinationType === 'customer') {
 
-     if (!formData.customer_id) 
+      if (!formData.customer_id)
         newErrors.customer_id = "Customer is required";
 
     } else {
       if (!formData.collab_owner_id) newErrors.collab_owner_id = "Collaborative owner is required";
     }
-    
+
     if (!formData.location) newErrors.location = "Location is required";
     if (formData.rate_per_unit <= 0) newErrors.rate_per_unit = "Rate per unit must be greater than 0";
     if (formData.no_of_unit_crusher <= 0) newErrors.no_of_unit_crusher = "Crusher units must be greater than 0";
@@ -425,9 +425,9 @@ const getCollaborativePartners = (currentUserId: any) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
-      toast.error("Please fix the form errors");
+      toast.error("Please complete all required fields");
       return;
     }
 
@@ -435,11 +435,11 @@ const getCollaborativePartners = (currentUserId: any) => {
     try {
       if (isEditMode) {
 
-        if(destinationType=='customer') {
-          formData.collab_owner_id="";
+        if (destinationType == 'customer') {
+          formData.collab_owner_id = "";
         }
         else {
-          formData.customer_id="";
+          formData.customer_id = "";
         }
         await api.put(`/trips/update/${tripId}`, formData);
         toast.success("Trip updated successfully");
@@ -447,7 +447,7 @@ const getCollaborativePartners = (currentUserId: any) => {
         await api.post("/trips/create", formData);
         toast.success("Trip created successfully");
       }
-      
+
       if (formData.lorry_id) {
         navigate(`/lorries/${formData.lorry_id}/trips`);
       } else {
@@ -455,7 +455,7 @@ const getCollaborativePartners = (currentUserId: any) => {
       }
     } catch (error: any) {
       let errorMessage = error.response?.data?.error || "Operation failed";
-      
+
       // Transform technical errors to user-friendly messages
       if (errorMessage.includes('dc_number_1')) {
         errorMessage = "This DC number is already in use. Please use a different DC number.";
@@ -494,16 +494,15 @@ const getCollaborativePartners = (currentUserId: any) => {
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
           <div className="flex items-center gap-3 mb-6">
             <BackButton />
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Truck className="h-6 w-6 text-blue-600" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                {isEditMode ? 'Edit Trip' : 'Create New Trip'}
-              </h1>
-              <p className="text-gray-600">
-                {isEditMode ? 'Update trip details' : 'Add a new trip for the lorry'}
-              </p>
+            <div className="flex items-center justify-center lg:justify-start flex-1">
+              <div className="text-center lg:text-left">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+                  {isEditMode ? 'Edit Trip' : 'Create New Trip'}
+                </h2>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {isEditMode ? 'Update trip details' : 'Add a new trip for the lorry'}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -550,28 +549,28 @@ const getCollaborativePartners = (currentUserId: any) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Destination Type *
                 </label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="radio"
                       name="destinationType"
                       checked={destinationType === 'customer'}
                       onChange={() => handleDestinationTypeChange('customer')}
-                      className="text-blue-600"
+                      className="text-blue-600 flex-shrink-0"
                     />
-                    <User className="h-4 w-4" />
-                    Customer
+                    <User className="h-4 w-4 flex-shrink-0" />
+                    <span className="text-sm sm:text-base">Customer</span>
                   </label>
-                  <label className="flex items-center gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="radio"
                       name="destinationType"
                       checked={destinationType === 'collaborative'}
                       onChange={() => handleDestinationTypeChange('collaborative')}
-                      className="text-blue-600"
+                      className="text-blue-600 flex-shrink-0"
                     />
-                    <Users className="h-4 w-4" />
-                    Collaborative Owner
+                    <Users className="h-4 w-4 flex-shrink-0" />
+                    <span className="text-sm sm:text-base whitespace-nowrap">Collaborative Owner</span>
                   </label>
                 </div>
               </div>
@@ -669,11 +668,10 @@ const getCollaborativePartners = (currentUserId: any) => {
                         key={index}
                         type="button"
                         onClick={() => handleAddressSelect(address)}
-                        className={`p-3 text-left rounded-lg border transition-colors ${
-                          formData.location === address
-                            ? 'border-blue-500 bg-blue-50 text-blue-700'
-                            : 'border-gray-300 bg-white hover:bg-gray-50'
-                        }`}
+                        className={`p-3 text-left rounded-lg border transition-colors ${formData.location === address
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-300 bg-white hover:bg-gray-50'
+                          }`}
                       >
                         <div className="flex items-start gap-2">
                           <Navigation className="h-4 w-4 mt-0.5 flex-shrink-0" />
@@ -698,7 +696,7 @@ const getCollaborativePartners = (currentUserId: any) => {
                   onChange={handleTextChange}
                   className="w-full input input-bordered"
                   placeholder={
-                    destinationType === 'customer' 
+                    destinationType === 'customer'
                       ? "Enter delivery address or select from above"
                       : "Enter delivery address for collaborative owner"
                   }
@@ -737,7 +735,7 @@ const getCollaborativePartners = (currentUserId: any) => {
                   <Package className="h-4 w-4 inline mr-2" />
                   Material *
                 </label>
-                
+
                 <div className="space-y-2">
                   {isCustomMaterial ? (
                     <div className="space-y-2">
@@ -783,7 +781,7 @@ const getCollaborativePartners = (currentUserId: any) => {
                     </div>
                   )}
                 </div>
-                
+
                 {errors.material_name && <p className="mt-1 text-sm text-red-600">{errors.material_name}</p>}
                 {!formData.crusher_id && !isCustomMaterial && (
                   <p className="mt-1 text-sm text-gray-500">Please select a crusher first</p>
@@ -938,7 +936,7 @@ const getCollaborativePartners = (currentUserId: any) => {
                 <Save className="h-4 w-4" />
                 {submitting ? 'Saving...' : (isEditMode ? 'Update Trip' : 'Create Trip')}
               </button>
-              
+
               <button
                 type="button"
                 onClick={() => navigate(-1)}
