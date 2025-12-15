@@ -98,18 +98,18 @@
 //   const navigate = useNavigate();
 //   const location = useLocation();
 //   const { user } = useAuth();
-  
+
 //   const [partner, setPartner] = useState<Partner | null>(null);
 //   const [loading, setLoading] = useState(true);
 //   const [activeMainTab, setActiveMainTab] = useState<'trips' | 'payments'>('trips');
 //   const [activeTripsTab, setActiveTripsTab] = useState<'my-trips' | 'partner-trips'>('my-trips');
 //   const [activePaymentsTab, setActivePaymentsTab] = useState<'my-payments' | 'partner-payments'>('my-payments');
-  
+
 //   const [myTrips, setMyTrips] = useState<Trip[]>([]);
 //   const [partnerTrips, setPartnerTrips] = useState<Trip[]>([]);
 //   const [myPayments, setMyPayments] = useState<Payment[]>([]);
 //   const [partnerPayments, setPartnerPayments] = useState<Payment[]>([]);
-  
+
 //   const [searchText, setSearchText] = useState('');
 //   const [dateRange, setDateRange] = useState({ start: '', end: '' });
 //   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('all');
@@ -121,7 +121,7 @@
 //       setPartnerPayments([]);
 //       setMyTrips([]);
 //       setPartnerTrips([]);
-      
+
 //       setPartner(location.state.partner);
 //       fetchData();
 //     } else {
@@ -161,7 +161,7 @@
 //           }
 //         })
 //       ]);
-      
+
 //       // Show all completed trips (including pending, approved, rejected)
 //       setMyTrips(myTripsRes.data.data?.trips || []);
 //       setPartnerTrips(partnerTripsRes.data.data?.trips || []);
@@ -246,22 +246,22 @@
 //     const approvedPartnerTrips = partnerTrips.filter(t => 
 //       t.collab_trip_status === 'approved'
 //     );
-    
+
 //     const totalMyTripsAmount = approvedMyTrips.reduce((sum, trip) => sum + trip.customer_amount, 0);
 //     const totalPartnerTripsAmount = approvedPartnerTrips.reduce((sum, trip) => sum + trip.customer_amount, 0);
-    
+
 //     const totalMyPayments = myPayments
 //       .filter(p => p.collab_payment_status === 'approved')
 //       .reduce((sum, payment) => sum + payment.amount, 0);
-    
+
 //     const totalPartnerPayments = partnerPayments
 //       .filter(p => p.collab_payment_status === 'approved')
 //       .reduce((sum, payment) => sum + payment.amount, 0);
-    
+
 //     const netTripAmount = totalPartnerTripsAmount - totalMyTripsAmount;
 //     const totalPaymentsMade = totalMyPayments + totalPartnerPayments;
 //     const finalBalance = netTripAmount - totalMyPayments + totalPartnerPayments;
-    
+
 //     return {
 //       totalMyTripsAmount,
 //       totalPartnerTripsAmount,
@@ -279,42 +279,42 @@
 
 //   const filteredTrips = () => {
 //     const trips = activeTripsTab === 'my-trips' ? myTrips : partnerTrips;
-    
+
 //     return trips.filter(trip => {
 //       const matchesSearch = !searchText || 
 //         trip.trip_number.toLowerCase().includes(searchText.toLowerCase()) ||
 //         trip.material_name.toLowerCase().includes(searchText.toLowerCase()) ||
 //         trip.location.toLowerCase().includes(searchText.toLowerCase());
-      
+
 //       const matchesTripStatus = tripStatusFilter === 'all' || 
 //         (trip.collab_trip_status === tripStatusFilter);
-      
+
 //       const tripDate = new Date(trip.trip_date);
 //       const matchesDateRange =
 //         (!dateRange.start || tripDate >= new Date(dateRange.start)) &&
 //         (!dateRange.end || tripDate <= new Date(dateRange.end));
-      
+
 //       return matchesSearch && matchesTripStatus && matchesDateRange;
 //     });
 //   };
 
 //   const filteredPayments = () => {
 //     const payments = activePaymentsTab === 'my-payments' ? myPayments : partnerPayments;
-    
+
 //     return payments.filter(payment => {
 //       const matchesSearch = !searchText ||
 //         payment.payment_number.toLowerCase().includes(searchText.toLowerCase()) ||
 //         payment.payment_mode.toLowerCase().includes(searchText.toLowerCase()) ||
 //         payment.notes?.toLowerCase().includes(searchText.toLowerCase());
-      
+
 //       const matchesStatus = paymentStatusFilter === 'all' || 
 //         payment.collab_payment_status === paymentStatusFilter;
-      
+
 //       const paymentDate = new Date(payment.payment_date);
 //       const matchesDateRange =
 //         (!dateRange.start || paymentDate >= new Date(dateRange.start)) &&
 //         (!dateRange.end || paymentDate <= new Date(dateRange.end));
-      
+
 //       return matchesSearch && matchesStatus && matchesDateRange;
 //     });
 //   };
@@ -697,7 +697,7 @@
 //                 </>
 //               )}
 //             </div>
-            
+
 //             <div className="flex items-center gap-2">
 //               {activeMainTab === 'trips' && (
 //                 <select
@@ -711,7 +711,7 @@
 //                   <option value="rejected">Rejected</option>
 //                 </select>
 //               )}
-              
+
 //               {activeMainTab === 'payments' && (
 //                 <select
 //                   value={paymentStatusFilter}
@@ -724,7 +724,7 @@
 //                   <option value="rejected">Rejected</option>
 //                 </select>
 //               )}
-              
+
 //               <div className="flex gap-2">
 //                 <input
 //                   type="date"
@@ -739,7 +739,7 @@
 //                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
 //                 />
 //               </div>
-              
+
 //               <div className="relative">
 //                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
 //                 <input
@@ -779,7 +779,7 @@
 //               ({activeMainTab === 'trips' ? filteredTrips().length : filteredPayments().length} items)
 //             </span>
 //           </h3>
-          
+
 //           {activeMainTab === 'trips' ? (
 //             filteredTrips().length === 0 ? (
 //               <div className="text-center py-12">
@@ -928,7 +928,7 @@ const CollaborationDetailsPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  
+
   const [partner, setPartner] = useState<Partner | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeMainTab, setActiveMainTab] = useState<'trips' | 'payments'>('trips');
@@ -940,7 +940,7 @@ const CollaborationDetailsPage = () => {
   const [partnerTrips, setPartnerTrips] = useState<Trip[]>([]);
   const [myPayments, setMyPayments] = useState<Payment[]>([]);
   const [partnerPayments, setPartnerPayments] = useState<Payment[]>([]);
-  
+
   const [searchText, setSearchText] = useState('');
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('all');
@@ -953,7 +953,7 @@ const CollaborationDetailsPage = () => {
       setPartnerPayments([]);
       setMyTrips([]);
       setPartnerTrips([]);
-      
+
       setPartner(location.state.partner);
       fetchData();
     } else {
@@ -992,7 +992,7 @@ const CollaborationDetailsPage = () => {
           }
         })
       ]);
-      
+
       setMyTrips(myTripsRes.data.data?.trips || []);
       setPartnerTrips(partnerTripsRes.data.data?.trips || []);
 
@@ -1069,28 +1069,28 @@ const CollaborationDetailsPage = () => {
   };
 
   const calculateTotals = () => {
-    const approvedMyTrips = myTrips.filter(t => 
+    const approvedMyTrips = myTrips.filter(t =>
       t.collab_trip_status === 'approved'
     );
-    const approvedPartnerTrips = partnerTrips.filter(t => 
+    const approvedPartnerTrips = partnerTrips.filter(t =>
       t.collab_trip_status === 'approved'
     );
-    
+
     const totalMyTripsAmount = approvedMyTrips.reduce((sum, trip) => sum + trip.customer_amount, 0);
     const totalPartnerTripsAmount = approvedPartnerTrips.reduce((sum, trip) => sum + trip.customer_amount, 0);
-    
+
     const totalMyPayments = myPayments
       .filter(p => p.collab_payment_status === 'approved')
       .reduce((sum, payment) => sum + payment.amount, 0);
-    
+
     const totalPartnerPayments = partnerPayments
       .filter(p => p.collab_payment_status === 'approved')
       .reduce((sum, payment) => sum + payment.amount, 0);
-    
+
     const netTripAmount = totalPartnerTripsAmount - totalMyTripsAmount;
     const totalPaymentsMade = totalMyPayments + totalPartnerPayments;
     const finalBalance = netTripAmount - totalMyPayments + totalPartnerPayments;
-    
+
     return {
       totalMyTripsAmount,
       totalPartnerTripsAmount,
@@ -1108,42 +1108,42 @@ const CollaborationDetailsPage = () => {
 
   const filteredTrips = () => {
     const trips = activeTripsTab === 'my-trips' ? myTrips : partnerTrips;
-    
+
     return trips.filter(trip => {
-      const matchesSearch = !searchText || 
+      const matchesSearch = !searchText ||
         trip.trip_number.toLowerCase().includes(searchText.toLowerCase()) ||
         trip.material_name.toLowerCase().includes(searchText.toLowerCase()) ||
         trip.location.toLowerCase().includes(searchText.toLowerCase());
-      
-      const matchesTripStatus = tripStatusFilter === 'all' || 
+
+      const matchesTripStatus = tripStatusFilter === 'all' ||
         (trip.collab_trip_status === tripStatusFilter);
-      
+
       const tripDate = new Date(trip.trip_date);
       const matchesDateRange =
         (!dateRange.start || tripDate >= new Date(dateRange.start)) &&
         (!dateRange.end || tripDate <= new Date(dateRange.end));
-      
+
       return matchesSearch && matchesTripStatus && matchesDateRange;
     });
   };
 
   const filteredPayments = () => {
     const payments = activePaymentsTab === 'my-payments' ? myPayments : partnerPayments;
-    
+
     return payments.filter(payment => {
       const matchesSearch = !searchText ||
         payment.payment_number.toLowerCase().includes(searchText.toLowerCase()) ||
         payment.payment_mode.toLowerCase().includes(searchText.toLowerCase()) ||
         payment.notes?.toLowerCase().includes(searchText.toLowerCase());
-      
-      const matchesStatus = paymentStatusFilter === 'all' || 
+
+      const matchesStatus = paymentStatusFilter === 'all' ||
         payment.collab_payment_status === paymentStatusFilter;
-      
+
       const paymentDate = new Date(payment.payment_date);
       const matchesDateRange =
         (!dateRange.start || paymentDate >= new Date(dateRange.start)) &&
         (!dateRange.end || paymentDate <= new Date(dateRange.end));
-      
+
       return matchesSearch && matchesStatus && matchesDateRange;
     });
   };
@@ -1168,8 +1168,8 @@ const CollaborationDetailsPage = () => {
     return configs[status as keyof typeof configs] || configs.pending;
   };
 
-  const TripCard = ({ trip, type, canApproveReject }: { 
-    trip: Trip; 
+  const TripCard = ({ trip, type, canApproveReject }: {
+    trip: Trip;
     type: 'my' | 'partner';
     canApproveReject: boolean;
   }) => {
@@ -1195,7 +1195,7 @@ const CollaborationDetailsPage = () => {
           <div className="flex items-center gap-2">
             <div className={`p-2 rounded-lg ${
               type === 'my' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'
-            }`}>
+              }`}>
               <Truck className="h-4 w-4" />
             </div>
             <div>
@@ -1392,11 +1392,11 @@ const CollaborationDetailsPage = () => {
             </div>
             <div className={`p-3 rounded-lg border ${
               totals.finalBalance > 0 
-                ? 'bg-gradient-to-br from-green-50 to-green-100 border-green-200'
-                : totals.finalBalance < 0
+              ? 'bg-gradient-to-br from-green-50 to-green-100 border-green-200'
+              : totals.finalBalance < 0
                 ? 'bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200'
                 : 'bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200'
-            }`}>
+              }`}>
               <div className="flex items-center gap-1 mb-1">
                 {totals.finalBalance > 0 ? (
                   <TrendingDown className="h-3 w-3 text-green-600" />
@@ -1406,15 +1406,15 @@ const CollaborationDetailsPage = () => {
                 <p className={`text-xs ${
                   totals.finalBalance > 0 ? 'text-green-700' : 
                   totals.finalBalance < 0 ? 'text-orange-700' : 'text-gray-700'
-                }`}>
-                  {totals.finalBalance > 0 ? `You need to pay ${partner.name}` : 
-                   totals.finalBalance < 0 ? `${partner.name} needs to pay you` : 'All settled'}
+                  }`}>
+                  {totals.finalBalance > 0 ? `You need to pay ${partner.name}` :
+                    totals.finalBalance < 0 ? `${partner.name} needs to pay you` : 'All settled'}
                 </p>
               </div>
               <p className={`text-base sm:text-lg font-bold ${
                 totals.finalBalance > 0 ? 'text-green-900' : 
                 totals.finalBalance < 0 ? 'text-orange-900' : 'text-gray-900'
-              }`}>
+                }`}>
                 {formatCurrency(Math.abs(totals.finalBalance))}
               </p>
             </div>
@@ -1429,17 +1429,17 @@ const CollaborationDetailsPage = () => {
             onClick={() => setActiveMainTab('trips')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all whitespace-nowrap ${
               activeMainTab === 'trips'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'bg-white text-gray-700 border border-gray-200'
-            }`}
+              ? 'bg-blue-600 text-white shadow-md'
+              : 'bg-white text-gray-700 border border-gray-200'
+              }`}
           >
             <Truck className="h-4 w-4" />
             <span>Trips</span>
             <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-bold ${
               activeMainTab === 'trips'
-                ? 'bg-white/20 text-white'
-                : 'bg-gray-200 text-gray-700'
-            }`}>
+              ? 'bg-white/20 text-white'
+              : 'bg-gray-200 text-gray-700'
+              }`}>
               {myTrips.length + partnerTrips.length}
             </span>
           </button>
@@ -1447,17 +1447,17 @@ const CollaborationDetailsPage = () => {
             onClick={() => setActiveMainTab('payments')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all whitespace-nowrap ${
               activeMainTab === 'payments'
-                ? 'bg-green-600 text-white shadow-md'
-                : 'bg-white text-gray-700 border border-gray-200'
-            }`}
+              ? 'bg-green-600 text-white shadow-md'
+              : 'bg-white text-gray-700 border border-gray-200'
+              }`}
           >
             <CreditCard className="h-4 w-4" />
             <span>Payments</span>
             <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-bold ${
               activeMainTab === 'payments'
-                ? 'bg-white/20 text-white'
-                : 'bg-gray-200 text-gray-700'
-            }`}>
+              ? 'bg-white/20 text-white'
+              : 'bg-gray-200 text-gray-700'
+              }`}>
               {myPayments.length + partnerPayments.length}
             </span>
           </button>
@@ -1472,9 +1472,9 @@ const CollaborationDetailsPage = () => {
                   onClick={() => setActiveTripsTab('my-trips')}
                   className={`px-4 py-2 font-medium text-sm border-b-2 whitespace-nowrap ${
                     activeTripsTab === 'my-trips'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500'
-                  }`}
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500'
+                    }`}
                 >
                   My Completed Trips
                   <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
@@ -1485,9 +1485,9 @@ const CollaborationDetailsPage = () => {
                   onClick={() => setActiveTripsTab('partner-trips')}
                   className={`px-4 py-2 font-medium text-sm border-b-2 whitespace-nowrap ${
                     activeTripsTab === 'partner-trips'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500'
-                  }`}
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500'
+                    }`}
                 >
                   Partner Completed Trips
                   <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
@@ -1501,9 +1501,9 @@ const CollaborationDetailsPage = () => {
                   onClick={() => setActivePaymentsTab('my-payments')}
                   className={`px-4 py-2 font-medium text-sm border-b-2 whitespace-nowrap ${
                     activePaymentsTab === 'my-payments'
-                      ? 'border-green-500 text-green-600'
-                      : 'border-transparent text-gray-500'
-                  }`}
+                    ? 'border-green-500 text-green-600'
+                    : 'border-transparent text-gray-500'
+                    }`}
                 >
                   My Payments
                   <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
@@ -1514,9 +1514,9 @@ const CollaborationDetailsPage = () => {
                   onClick={() => setActivePaymentsTab('partner-payments')}
                   className={`px-4 py-2 font-medium text-sm border-b-2 whitespace-nowrap ${
                     activePaymentsTab === 'partner-payments'
-                      ? 'border-green-500 text-green-600'
-                      : 'border-transparent text-gray-500'
-                  }`}
+                    ? 'border-green-500 text-green-600'
+                    : 'border-transparent text-gray-500'
+                    }`}
                 >
                   Partner Payments
                   <span className="ml-2 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
@@ -1526,7 +1526,7 @@ const CollaborationDetailsPage = () => {
               </>
             )}
           </div>
-          
+
           {/* Filters Toggle Button */}
           <button
             onClick={() => setShowFilters(!showFilters)}
@@ -1585,23 +1585,27 @@ const CollaborationDetailsPage = () => {
                       <option value="rejected">Rejected</option>
                     </select>
                   )}
-                  
+
                   {/* Date Range */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="date"
-                      value={dateRange.start}
-                      onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                      className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                      placeholder="Start Date"
-                    />
-                    <input
-                      type="date"
-                      value={dateRange.end}
-                      onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                      className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                      placeholder="End Date"
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs text-gray-600 font-medium">Start Date</label>
+                      <input
+                        type="date"
+                        value={dateRange.start}
+                        onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs text-gray-600 font-medium">End Date</label>
+                      <input
+                        type="date"
+                        value={dateRange.end}
+                        onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none "
+                      />
+                    </div>
                   </div>
 
                   {/* Clear Filters */}
@@ -1641,18 +1645,18 @@ const CollaborationDetailsPage = () => {
         {/* Content Cards */}
         <div className="bg-white rounded-lg border shadow-sm p-4">
           <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-3">
-            {activeMainTab === 'trips' 
-              ? (activeTripsTab === 'my-trips' 
-                  ? `My Completed Trips to ${partner.name}` 
-                  : `${partner.name}'s Completed Trips to Me`)
+            {activeMainTab === 'trips'
+              ? (activeTripsTab === 'my-trips'
+                ? `My Completed Trips to ${partner.name}`
+                : `${partner.name}'s Completed Trips to Me`)
               : (activePaymentsTab === 'my-payments'
-                  ? `My Payments to ${partner.name}`
-                  : `${partner.name}'s Payments to Me`)}
+                ? `My Payments to ${partner.name}`
+                : `${partner.name}'s Payments to Me`)}
             <span className="text-gray-500 font-normal ml-2">
               ({activeMainTab === 'trips' ? filteredTrips().length : filteredPayments().length} items)
             </span>
           </h3>
-          
+
           {activeMainTab === 'trips' ? (
             filteredTrips().length === 0 ? (
               <div className="text-center py-12">
@@ -1663,9 +1667,9 @@ const CollaborationDetailsPage = () => {
             ) : (
               <div className="space-y-3">
                 {filteredTrips().map((trip) => (
-                  <TripCard 
-                    key={trip._id} 
-                    trip={trip} 
+                  <TripCard
+                    key={trip._id}
+                    trip={trip}
                     type={activeTripsTab === 'my-trips' ? 'my' : 'partner'}
                     canApproveReject={activeTripsTab === 'partner-trips'}
                   />
@@ -1681,8 +1685,8 @@ const CollaborationDetailsPage = () => {
             ) : (
               <div className="space-y-3">
                 {filteredPayments().map((payment) => (
-                  <PaymentCard 
-                    key={payment._id} 
+                  <PaymentCard
+                    key={payment._id}
                     payment={payment}
                     canApproveReject={activePaymentsTab === 'partner-payments'}
                   />
