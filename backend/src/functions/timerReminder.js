@@ -1,10 +1,10 @@
-// const { app } = require("@azure/functions");
-// const reminderScheduler = require("./reminderScheduler");
+const { app } = require("@azure/functions");
+const reminderScheduler = require("./reminderScheduler");
 
-// app.timer("ReminderTimer", {
-//   schedule: "0 */1 * * * *",  // every 1 minute
-//   handler: async () => {
-//     console.log("Running Reminder Scheduler...");
-//     await reminderScheduler();
-//   }
-// });
+app.timer("ReminderTimer", {
+  schedule: "0 0 6 * * *",   // At 06:00:00 everyday, 
+  handler: async () => {
+    console.log("Running Reminder Scheduler...");
+    await reminderScheduler();
+  }
+});
