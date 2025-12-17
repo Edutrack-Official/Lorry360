@@ -445,7 +445,7 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
   }
 
   return (
-    <div className="space-y-6">
+    <div className="">
       {/* Period Selector */}
       <div className="bg-white rounded-xl border shadow-sm p-4 sm:p-6">
         <div className="flex flex-col gap-4">
@@ -519,7 +519,7 @@ const SalaryTab: React.FC<SalaryTabProps> = ({ driverId, salary, onUpdate, drive
       </div>
 
       {/* Salary to be Paid - Most Important Card */}
-      <div className="bg-white rounded-xl border shadow-sm p-6">
+      <div className="bg-white rounded-xl border shadow-sm p-6 mt-4">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-bold text-gray-900">Salary Summary</h3>
           <div className="text-sm text-gray-600">
