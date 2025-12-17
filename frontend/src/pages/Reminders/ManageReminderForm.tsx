@@ -437,9 +437,9 @@ const ManageReminderForm: React.FC = () => {
           <div className="flex items-center gap-3">
             <BackButton />
             <div className="flex items-center gap-2 flex-1">
-              <div className="p-2 bg-blue-100 rounded-lg">
+              {/* <div className="p-2 bg-blue-100 rounded-lg">
                 <Bell className="h-5 w-5 text-blue-600" />
-              </div>
+              </div> */}
               <div>
                 <h2 className="text-lg sm:text-xl font-bold text-gray-900">
                   {isEditMode ? "Edit Reminder" : "Add New Reminder"}

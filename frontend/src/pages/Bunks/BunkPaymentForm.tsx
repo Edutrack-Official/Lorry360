@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Save, 
-  CreditCard, 
-  Calendar, 
-  Building2, 
-  FileText, 
+import {
+  ArrowLeft,
+  Save,
+  CreditCard,
+  Calendar,
+  Building2,
+  FileText,
   X,
   AlertCircle,
   Banknote,
@@ -72,7 +72,7 @@ const BunkPaymentForm = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const isEditMode = !!paymentId;
-  
+
   const [formData, setFormData] = useState<PaymentFormData>({
     payment_type: 'to_bunk',
     bunk_id: bunkId || searchParams.get('bunk') || '',
@@ -99,14 +99,14 @@ const BunkPaymentForm = () => {
             try {
               const paymentRes = await api.get(`/payments/${paymentId}`);
               const paymentData = paymentRes.data.data;
-              
+
               // Set form data from existing payment
               setFormData({
                 payment_type: paymentData.payment_type || 'to_bunk',
                 bunk_id: paymentData.bunk_id || '',
                 amount: paymentData.amount || 0,
-                payment_date: paymentData.payment_date ? 
-                  new Date(paymentData.payment_date).toISOString().split('T')[0] : 
+                payment_date: paymentData.payment_date ?
+                  new Date(paymentData.payment_date).toISOString().split('T')[0] :
                   new Date().toISOString().split('T')[0],
                 payment_mode: paymentData.payment_mode || 'cash',
                 notes: paymentData.notes || ''
@@ -160,7 +160,7 @@ const BunkPaymentForm = () => {
   const calculatePaymentStats = () => {
     // Filter for fuel expenses only
     const fuelExpenses = expenses.filter(expense => expense.category === 'fuel');
-    
+
     const totalExpenseAmount = fuelExpenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
     const totalPayments = payments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
     const pendingAmount = Math.max(0, totalExpenseAmount - totalPayments);
@@ -176,7 +176,7 @@ const BunkPaymentForm = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    
+
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -189,7 +189,7 @@ const BunkPaymentForm = () => {
 
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
+
     if (value === '') {
       setFormData(prev => ({
         ...prev,
@@ -232,7 +232,7 @@ const BunkPaymentForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       toast.error("Please fix the form errors");
       return;
@@ -256,20 +256,20 @@ const BunkPaymentForm = () => {
         await api.post("/payments/create", submissionData);
         toast.success("Payment recorded successfully");
       }
-      
+
       // Navigate back to payments list
       const targetBunkId = bunkId || formData.bunk_id;
       navigate(`/bunks/${targetBunkId}/payments`);
-      
+
     } catch (error: any) {
       console.error('Payment submission error:', error);
-      let errorMessage = error.response?.data?.error || 
+      let errorMessage = error.response?.data?.error ||
         (isEditMode ? "Failed to update payment" : "Failed to record payment");
-      
+
       if (errorMessage.includes('bunk_id') && errorMessage.includes('required')) {
         errorMessage = "Bunk information is missing. Please refresh the page and try again.";
       }
-      
+
       toast.error(errorMessage);
     } finally {
       setSubmitting(false);
@@ -331,7 +331,7 @@ const BunkPaymentForm = () => {
       <div className="max-w-4xl mx-auto space-y-4">
         {/* Header */}
         <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
-          <div className="flex items-start gap-3 mb-4">
+          <div className="flex items-center gap-4 mb-4">
             <button
               onClick={() => {
                 const targetBunkId = bunkId || formData.bunk_id;
@@ -342,88 +342,17 @@ const BunkPaymentForm = () => {
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
-            <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
-              <CreditCard className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
-            </div>
             <div className="min-w-0 flex-1">
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
                 {isEditMode ? 'Edit Payment' : 'Bunk Payments'}
               </h1>
-              <p className="text-sm sm:text-base text-gray-600 truncate">
-                {isEditMode 
-                  ? `Edit payment for ${bunk?.bunk_name || 'Bunk'}`
+              <p className="text-xs text-gray-500 mt-0.5 truncate">
+                {isEditMode
+                  ? `Update payment details for ${bunk?.bunk_name || 'Bunk'}`
                   : `Manage payments to ${bunk?.bunk_name || 'Bunk'}`}
               </p>
             </div>
           </div>
-
-          {/* Bunk Info Card */}
-          {/* {bunk && (
-            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-              <div className="flex items-start gap-3">
-                <Building2 className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-blue-900 break-words">{bunk.bunk_name}</h3>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      bunk.isActive 
-                        ? "bg-green-100 text-green-800" 
-                        : "bg-red-100 text-red-800"
-                    }`}>
-                      {bunk.isActive ? "Active" : "Inactive"}
-                    </span>
-                  </div>
-                  {bunk.address && (
-                    <p className="text-blue-600 text-sm break-words">{bunk.address}</p>
-                  )}
-                  <p className="text-blue-500 text-xs mt-1">
-                    Created: {new Date(bunk.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )} */}
-
-          {/* Payment Stats */}
-          {/* {!isEditMode && bunk && (
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="bg-white p-4 rounded-lg border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Total Fuel Expenses</p>
-                    <p className="text-xl font-bold text-red-600">
-                      {formatCurrency(paymentStats.totalExpenseAmount)}
-                    </p>
-                  </div>
-                  <Fuel className="h-8 w-8 text-red-400" />
-                </div>
-              </div>
-              
-              <div className="bg-white p-4 rounded-lg border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Total Payments Made</p>
-                    <p className="text-xl font-bold text-green-600">
-                      {formatCurrency(paymentStats.totalPayments)}
-                    </p>
-                  </div>
-                  <CreditCard className="h-8 w-8 text-green-400" />
-                </div>
-              </div>
-              
-              <div className="bg-white p-4 rounded-lg border border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Pending Amount</p>
-                    <p className="text-xl font-bold text-orange-600">
-                      {formatCurrency(paymentStats.pendingAmount)}
-                    </p>
-                  </div>
-                  <AlertCircle className="h-8 w-8 text-orange-400" />
-                </div>
-              </div>
-            </div>
-          )} */}
         </div>
 
         {/* Payment Form */}
@@ -431,7 +360,7 @@ const BunkPaymentForm = () => {
           <h3 className="text-lg font-bold text-gray-900 mb-6">
             {isEditMode ? 'Edit Payment' : 'Record New Payment'}
           </h3>
-          
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-4 sm:space-y-6">
               {/* Amount */}
@@ -501,11 +430,10 @@ const BunkPaymentForm = () => {
                         key={mode.value}
                         type="button"
                         onClick={() => setFormData(prev => ({ ...prev, payment_mode: mode.value }))}
-                        className={`p-3 rounded-lg border transition-all ${
-                          formData.payment_mode === mode.value
+                        className={`p-3 rounded-lg border transition-all ${formData.payment_mode === mode.value
                             ? 'border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200'
                             : 'border-gray-300 bg-white hover:bg-gray-50 hover:border-gray-400'
-                        }`}
+                          }`}
                       >
                         <div className="flex flex-col items-center gap-1.5 sm:flex-row sm:gap-2">
                           <IconComponent className="h-5 w-5" />
@@ -560,7 +488,7 @@ const BunkPaymentForm = () => {
                   </>
                 )}
               </button>
-              
+
               <button
                 type="button"
                 onClick={() => {

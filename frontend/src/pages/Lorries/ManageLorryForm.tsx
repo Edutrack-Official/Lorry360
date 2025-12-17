@@ -178,17 +178,15 @@ const ManageLorryForm: React.FC = () => {
       {/* Mobile-First Header - Sticky */}
       <div className="bg-white border-b sticky top-0 z-10 shadow-sm">
         <div className="px-4 py-4 sm:px-6">
-          <div className="flex items-center">
+          <div className="flex items-center gap-4">
             <BackButton />
-            <div className="flex items-center justify-center lg:justify-start flex-1 lg:pl-4">
-              <div className="text-center lg:text-left">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-                  {isEditMode ? "Edit Lorry" : "Add New Lorry"}
-                </h2>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  {isEditMode ? "Update lorry information" : "Create a new lorry entry"}
-                </p>
-              </div>
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+                {isEditMode ? "Edit Lorry" : "Add New Lorry"}
+              </h2>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {isEditMode ? "Update lorry information" : "Create a new lorry entry"}
+              </p>
             </div>
           </div>
         </div>

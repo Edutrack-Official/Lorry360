@@ -269,19 +269,17 @@ const ExpenseForm = () => {
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-          <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center gap-4 mb-6">
             <BackButton />
-            <div className="flex items-center justify-center lg:justify-start flex-1">
-              <div className="text-center lg:text-left">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-                  {isEditing ? 'Edit Expense' : 'Add New Expense'}
-                </h2>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  {isEditing ? 'Update expense details' : 'Add a new expense for the lorry'}
-                </p>
-              </div>
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+                {isEditing ? 'Edit Expense' : 'Add New Expense'}
+              </h2>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {isEditing ? 'Update expense details' : 'Add a new expense for the lorry'}
+              </p>
             </div>
-        </div>
+          </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Lorry Display/Selection */}
@@ -451,10 +449,10 @@ const ExpenseForm = () => {
                 <label
                   key={mode}
                   className={`flex items-center justify-center gap-2 p-3 border rounded-lg cursor-pointer transition-colors ${formData.payment_mode === mode
-                      ? 'border-green-500 bg-green-50 text-green-700'
-                      : errors.payment_mode
-                        ? 'border-red-300 bg-white hover:bg-gray-50'
-                        : 'border-gray-300 bg-white hover:bg-gray-50'
+                    ? 'border-green-500 bg-green-50 text-green-700'
+                    : errors.payment_mode
+                      ? 'border-red-300 bg-white hover:bg-gray-50'
+                      : 'border-gray-300 bg-white hover:bg-gray-50'
                     }`}
                 >
                   <input

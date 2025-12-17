@@ -184,13 +184,15 @@ const ManageCrusherForm: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header section */}
-      <div className="bg-white p-4 sm:p-5 rounded-t-xl border shadow-md flex items-center gap-3">
+      <div className="bg-white p-4 sm:p-5 rounded-t-xl border shadow-md flex items-center gap-4">
         <BackButton />
-        <div className="flex items-center justify-center lg:justify-start flex-1 min-w-0">
-          <h2 className="text-lg sm:text-2xl font-bold flex items-center gap-2 text-gray-800 text-center lg:text-left">
-            {/* <Package className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 flex-shrink-0" /> */}
-            <span>{isEditMode ? "Edit Crusher" : "Add Crusher"}</span>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-lg sm:text-2xl font-bold text-gray-800">
+            {isEditMode ? "Edit Crusher" : "Add Crusher"}
           </h2>
+          <p className="text-xs text-gray-500 mt-0.5">
+            {isEditMode ? "Update crusher information" : "Add a new crusher to your records"}
+          </p>
         </div>
       </div>
 

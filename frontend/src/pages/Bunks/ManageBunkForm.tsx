@@ -31,7 +31,7 @@ const ManageBunkForm: React.FC = () => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(false);
-  
+
   const isEditMode = Boolean(id);
 
   useEffect(() => {
@@ -81,7 +81,7 @@ const ManageBunkForm: React.FC = () => {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -127,20 +127,19 @@ const ManageBunkForm: React.FC = () => {
       <div className="max-w-3xl mx-auto space-y-6">
         {/* Header section */}
         <div className="bg-white p-5 rounded-xl border shadow-sm">
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-4 mb-2">
             <BackButton />
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Building2 className="w-6 h-6 text-blue-600" />
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
+                {isEditMode ? "Edit Fuel Bunk" : "Add New Fuel Bunk"}
+              </h2>
+              <p className="text-[10px] text-gray-500 mt-0.5">
+                {isEditMode
+                  ? "Update fuel bunk details"
+                  : "Add a new fuel bunk to your account"}
+              </p>
             </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
-              {isEditMode ? "Edit Fuel Bunk" : "Add New Fuel Bunk"}
-            </h2>
           </div>
-          <p className="text-sm text-gray-600 ml-12">
-            {isEditMode 
-              ? "Update the details of your fuel bunk" 
-              : "Fill in the details to add a new fuel bunk to your account"}
-          </p>
         </div>
 
         {/* Form section */}
@@ -187,7 +186,7 @@ const ManageBunkForm: React.FC = () => {
                 <User className="h-5 w-5 text-blue-600" />
                 Contact Information (Optional)
               </h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Contact Person */}
                 <div>

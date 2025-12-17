@@ -572,17 +572,15 @@ const TripForm = () => {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-          <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center gap-4 mb-6">
             <BackButton />
-            <div className="flex items-center justify-center lg:justify-start flex-1">
-              <div className="text-center lg:text-left">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-                  {isEditMode ? 'Edit Trip' : 'Create New Trip'}
-                </h2>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  {isEditMode ? 'Update trip details' : 'Add a new trip for the lorry'}
-                </p>
-              </div>
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+                {isEditMode ? 'Edit Trip' : 'Create New Trip'}
+              </h2>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {isEditMode ? 'Update trip details' : 'Add a new trip for the lorry'}
+              </p>
             </div>
           </div>
 

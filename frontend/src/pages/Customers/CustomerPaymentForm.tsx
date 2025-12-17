@@ -321,7 +321,7 @@ const CustomerPaymentForm = () => {
       <div className="max-w-4xl mx-auto space-y-4">
         {/* Header */}
         <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-4 mb-4">
             <button
               onClick={() => {
                 const targetCustomerId = customerId || formData.customer_id;
@@ -332,17 +332,15 @@ const CustomerPaymentForm = () => {
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
-            <div className="flex items-center justify-center lg:justify-start flex-1 min-w-0">
-              <div className="text-center lg:text-left min-w-0 max-w-full">
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-                  {isEditMode ? 'Edit Payment' : 'Customer Payments'}
-                </h1>
-                {/* <p className="text-sm sm:text-base text-gray-600 truncate">
-                  {isEditMode
-                    ? `Edit payment for ${customer?.name || 'Customer'}`
-                    : `Manage payments for ${customer?.name || 'Customer'}`}
-                </p> */}
-              </div>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+                {isEditMode ? 'Edit Payment' : 'Customer Payments'}
+              </h1>
+              <p className="text-xs text-gray-500 mt-0.5 truncate">
+                {isEditMode
+                  ? `Update payment details for ${customer?.name || 'Customer'}`
+                  : `Manage payments for ${customer?.name || 'Customer'}`}
+              </p>
             </div>
           </div>
 

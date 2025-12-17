@@ -204,7 +204,7 @@ const CustomerDetails = () => {
       {/* Header */}
       <div className="bg-white p-4 sm:p-6 rounded-xl border shadow-sm">
         {/* Title Section */}
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex items-center gap-4 mb-6">
           <button
             onClick={() => navigate("/customers")}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
@@ -213,18 +213,15 @@ const CustomerDetails = () => {
             <ArrowLeft className="h-5 w-5" />
           </button>
 
-          <div className="flex items-center justify-center lg:justify-start flex-1 min-w-0">
-            <div className="text-center lg:text-left min-w-0 max-w-full">
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center justify-center lg:justify-start gap-2">
-                <User className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
-                  <span className="truncate">{customer.name}</span>
-              </h1>
-              {/* <div className=" text-[12px] text-gray-600">
-                
-                <p className="truncate">{customer.phone}</p>
-                <p className="line-clamp-2">{customer.address}</p>
-              </div> */}
-            </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <User className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
+              <span className="truncate">{customer.name}</span>
+            </h1>
+            {/* <div className="text-xs text-gray-600 mt-1">
+      <p className="truncate">{customer.phone}</p>
+      <p className="line-clamp-2">{customer.address}</p>
+    </div> */}
           </div>
         </div>
 

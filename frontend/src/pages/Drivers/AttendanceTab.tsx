@@ -57,51 +57,51 @@ const AttendanceTab: React.FC<AttendanceTabProps> = ({ driverId }) => {
         }
     };
 
-const getStatusBadge = (status: string) => {
-    const statusConfig = {
-        fullduty: {
-            color: 'bg-green-100 text-green-800 border-green-200',
-            label: 'Full Duty',
-            icon: CheckCircle2
-        },
-        halfduty: {
-            color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-            label: 'Half Duty',
-            icon: Circle
-        },
-        doubleduty: {
-            color: 'bg-blue-100 text-blue-800 border-blue-200',
-            label: 'Double Duty',
-            icon: CircleDot
-        },
-        tripduty: {
-            color: 'bg-purple-100 text-purple-800 border-purple-200',
-            label: 'Trip Duty',
-            icon: Truck
-        },
-        custom: {
-            color: 'bg-orange-100 text-orange-800 border-orange-200',
-            label: 'Custom',
-            icon: Settings
-        },
-        absent: {
-            color: 'bg-red-100 text-red-800 border-red-200',
-            label: 'Absent',
-            icon: XCircle
-        }
+    const getStatusBadge = (status: string) => {
+        const statusConfig = {
+            fullduty: {
+                color: 'bg-green-100 text-green-800 border-green-200',
+                label: 'Full Duty',
+                icon: CheckCircle2
+            },
+            halfduty: {
+                color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+                label: 'Half Duty',
+                icon: Circle
+            },
+            doubleduty: {
+                color: 'bg-blue-100 text-blue-800 border-blue-200',
+                label: 'Double Duty',
+                icon: CircleDot
+            },
+            tripduty: {
+                color: 'bg-purple-100 text-purple-800 border-purple-200',
+                label: 'Trip Duty',
+                icon: Truck
+            },
+            custom: {
+                color: 'bg-orange-100 text-orange-800 border-orange-200',
+                label: 'Custom',
+                icon: Settings
+            },
+            absent: {
+                color: 'bg-red-100 text-red-800 border-red-200',
+                label: 'Absent',
+                icon: XCircle
+            }
+        };
+
+        const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.absent;
+        const IconComponent = config.icon;
+
+        return (
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${config.color}`}>
+                <IconComponent className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{config.label}</span>
+                <span className="sm:hidden">{config.label.split(' ')[0]}</span>
+            </span>
+        );
     };
-
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.absent;
-    const IconComponent = config.icon;
-
-    return (
-        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${config.color}`}>
-            <IconComponent className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">{config.label}</span>
-            <span className="sm:hidden">{config.label.split(' ')[0]}</span>
-        </span>
-    );
-};
 
     const getStatusBackground = (status: string) => {
         const backgrounds = {
@@ -196,8 +196,10 @@ const getStatusBadge = (status: string) => {
         for (let i = firstDay - 1; i >= 0; i--) {
             const date = new Date(prevMonth.getFullYear(), prevMonth.getMonth(), daysInPrevMonth - i);
             days.push(
-                <div key={`prev-${i}`} className="aspect-square min-h-[4rem] sm:min-h-[5rem] p-2 border border-gray-200 bg-gray-50/50">
-                    <span className="block text-right text-gray-400 text-xs sm:text-sm font-medium">{date.getDate()}</span>
+                <div key={`prev-${i}`} className="min-h-[75px] xs:min-h-[85px] sm:min-h-[100px] p-2 border border-gray-200 bg-gray-50/50">
+                    <span className="block text-right text-gray-400 text-xs sm:text-sm font-medium">
+                        {date.getDate()}
+                    </span>
                 </div>
             );
         }
@@ -213,17 +215,16 @@ const getStatusBadge = (status: string) => {
             days.push(
                 <div
                     key={day}
-                    className={`aspect-square min-h-[4rem] sm:min-h-[5rem] p-2 border transition-all ${isTodayDate
-                        ? 'bg-blue-50 border-blue-400 ring-2 ring-blue-300'
-                        : isFuture
-                            ? 'bg-gray-50/50 cursor-not-allowed opacity-50 border-gray-200'
-                            : attendanceRecord
-                                ? `${getStatusBackground(attendanceRecord.status)} cursor-pointer hover:shadow-md border`
-                                : 'bg-white hover:bg-gray-50 cursor-pointer border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                    className={`min-h-[75px] xs:min-h-[85px] sm:min-h-[100px] p-2 border transition-all flex flex-col ${isFuture
+                        ? 'bg-gray-50/50 cursor-not-allowed opacity-50 border-gray-200'
+                        : attendanceRecord
+                            ? `${getStatusBackground(attendanceRecord.status)} cursor-pointer hover:shadow-md border`
+                            : 'bg-white hover:bg-gray-50 cursor-pointer border-gray-200 hover:border-blue-300 hover:shadow-sm'
                         }`}
                     onClick={() => !isFuture && handleDateClick(date)}
                 >
-                    <div className="flex items-start justify-between mb-1.5">
+                    {/* Top section: Day number and indicator */}
+                    <div className="flex items-start justify-between mb-1 flex-shrink-0">
                         <span className={`text-xs sm:text-sm font-semibold ${isTodayDate
                             ? 'text-blue-700'
                             : isFuture
@@ -235,27 +236,30 @@ const getStatusBadge = (status: string) => {
                             {day}
                         </span>
                         {isTodayDate && (
-                            <span className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></span>
+                            <span className="w-2 h-2 bg-blue-600 rounded-full animate-pulse flex-shrink-0"></span>
                         )}
                     </div>
 
-                    {attendanceRecord ? (
-                        <div className="space-y-1">
-                            <div className="text-[10px] sm:text-xs text-gray-700 font-medium truncate">
-                                {attendanceRecord.lorry_id?.registration_number ||
-                                    (attendanceRecord.status === 'absent' ? 'Absent' : 'N/A')}
-                            </div>
-                            {attendanceRecord.salary_amount !== undefined && (
-                                <div className="text-xs sm:text-sm font-bold text-gray-900 truncate">
-                                    ₹{attendanceRecord.salary_amount}
+                    {/* Bottom section: Content area that takes remaining space */}
+                    <div className="flex-grow flex flex-col justify-center min-h-0 pt-1">
+                        {attendanceRecord ? (
+                            <div className="space-y-0.5 overflow-hidden">
+                                <div className="text-[10px] xs:text-xs sm:text-sm text-gray-700 font-medium  leading-tight">
+                                    {attendanceRecord.lorry_id?.registration_number ||
+                                        (attendanceRecord.status === 'absent' ? 'Absent' : 'N/A')}
                                 </div>
-                            )}
-                        </div>
-                    ) : isPastOrToday && !isFuture && (
-                        <div className="flex items-center justify-center h-[calc(100%-1.5rem)]">
-                            <Plus className="h-4 w-4 text-gray-400 opacity-60" />
-                        </div>
-                    )}
+                                {attendanceRecord.salary_amount !== undefined && (
+                                    <div className="text-xs sm:text-sm font-bold text-gray-900  leading-tight">
+                                        ₹{attendanceRecord.salary_amount}
+                                    </div>
+                                )}
+                            </div>
+                        ) : isPastOrToday && !isFuture && (
+                            <div className="flex items-center justify-center h-full">
+                                <Plus className="h-4 w-4 xs:h-5 xs:w-5 text-gray-400 opacity-60" />
+                            </div>
+                        )}
+                    </div>
                 </div>
             );
         }
@@ -265,7 +269,7 @@ const getStatusBadge = (status: string) => {
         const nextMonthDays = totalCells - days.length;
         for (let i = 1; i <= nextMonthDays; i++) {
             days.push(
-                <div key={`next-${i}`} className="aspect-square min-h-[4rem] sm:min-h-[5rem] p-2 border border-gray-200 bg-gray-50/50">
+                <div key={`next-${i}`} className="min-h-[75px] xs:min-h-[85px] sm:min-h-[100px] p-2 border border-gray-200 bg-gray-50/50">
                     <span className="block text-right text-gray-400 text-xs sm:text-sm font-medium">{i}</span>
                 </div>
             );
@@ -451,36 +455,39 @@ const getStatusBadge = (status: string) => {
                         </div>
 
                         {/* Calendar Grid */}
-                        <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-                            <div className="grid grid-cols-7">
-                                {/* Weekday Headers */}
-                                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                                    <div key={day} className="bg-gray-100 p-2.5 sm:p-3 text-center text-xs sm:text-sm font-bold text-gray-700 border-b border-gray-200">
-                                        <span className="hidden xs:inline">{day}</span>
-                                        <span className="xs:hidden">{day.charAt(0)}</span>
-                                    </div>
-                                ))}
+                        <div className="overflow-x-auto -mx-3 sm:mx-0 pb-3 sm:pb-0">
+                            <div className="min-w-[360px] px-3 sm:px-0">
+                                <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
+                                    <div className="grid grid-cols-7 min-w-0">
+                                        {/* Weekday Headers - Make them smaller on mobile */}
+                                        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day) => (
+                                            <div key={day} className="bg-gray-100 p-1.5 xs:p-2 sm:p-3 text-center text-xs font-bold text-gray-700 border-b border-gray-200">
+                                                <span className="hidden xs:inline">{['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][['S', 'M', 'T', 'W', 'T', 'F', 'S'].indexOf(day)]}</span>
+                                                <span className="xs:hidden">{day}</span>
+                                            </div>
+                                        ))}
 
-                                {/* Calendar Days */}
-                                {renderCalendar()}
+                                        {/* Calendar Days */}
+                                        {renderCalendar()}
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
                         {/* Legend */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-4 border-t border-gray-200">
-                            {[
-                                { color: 'bg-green-100 border-green-300', label: 'Full Duty' },
-                                { color: 'bg-yellow-100 border-yellow-300', label: 'Half Duty' },
-                                { color: 'bg-blue-100 border-blue-300', label: 'Double Duty' },
-                                { color: 'bg-purple-100 border-purple-300', label: 'Trip Duty' },
-                                { color: 'bg-orange-100 border-orange-300', label: 'Custom' },
-                                { color: 'bg-red-100 border-red-300', label: 'Absent' }
-                            ].map((item) => (
-                                <div key={item.label} className="flex items-center gap-2">
-                                    <div className={`w-4 h-4 rounded border ${item.color}`}></div>
-                                    <span className="text-xs sm:text-sm text-gray-600">{item.label}</span>
-                                </div>
-                            ))}
+                        <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-6 gap-2 xs:gap-3 pt-3 sm:pt-4 border-t border-gray-200">                            {[
+                            { color: 'bg-green-100 border-green-300', label: 'Full Duty' },
+                            { color: 'bg-yellow-100 border-yellow-300', label: 'Half Duty' },
+                            { color: 'bg-blue-100 border-blue-300', label: 'Double Duty' },
+                            { color: 'bg-purple-100 border-purple-300', label: 'Trip Duty' },
+                            { color: 'bg-orange-100 border-orange-300', label: 'Custom' },
+                            { color: 'bg-red-100 border-red-300', label: 'Absent' }
+                        ].map((item) => (
+                            <div key={item.label} className="flex items-center gap-2">
+                                <div className={`w-4 h-4 rounded border ${item.color}`}></div>
+                                <span className="text-xs sm:text-sm text-gray-600">{item.label}</span>
+                            </div>
+                        ))}
                         </div>
                     </div>
                 )}

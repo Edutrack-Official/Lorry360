@@ -500,22 +500,20 @@ const ManageAttendanceForm = () => {
       {/* Header */}
       <div className="bg-white shadow-sm border-b sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8">
-          <div className="flex items-center gap-2 sm:gap-4 h-14 sm:h-16">
+          <div className="flex items-center gap-3 sm:gap-4 h-14 sm:h-16">
             <button
               onClick={() => navigate(-1)}
               className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
-            <div className="flex items-center justify-center lg:justify-start flex-1 min-w-0">
-              <div className="text-center lg:text-left min-w-0">
-                <h1 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">
-                  {isEditMode ? "Edit Attendance" : "Add Attendance"}
-                </h1>
-                <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">
-                  {isEditMode ? "Update driver attendance record" : "Record driver attendance for the day"}
-                </p>
-              </div>
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">
+                {isEditMode ? "Edit Attendance" : "Add Attendance"}
+              </h1>
+              <p className="text-xs sm:text-sm text-gray-600 hidden sm:block truncate">
+                {isEditMode ? "Update driver attendance record" : "Record driver attendance for the day"}
+              </p>
             </div>
           </div>
         </div>
@@ -535,7 +533,7 @@ const ManageAttendanceForm = () => {
               <div className="space-y-5 sm:space-y-6">
                 {/* Driver Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {/* <label className="block text-sm font-medium text-gray-700 mb-2">
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4" />
                       <span>Select Driver <span className="text-red-500">*</span></span>
@@ -557,7 +555,7 @@ const ManageAttendanceForm = () => {
                   </select>
                   {errors.driver_id && (
                     <p className="mt-1 text-sm text-red-600">{errors.driver_id}</p>
-                  )}
+                  )} */}
 
                   {/* Selected Driver Info */}
                   {selectedDriver && (

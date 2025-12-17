@@ -210,7 +210,7 @@ const CrusherDetails = () => {
       {/* Header */}
       <div className="bg-white p-4 sm:p-5 md:p-6 rounded-xl border shadow-sm">
         <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <button
               onClick={() => navigate("/crushers")}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
@@ -218,13 +218,11 @@ const CrusherDetails = () => {
               <ArrowLeft className="h-5 w-5" />
             </button>
 
-            <div className="flex items-center justify-center lg:justify-start flex-1 min-w-0">
-              <div className="text-center lg:text-left min-w-0 max-w-full">
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center justify-center lg:justify-start gap-2">
-                  <User2 className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
-                  <span className="truncate">{crusher.name}</span>
-                </h1>
-              </div>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <User2 className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
+                <span className="truncate">{crusher.name}</span>
+              </h1>
             </div>
           </div>
         </div>
