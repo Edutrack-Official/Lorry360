@@ -1,4 +1,4 @@
-// // src/pages/partners/PartnerPaymentForm.tsx
+
 // import React, { useState, useEffect } from 'react';
 // import { useNavigate, useParams } from 'react-router-dom';
 // import { 
@@ -73,7 +73,8 @@
 //   });
 
 //   const [partner, setPartner] = useState<Partner | null>(null);
-//   const [payments, setPayments] = useState<Payment[]>([]);
+//   const [myPayments, setMyPayments] = useState<Payment[]>([]);
+//   const [partnerPayments, setPartnerPayments] = useState<Payment[]>([]);
 //   const [myTrips, setMyTrips] = useState<Trip[]>([]);
 //   const [partnerTrips, setPartnerTrips] = useState<Trip[]>([]);
 //   const [loading, setLoading] = useState(true);
@@ -115,17 +116,6 @@
 //             await fetchPartnerData(partnerId);
 //           }
 
-//           // Fetch existing payments for stats (only for create mode)
-//           if (!isEditMode && partnerId) {
-//             const paymentsRes = await api.get('/payments', {
-//               params: {
-//                 payment_type: 'to_collab_owner',
-//                 collab_owner_id: partnerId
-//               }
-//             });
-//             setPayments(paymentsRes.data.data?.payments || []);
-//           }
-
 //           // Fetch trips for stats
 //           if (partnerId) {
 //             const [myTripsRes, partnerTripsRes] = await Promise.all([
@@ -145,8 +135,36 @@
 //               })
 //             ]);
             
-//             setMyTrips(myTripsRes.data.data?.trips || []);
-//             setPartnerTrips(partnerTripsRes.data.data?.trips || []);
+//             // Filter only completed trips (match CollaborationDetailsPage)
+//             setMyTrips(
+//               (myTripsRes.data.data?.trips || []).filter(
+//                 (trip: any) => trip.status === "completed"
+//               )
+//             );
+
+//             setPartnerTrips(
+//               (partnerTripsRes.data.data?.trips || []).filter(
+//                 (trip: any) => trip.status === "completed"
+//               )
+//             );
+//           }
+
+//           // FIXED: Fetch payments separately (match CollaborationDetailsPage exactly)
+//           if (partnerId) {
+//             try {
+//               const myPaymentsRes = await api.get(`/payments/to-partner/${partnerId}`);
+//               const partnerPaymentsRes = await api.get('/payments-received', {
+//                 params: { owner_id: partnerId }
+//               });
+
+//               // Keep them SEPARATE - don't combine!
+//               setMyPayments(myPaymentsRes.data.data?.payments || []);
+//               setPartnerPayments(partnerPaymentsRes.data.data?.payments || []);
+//             } catch (error) {
+//               console.error("Error fetching payments:", error);
+//               setMyPayments([]);
+//               setPartnerPayments([]);
+//             }
 //           }
 
 //         } catch (error: any) {
@@ -160,6 +178,19 @@
 
 //     fetchData();
 //   }, [partnerId, paymentId, isEditMode, navigate]);
+
+//   // Auto-fill amount with pending amount when data is loaded (only in create mode)
+//   // useEffect(() => {
+//   //   if (!isEditMode && !loading && (myTrips.length > 0 || partnerTrips.length > 0)) {
+//   //     const stats = calculatePaymentStats();
+//   //     if (stats.pendingAmount > 0 && formData.amount === 0) {
+//   //       setFormData(prev => ({
+//   //         ...prev,
+//   //         amount: stats.pendingAmount
+//   //       }));
+//   //     }
+//   //   }
+//   // }, [isEditMode, loading, myTrips, partnerTrips, myPayments, partnerPayments]);
 
 //   const fetchPartnerData = async (targetPartnerId: string) => {
 //     const collabRes = await api.get('/collaborations/active');
@@ -182,18 +213,27 @@
 //   const calculatePaymentStats = () => {
 //     const totalMyTripsAmount = myTrips.reduce((sum, trip) => sum + (trip.customer_amount || 0), 0);
 //     const totalPartnerTripsAmount = partnerTrips.reduce((sum, trip) => sum + (trip.customer_amount || 0), 0);
-//     const netTripAmount = totalPartnerTripsAmount - totalMyTripsAmount;
     
-//     const totalPayments = payments
+//     // FIXED: Use separate arrays exactly like CollaborationDetailsPage
+//     const totalMyPayments = myPayments
 //       .filter(p => p.collab_payment_status === 'approved')
 //       .reduce((sum, payment) => sum + (payment.amount || 0), 0);
     
-//     const pendingAmount = Math.max(0, netTripAmount - totalPayments);
+//     const totalPartnerPayments = partnerPayments
+//       .filter(p => p.collab_payment_status === 'approved')
+//       .reduce((sum, payment) => sum + (payment.amount || 0), 0);
+    
+//     const netTripAmount = totalPartnerTripsAmount - totalMyTripsAmount;
+//     const totalPaymentsMade = totalMyPayments + totalPartnerPayments;
+    
+//     // EXACT same calculation as CollaborationDetailsPage
+//     const finalBalance = netTripAmount - totalMyPayments + totalPartnerPayments;
+//     const pendingAmount = finalBalance > 0 ? finalBalance : 0;
 
 //     return {
 //       netTripAmount,
-//       totalPayments,
-//       pendingAmount
+//       totalPayments: totalPaymentsMade,
+//       pendingAmount: pendingAmount
 //     };
 //   };
 
@@ -246,7 +286,7 @@
 //     if (!formData.payment_mode) newErrors.payment_mode = "Payment mode is required";
 
 //     // For create mode only, check if amount exceeds pending amount
-//     if (!isEditMode && formData.amount > paymentStats.pendingAmount) {
+//     if (!isEditMode && paymentStats.pendingAmount > 0 && formData.amount > paymentStats.pendingAmount) {
 //       newErrors.amount = `Amount cannot exceed pending amount of ${formatCurrency(paymentStats.pendingAmount)}`;
 //     }
 
@@ -554,11 +594,8 @@
 
 // export default PartnerPaymentForm;
 
-// src/pages/partners/PartnerPaymentForm.tsx
-// src/pages/partners/PartnerPaymentForm.tsx
-// src/pages/partners/PartnerPaymentForm.tsx
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { 
   ArrowLeft, 
   Save, 
@@ -619,7 +656,11 @@ interface Trip {
 const PartnerPaymentForm = () => {
   const { partnerId, paymentId } = useParams<{ partnerId: string; paymentId?: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const isEditMode = !!paymentId;
+  
+  // Get partner info from location state if available
+  const locationPartner = location.state?.partner;
   
   const [formData, setFormData] = useState<PaymentFormData>({
     payment_type: 'to_collab_owner',
@@ -630,7 +671,7 @@ const PartnerPaymentForm = () => {
     notes: ''
   });
 
-  const [partner, setPartner] = useState<Partner | null>(null);
+  const [partner, setPartner] = useState<Partner | null>(locationPartner || null);
   const [myPayments, setMyPayments] = useState<Payment[]>([]);
   const [partnerPayments, setPartnerPayments] = useState<Payment[]>([]);
   const [myTrips, setMyTrips] = useState<Trip[]>([]);
@@ -638,6 +679,28 @@ const PartnerPaymentForm = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Helper function to get the correct partner ID
+  const getPartnerId = () => {
+    const id = partnerId || formData.collab_owner_id || partner?._id;
+    console.log('🔍 Getting Partner ID:', { partnerId, 'formData.collab_owner_id': formData.collab_owner_id, 'partner._id': partner?._id, resolved: id });
+    return id;
+  };
+
+  // Helper function to navigate back to collaboration page
+  const navigateToCollaboration = () => {
+    const targetPartnerId = getPartnerId();
+    console.log('🚀 Navigating to collaboration with partner ID:', targetPartnerId);
+    
+    if (targetPartnerId) {
+      navigate(`/partners/collaboration/${targetPartnerId}`, {
+        state: { partner }
+      });
+    } else {
+      console.error('❌ No partner ID found, navigating to /partners');
+      navigate('/partners');
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -649,6 +712,8 @@ const PartnerPaymentForm = () => {
             try {
               const paymentRes = await api.get(`/payments/${paymentId}`);
               const paymentData = paymentRes.data.data;
+              
+              console.log('📝 Payment Data:', paymentData);
               
               setFormData({
                 payment_type: paymentData.payment_type || 'to_collab_owner',
@@ -662,6 +727,8 @@ const PartnerPaymentForm = () => {
               });
 
               const targetPartnerId = partnerId || paymentData.collab_owner_id;
+              console.log('🎯 Target Partner ID for edit mode:', targetPartnerId);
+              
               if (targetPartnerId) {
                 await fetchPartnerData(targetPartnerId);
               }
@@ -671,6 +738,7 @@ const PartnerPaymentForm = () => {
               navigate('/partners');
             }
           } else if (partnerId) {
+            console.log('🎯 Partner ID from URL:', partnerId);
             await fetchPartnerData(partnerId);
           }
 
@@ -707,7 +775,7 @@ const PartnerPaymentForm = () => {
             );
           }
 
-          // FIXED: Fetch payments separately (match CollaborationDetailsPage exactly)
+          // Fetch payments separately (match CollaborationDetailsPage exactly)
           if (partnerId) {
             try {
               const myPaymentsRes = await api.get(`/payments/to-partner/${partnerId}`);
@@ -715,7 +783,6 @@ const PartnerPaymentForm = () => {
                 params: { owner_id: partnerId }
               });
 
-              // Keep them SEPARATE - don't combine!
               setMyPayments(myPaymentsRes.data.data?.payments || []);
               setPartnerPayments(partnerPaymentsRes.data.data?.payments || []);
             } catch (error) {
@@ -737,32 +804,33 @@ const PartnerPaymentForm = () => {
     fetchData();
   }, [partnerId, paymentId, isEditMode, navigate]);
 
-  // Auto-fill amount with pending amount when data is loaded (only in create mode)
-  // useEffect(() => {
-  //   if (!isEditMode && !loading && (myTrips.length > 0 || partnerTrips.length > 0)) {
-  //     const stats = calculatePaymentStats();
-  //     if (stats.pendingAmount > 0 && formData.amount === 0) {
-  //       setFormData(prev => ({
-  //         ...prev,
-  //         amount: stats.pendingAmount
-  //       }));
-  //     }
-  //   }
-  // }, [isEditMode, loading, myTrips, partnerTrips, myPayments, partnerPayments]);
-
   const fetchPartnerData = async (targetPartnerId: string) => {
+    console.log('📥 Fetching partner data for ID:', targetPartnerId);
+    
     const collabRes = await api.get('/collaborations/active');
     const collaborations = collabRes.data.data?.collaborations || [];
+    
+    console.log('🤝 All collaborations:', collaborations);
     
     const collaboration = collaborations.find((c: any) => 
       c.from_owner_id._id === targetPartnerId || c.to_owner_id._id === targetPartnerId
     );
     
+    console.log('✅ Found collaboration:', collaboration);
+    
     if (collaboration) {
       const partnerData = collaboration.from_owner_id._id === targetPartnerId 
         ? collaboration.from_owner_id 
         : collaboration.to_owner_id;
+      
+      console.log('👤 Partner Data:', partnerData);
       setPartner(partnerData);
+      
+      // Also update formData.collab_owner_id to ensure it's set
+      setFormData(prev => ({
+        ...prev,
+        collab_owner_id: targetPartnerId
+      }));
     } else {
       throw new Error('Partner not found');
     }
@@ -772,7 +840,6 @@ const PartnerPaymentForm = () => {
     const totalMyTripsAmount = myTrips.reduce((sum, trip) => sum + (trip.customer_amount || 0), 0);
     const totalPartnerTripsAmount = partnerTrips.reduce((sum, trip) => sum + (trip.customer_amount || 0), 0);
     
-    // FIXED: Use separate arrays exactly like CollaborationDetailsPage
     const totalMyPayments = myPayments
       .filter(p => p.collab_payment_status === 'approved')
       .reduce((sum, payment) => sum + (payment.amount || 0), 0);
@@ -783,8 +850,6 @@ const PartnerPaymentForm = () => {
     
     const netTripAmount = totalPartnerTripsAmount - totalMyTripsAmount;
     const totalPaymentsMade = totalMyPayments + totalPartnerPayments;
-    
-    // EXACT same calculation as CollaborationDetailsPage
     const finalBalance = netTripAmount - totalMyPayments + totalPartnerPayments;
     const pendingAmount = finalBalance > 0 ? finalBalance : 0;
 
@@ -862,13 +927,22 @@ const PartnerPaymentForm = () => {
 
     setSubmitting(true);
     try {
+      const targetPartnerId = getPartnerId();
+      console.log('💾 Submitting with partner ID:', targetPartnerId);
+      
+      if (!targetPartnerId) {
+        throw new Error('Partner ID is missing');
+      }
+      
       const submissionData = {
         ...formData,
-        collab_owner_id: partnerId || formData.collab_owner_id,
+        collab_owner_id: targetPartnerId,
         payment_type: 'to_collab_owner',
         amount: parseFloat(formData.amount.toString()),
         collab_payment_status: 'pending'
       };
+
+      console.log('📤 Submission data:', submissionData);
 
       if (isEditMode && paymentId) {
         await api.put(`/payments/update/${paymentId}`, submissionData);
@@ -878,11 +952,12 @@ const PartnerPaymentForm = () => {
         toast.success("Payment recorded successfully. Waiting for partner approval.");
       }
       
-      const targetPartnerId = partnerId || formData.collab_owner_id;
-      navigate(`/partners/collaboration/${targetPartnerId}`);
+      // Navigate to collaboration page
+      console.log('✅ Payment saved, navigating back...');
+      navigateToCollaboration();
       
     } catch (error: any) {
-      console.error('Payment submission error:', error);
+      console.error('❌ Payment submission error:', error);
       let errorMessage = error.response?.data?.error || 
         (isEditMode ? "Failed to update payment" : "Failed to record payment");
       
@@ -953,10 +1028,7 @@ const PartnerPaymentForm = () => {
         <div className="bg-white rounded-lg shadow-sm p-4">
           <div className="flex items-start gap-3 mb-3">
             <button
-              onClick={() => {
-                const targetPartnerId = partnerId || formData.collab_owner_id;
-                navigate(-1);
-              }}
+              onClick={navigateToCollaboration}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
               aria-label="Back to collaboration"
             >
@@ -986,6 +1058,7 @@ const PartnerPaymentForm = () => {
                   <h3 className="font-semibold text-blue-900 break-words">{partner.name}</h3>
                   <p className="text-blue-700 text-sm break-words">{partner.company_name}</p>
                   <p className="text-blue-600 text-sm break-words">{partner.email}</p>
+                  <p className="text-blue-500 text-xs mt-1">ID: {partner._id}</p>
                 </div>
               </div>
             </div>
@@ -1132,10 +1205,7 @@ const PartnerPaymentForm = () => {
               
               <button
                 type="button"
-                onClick={() => {
-                  const targetPartnerId = partnerId || formData.collab_owner_id;
-                  navigate(`/partners/collaboration/${targetPartnerId}`);
-                }}
+                onClick={navigateToCollaboration}
                 disabled={submitting}
                 className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex-1 sm:flex-none disabled:opacity-50 text-sm font-medium"
               >
