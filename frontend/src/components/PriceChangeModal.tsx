@@ -324,12 +324,12 @@ const PriceChangeModal: React.FC<PriceChangeModalProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <TrendingUp className="h-5 w-5 text-gray-600" />
-                  <div>
+              <div className="flex items-start sm:items-center justify-between p-4 border border-gray-200 rounded-lg gap-3">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <TrendingUp className="h-5 w-5 text-gray-600 flex-shrink-0 mt-0.5 sm:mt-0" />
+                  <div className="min-w-0">
                     <p className="text-sm font-medium text-gray-900">Update Customer Amount</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 mt-0.5">
                       Add price difference to customer amount along with extra amount
                     </p>
                   </div>
@@ -341,9 +341,15 @@ const PriceChangeModal: React.FC<PriceChangeModalProps> = ({
                       setExtraAmount("0");
                     }
                   }}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${updateCustomerAmount ? 'bg-blue-600' : 'bg-gray-200'}`}
+                  className={`relative inline-flex h-7 w-12 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${updateCustomerAmount ? 'bg-blue-600' : 'bg-gray-300'
+                    }`}
+                  role="switch"
+                  aria-checked={updateCustomerAmount}
                 >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${updateCustomerAmount ? 'translate-x-6' : 'translate-x-1'}`} />
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${updateCustomerAmount ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                  />
                 </button>
               </div>
 
