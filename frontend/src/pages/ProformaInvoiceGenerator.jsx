@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Download, 
-  FileText, 
+import {
+  Download,
+  FileText,
   User,
   Plus,
   Trash2,
@@ -114,7 +114,7 @@ const ProformaInvoiceGenerator = () => {
   const downloadProformaPDF = async () => {
     const customerDetails = getSelectedCustomerDetails();
     const companyDetails = getCompanyDetails();
-    
+
     if ((!selectedCustomer && !useCustomCustomer) || !customerDetails.name) {
       toast.error('Please select or enter customer details');
       return;
@@ -245,18 +245,18 @@ const ProformaInvoiceGenerator = () => {
         margin: [10, 10, 10, 10],
         filename: `Proforma_Invoice_${invoiceNumber}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
+        html2canvas: {
           scale: 2,
           useCORS: true,
           letterRendering: true,
           logging: false
         },
-        jsPDF: { 
-          unit: 'mm', 
-          format: 'a4', 
+        jsPDF: {
+          unit: 'mm',
+          format: 'a4',
           orientation: 'portrait'
         },
-        pagebreak: { 
+        pagebreak: {
           mode: ['css', 'legacy'],
           avoid: 'tr'
         }
@@ -264,7 +264,7 @@ const ProformaInvoiceGenerator = () => {
 
       // Generate and download PDF
       await html2pdf().set(opt).from(element).save();
-      
+
       toast.success('Proforma Invoice PDF downloaded successfully!');
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -297,14 +297,17 @@ const ProformaInvoiceGenerator = () => {
         <header className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="space-y-1">
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
-                Proforma Invoice Generator
-              </h1>
-              <p className="text-sm sm:text-base text-gray-600">
+              <div className="flex items-center gap-2">
+                <FileText className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-blue-600" />
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
+                  Proforma Invoice Generator
+                </h1>
+              </div>
+              <p className="text-sm sm:text-base text-gray-600 ml-8 sm:ml-9 lg:ml-10">
                 Generate proforma invoices for customer estimates
               </p>
             </div>
-            
+
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <button
                 onClick={resetForm}
@@ -388,11 +391,10 @@ const ProformaInvoiceGenerator = () => {
                         <button
                           key={customer._id}
                           onClick={() => setSelectedCustomer(customer._id)}
-                          className={`w-full text-left p-3 sm:p-4 border rounded-lg transition-all ${
-                            selectedCustomer === customer._id
-                              ? 'border-blue-500 bg-blue-50'
-                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                          }`}
+                          className={`w-full text-left p-3 sm:p-4 border rounded-lg transition-all ${selectedCustomer === customer._id
+                            ? 'border-blue-500 bg-blue-50'
+                            : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                            }`}
                         >
                           <h3 className="font-semibold text-sm sm:text-base text-gray-900">
                             {customer.name}
@@ -416,7 +418,7 @@ const ProformaInvoiceGenerator = () => {
                       <input
                         type="text"
                         value={customCustomer.name}
-                        onChange={(e) => setCustomCustomer({...customCustomer, name: e.target.value})}
+                        onChange={(e) => setCustomCustomer({ ...customCustomer, name: e.target.value })}
                         className="w-full px-3 py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
                         placeholder="Enter customer name"
                       />
@@ -427,7 +429,7 @@ const ProformaInvoiceGenerator = () => {
                       </label>
                       <textarea
                         value={customCustomer.address}
-                        onChange={(e) => setCustomCustomer({...customCustomer, address: e.target.value})}
+                        onChange={(e) => setCustomCustomer({ ...customCustomer, address: e.target.value })}
                         className="w-full px-3 py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow resize-none"
                         rows="3"
                         placeholder="Enter customer address"
@@ -440,7 +442,7 @@ const ProformaInvoiceGenerator = () => {
                       <input
                         type="text"
                         value={customCustomer.phone}
-                        onChange={(e) => setCustomCustomer({...customCustomer, phone: e.target.value})}
+                        onChange={(e) => setCustomCustomer({ ...customCustomer, phone: e.target.value })}
                         className="w-full px-3 py-2.5 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
                         placeholder="Enter customer phone"
                       />

@@ -584,9 +584,18 @@ const InvoiceGenerator = () => {
     <div className="max-w-7xl mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Invoice Generator</h1>
-          <p className="text-gray-600">Generate customer invoices and collaboration statements</p>
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Download className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-green-600" />
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
+                Invoice Generator
+              </h1>
+            </div>
+            <p className="text-sm sm:text-base text-gray-600 ml-8 sm:ml-9 lg:ml-10">
+              Generate customer invoices and collaboration statements
+            </p>
+          </div>
         </div>
         {/* <div className="flex items-center gap-3">
           <button
@@ -686,8 +695,8 @@ const InvoiceGenerator = () => {
                   key={customer._id}
                   onClick={() => setSelectedCustomer(customer._id)}
                   className={`p-4 border rounded-lg mb-2 cursor-pointer transition-all ${selectedCustomer === customer._id
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
                     }`}
                 >
                   <h3 className="font-semibold text-gray-900">{customer.name}</h3>
@@ -710,8 +719,8 @@ const InvoiceGenerator = () => {
                     key={collab._id}
                     onClick={() => handleCollaborationSelect(collab)}
                     className={`p-4 border rounded-lg mb-2 cursor-pointer transition-all ${selectedCollaboration === partnerInfo.partnerId
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
                       }`}
                   >
                     <h3 className="font-semibold text-gray-900">{partnerInfo.partnerName}</h3>
@@ -720,8 +729,8 @@ const InvoiceGenerator = () => {
                     )}
                     <div className="flex items-center justify-between mt-2">
                       <span className={`px-2 py-1 text-xs rounded-full ${collabStatus === 'active'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-gray-100 text-gray-800'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-gray-100 text-gray-800'
                         }`}>
                         {collabStatus}
                       </span>
