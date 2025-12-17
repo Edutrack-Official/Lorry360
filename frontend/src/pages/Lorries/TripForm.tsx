@@ -288,6 +288,97 @@ const TripForm = () => {
     }
   }, [formData.rate_per_unit, formData.no_of_unit_crusher]);
 
+  // Clear errors when form data changes
+  useEffect(() => {
+    const newErrors = { ...errors };
+    let hasChanges = false;
+
+    // Clear error for lorry_id
+    if (formData.lorry_id && errors.lorry_id) {
+      delete newErrors.lorry_id;
+      hasChanges = true;
+    }
+
+    // Clear error for driver_id
+    if (formData.driver_id && errors.driver_id) {
+      delete newErrors.driver_id;
+      hasChanges = true;
+    }
+
+    // Clear error for crusher_id
+    if (formData.crusher_id && errors.crusher_id) {
+      delete newErrors.crusher_id;
+      hasChanges = true;
+    }
+
+    // Clear error for material_name
+    if (formData.material_name && errors.material_name) {
+      delete newErrors.material_name;
+      hasChanges = true;
+    }
+
+    // Clear error for customer_id (when customer destination)
+    if (destinationType === 'customer' && formData.customer_id && errors.customer_id) {
+      delete newErrors.customer_id;
+      hasChanges = true;
+    }
+
+    // Clear error for collab_owner_id (when collaborative destination)
+    if (destinationType === 'collaborative' && formData.collab_owner_id && errors.collab_owner_id) {
+      delete newErrors.collab_owner_id;
+      hasChanges = true;
+    }
+
+    // Clear error for location
+    if (formData.location && errors.location) {
+      delete newErrors.location;
+      hasChanges = true;
+    }
+
+    // Clear error for rate_per_unit
+    if (formData.rate_per_unit > 0 && errors.rate_per_unit) {
+      delete newErrors.rate_per_unit;
+      hasChanges = true;
+    }
+
+    // Clear error for no_of_unit_crusher
+    if (formData.no_of_unit_crusher > 0 && errors.no_of_unit_crusher) {
+      delete newErrors.no_of_unit_crusher;
+      hasChanges = true;
+    }
+
+    // Clear error for no_of_unit_customer
+    if (formData.no_of_unit_customer > 0 && errors.no_of_unit_customer) {
+      delete newErrors.no_of_unit_customer;
+      hasChanges = true;
+    }
+
+    // Clear error for crusher_amount
+    if (formData.crusher_amount > 0 && errors.crusher_amount) {
+      delete newErrors.crusher_amount;
+      hasChanges = true;
+    }
+
+    // Clear error for customer_amount
+    if (formData.customer_amount > 0 && errors.customer_amount) {
+      // Check if customer_amount is greater than crusher_amount
+      if (formData.customer_amount >= formData.crusher_amount) {
+        delete newErrors.customer_amount;
+        hasChanges = true;
+      }
+    }
+
+    // Clear error for trip_date
+    if (formData.trip_date && errors.trip_date) {
+      delete newErrors.trip_date;
+      hasChanges = true;
+    }
+
+    if (hasChanges) {
+      setErrors(newErrors);
+    }
+  }, [formData, destinationType, errors]);
+
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
 
@@ -307,10 +398,6 @@ const TripForm = () => {
         }));
       }
     }
-
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
   };
 
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -320,10 +407,6 @@ const TripForm = () => {
       ...prev,
       [name]: value
     }));
-
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
   };
 
   const handleMaterialInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -402,10 +485,8 @@ const TripForm = () => {
 
     // Validate destination based on type
     if (destinationType === 'customer') {
-
       if (!formData.customer_id)
         newErrors.customer_id = "Customer is required";
-
     } else {
       if (!formData.collab_owner_id) newErrors.collab_owner_id = "Collaborative owner is required";
     }
@@ -434,7 +515,6 @@ const TripForm = () => {
     setSubmitting(true);
     try {
       if (isEditMode) {
-
         if (destinationType == 'customer') {
           formData.collab_owner_id = "";
         }
