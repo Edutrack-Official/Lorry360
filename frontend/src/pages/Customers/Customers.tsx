@@ -161,9 +161,9 @@ const Customers = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex justify-center items-center min-h-screen">
         <div className="flex flex-col items-center gap-3">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-10 w-10 border-3 border-blue-600 border-t-transparent"></div>
           <p className="text-sm text-gray-600">Loading customers...</p>
         </div>
       </div>
@@ -171,7 +171,7 @@ const Customers = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-20 shadow-sm">
         <div className="px-4 py-4 sm:px-6">
@@ -277,156 +277,152 @@ const Customers = () => {
         </div>
       </div>
 
-      {/* Cards Grid */}
-      {filtered.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filtered.map((customer) => {
-            const statusConfig = getStatusConfig(customer.isActive);
-            const StatusIcon = statusConfig.icon;
+      {/* Content - Added wrapper with padding like Crushers */}
+      <div className="p-4 sm:p-6">
+        {/* Cards Grid */}
+        {filtered.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filtered.map((customer) => {
+              const statusConfig = getStatusConfig(customer.isActive);
+              const StatusIcon = statusConfig.icon;
 
-            return (
-              <motion.div
-                key={customer._id}
-                layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer active:scale-98"
-                onClick={(e) => {
-                  if ((e.target as HTMLElement).closest('button, a, input')) return;
-                  navigate(`/customers/${customer._id}/trips`);
-                }}
-              >
-                <div className="p-4 sm:p-5">
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-1 truncate">
-                        {customer.name}
-                      </h3>
-                    </div>
-
-                    {/* Action Menu - Updated with Delete option */}
-                    <div className="relative ml-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowActionMenu(showActionMenu === customer._id ? null : customer._id);
-                        }}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                      >
-                        <MoreVertical className="h-4 w-4 text-gray-500" />
-                      </button>
-
-                      <AnimatePresence>
-                        {showActionMenu === customer._id && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                            transition={{ duration: 0.15 }}
-                            className="absolute right-0 top-10 z-30 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/customers/edit/${customer._id}`);
-                              }}
-                              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                            >
-                              <Edit className="h-4 w-4 text-gray-500" />
-                              Edit Customer
-                            </button>
-                            {/* <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleToggleStatus(customer._id, customer.isActive);
-                              }}
-                              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                            >
-                              <Power className="h-4 w-4 text-gray-500" />
-                              {customer.isActive ? "Deactivate" : "Activate"}
-                            </button> */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedCustomer(customer);
-                              }}
-                              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                            >
-                              <User className="h-4 w-4 text-gray-500" />
-                              View Details
-                            </button>
-                            <div className="border-t border-gray-100 my-1"></div>
-                            {/* Delete option - added like crushers */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteClick(customer._id, customer.name);
-                              }}
-                              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              Delete Customer
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </div>
-
-                  {/* Status Badge */}
-                  <div className="flex items-center justify-between mb-4">
-                    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium border ${statusConfig.color}`}>
-                      <StatusIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                      {statusConfig.label}
-                    </div>
-
-                    {/* Site Addresses Badge */}
-                    {customer.site_addresses && customer.site_addresses.length > 0 && (
-                      <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium border bg-blue-50 text-blue-700 border-blue-200">
-                        <MapPin className="h-3 w-3" />
-                        {customer.site_addresses.length} Site{customer.site_addresses.length > 1 ? 's' : ''}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Customer Details */}
-                  <div className="space-y-3">
-                    {/* Phone */}
-                    <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors">
-                      <div className="p-1.5 bg-white rounded-md shadow-sm">
-                        <Phone className="h-3.5 w-3.5 text-blue-600" />
-                      </div>
-                      <span className="text-sm font-medium text-gray-700">{customer.phone}</span>
-                    </div>
-
-                    {/* Address */}
-                    <div className="flex items-start gap-3 p-2 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors">
-                      <div className="p-1.5 bg-white rounded-md shadow-sm mt-0.5">
-                        <MapPin className="h-3.5 w-3.5 text-green-600" />
-                      </div>
+              return (
+                <motion.div
+                  key={customer._id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer active:scale-98"
+                  onClick={(e) => {
+                    if ((e.target as HTMLElement).closest('button, a, input')) return;
+                    navigate(`/customers/${customer._id}/trips`);
+                  }}
+                >
+                  <div className="p-4 sm:p-5">
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-3">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-700 line-clamp-2">{customer.address}</p>
+                        <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-1 truncate">
+                          {customer.name}
+                        </h3>
+                      </div>
+
+                      {/* Action Menu */}
+                      <div className="relative ml-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowActionMenu(showActionMenu === customer._id ? null : customer._id);
+                          }}
+                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        >
+                          <MoreVertical className="h-4 w-4 text-gray-500" />
+                        </button>
+
+                        <AnimatePresence>
+                          {showActionMenu === customer._id && (
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                              transition={{ duration: 0.15 }}
+                              className="absolute right-0 top-10 z-30 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/customers/edit/${customer._id}`);
+                                }}
+                                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                              >
+                                <Edit className="h-4 w-4 text-gray-500" />
+                                Edit Customer
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedCustomer(customer);
+                                }}
+                                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                              >
+                                <User className="h-4 w-4 text-gray-500" />
+                                View Details
+                              </button>
+                              <div className="border-t border-gray-100 my-1"></div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteClick(customer._id, customer.name);
+                                }}
+                                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                Delete Customer
+                              </button>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+
+                    {/* Status Badge */}
+                    <div className="flex items-center justify-between mb-4">
+                      <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium border ${statusConfig.color}`}>
+                        <StatusIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                        {statusConfig.label}
+                      </div>
+
+                      {/* Site Addresses Badge */}
+                      {customer.site_addresses && customer.site_addresses.length > 0 && (
+                        <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium border bg-blue-50 text-blue-700 border-blue-200">
+                          <MapPin className="h-3 w-3" />
+                          {customer.site_addresses.length} Site{customer.site_addresses.length > 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Customer Details */}
+                    <div className="space-y-3">
+                      {/* Phone */}
+                      <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors">
+                        <div className="p-1.5 bg-white rounded-md shadow-sm">
+                          <Phone className="h-3.5 w-3.5 text-blue-600" />
+                        </div>
+                        <span className="text-sm font-medium text-gray-700">{customer.phone}</span>
+                      </div>
+
+                      {/* Address */}
+                      <div className="flex items-start gap-3 p-2 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors">
+                        <div className="p-1.5 bg-white rounded-md shadow-sm mt-0.5">
+                          <MapPin className="h-3.5 w-3.5 text-green-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-700 line-clamp-2">{customer.address}</p>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="bg-white rounded-xl border border-gray-200 p-8 sm:p-12 text-center">
-          <User className="h-12 w-12 sm:h-16 sm:w-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
-            {searchText || filterStatus !== "all"
-              ? "No customers found matching your criteria"
-              : "No customers yet"}
-          </h3>
-        </div>
-      )}
+                </motion.div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8 sm:p-12 text-center">
+            <div className="max-w-md mx-auto">
+              <div className="inline-flex p-4 bg-gray-100 rounded-full mb-4">
+                <User className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400" />
+              </div>
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+                {searchText || filterStatus !== "all"
+                  ? "No customers found matching your criteria"
+                  : "No customers yet"}
+              </h3>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Customer Details Modal */}
       <AnimatePresence>
@@ -581,7 +577,7 @@ const Customers = () => {
         )}
       </AnimatePresence>
 
-      {/* Delete Confirmation Modal - Same as crushers */}
+      {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         isOpen={deleteModalOpen}
         onClose={() => {
