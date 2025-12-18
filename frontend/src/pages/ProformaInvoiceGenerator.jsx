@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Download,
@@ -7,14 +8,17 @@ import {
   Trash2,
   Search,
   MapPin,
-  Loader
+  Loader,
+  Building,
+  Calendar,
+  RefreshCw
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from "../api/client";
 import { useAuth } from '../contexts/AuthContext';
 
 const ProformaInvoiceGenerator = () => {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [customers, setCustomers] = useState([]);
   const [selectedCustomer, setSelectedCustomer] = useState('');
   const [useCustomCustomer, setUseCustomCustomer] = useState(false);
@@ -33,26 +37,107 @@ const ProformaInvoiceGenerator = () => {
   const [notes, setNotes] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [downloading, setDownloading] = useState(false);
+  const [companyLogo, setCompanyLogo] = useState('');
+  const [companyDetails, setCompanyDetails] = useState({});
+  const [loadingUser, setLoadingUser] = useState(true);
 
+  // Fetch complete user details with logo
+  useEffect(() => {
+    const fetchUserWithLogo = async () => {
+      try {
+        setLoadingUser(true);
+        
+        if (user?.userId && token) {
+          const response = await api.get(`/users/${user.userId}`);
+          
+          if (response.data.success) {
+            const userData = response.data.data;
+            setCompanyLogo(userData.logo || '');
+            setCompanyDetails({
+              name: userData.company_name || userData.name,
+              address: userData.address,
+              phone: userData.phone,
+              email: userData.email,
+              city: userData.city,
+              state: userData.state,
+              pincode: userData.pincode,
+              website: userData.website || '',
+              logo: userData.logo || '',
+              gst_number: userData.gst_number || ''
+            });
+            console.log('Fetched user details:', userData);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user details:', error);
+        toast.error('Failed to load company details');
+        
+        // Fallback to basic user info from context
+        if (user) {
+          setCompanyDetails({
+            name: user.company_name || user.name,
+            address: user.address || '',
+            phone: user.phone || '',
+            email: user.email || '',
+            city: user.city || '',
+            state: user.state || '',
+            pincode: user.pincode || '',
+            logo: user.logo || '',
+            gst_number: user.gst_number || ''
+          });
+          setCompanyLogo(user.logo || '');
+        }
+      } finally {
+        setLoadingUser(false);
+      }
+    };
+
+    if (user?.userId && token) {
+      fetchUserWithLogo();
+    } else if (user) {
+      // Use context user data if no token
+      setCompanyDetails({
+        name: user.company_name || user.name,
+        address: user.address || '',
+        phone: user.phone || '',
+        email: user.email || '',
+        city: user.city || '',
+        state: user.state || '',
+        pincode: user.pincode || '',
+        logo: user.logo || '',
+        gst_number: user.gst_number || ''
+      });
+      setCompanyLogo(user.logo || '');
+      setLoadingUser(false);
+    }
+  }, [user, token]);
+
+  // Initialize form and fetch customers
   useEffect(() => {
     fetchCustomers();
     setInvoiceDate(new Date().toISOString().split('T')[0]);
     setInvoiceNumber(`P-${Math.floor(1000 + Math.random() * 9000)}`);
-    setPaymentTerms('Weekly payment terms. Payment due within 7 days of invoice date.');
+    setPaymentTerms('50% advance payment, 50% before delivery.');
     setNotes('This is a proforma invoice and not a demand for payment. Prices are subject to change without prior notice. Valid for 15 days from the date of issue.');
   }, []);
 
   const getCompanyDetails = () => {
+    if (Object.keys(companyDetails).length > 0) {
+      return companyDetails;
+    }
+    
     if (!user) return {};
     return {
-      name: user.company_name,
+      name: user.company_name || user.name,
       address: user.address,
       phone: user.phone,
       email: user.email,
       city: user.city,
       state: user.state,
       pincode: user.pincode,
-      website: user.website || 'www.yourcompany.com'
+      website: user.website || '',
+      logo: user.logo || '',
+      gst_number: user.gst_number || ''
     };
   };
 
@@ -138,105 +223,152 @@ const ProformaInvoiceGenerator = () => {
     };
 
     try {
-      // Import html2pdf dynamically - handle both default and named exports
+      // Import html2pdf dynamically
       const module = await import('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js');
       const html2pdf = module.default || window.html2pdf;
+const proformaContent = `
+<div style="
+  font-family: Arial, sans-serif;
+  color: #000;
+  width: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
+  padding: 18px;
+  background: #fff;
+">  <!-- Header Section -->
+  <div style="margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 15px; page-break-inside: avoid; display: flex; justify-content: space-between; align-items: flex-start;">
+    <!-- Left: Logo and Company Name -->
+    <div style="display:flex; align-items:center; gap:18px; margin-bottom:8px;">
+      ${companyDetails?.logo ? `
+        <img 
+          src="${companyDetails.logo}" 
+          alt="Company Logo"
+          crossorigin="anonymous"
+          style="
+            width:90px;
+            height:70px;
+            object-fit:contain;
+            object-position: center top;
+            display:block;
+          "
+        />
+      ` : ''}
 
-      const proformaContent = `
-        <div style="font-family: 'Arial', sans-serif; color: #000; padding: 15px; box-sizing: border-box; background: #fff;">
-          <!-- Header Section -->
-          <div style="text-align: center; margin-bottom: 15px; border-bottom: 2px solid #000; padding-bottom: 12px;">
-            <h1 style="font-size: 28px; font-weight: bold; margin: 0 0 8px 0;">${companyDetails.name}</h1>
-            <p style="margin: 0 0 4px 0; font-size: 14px; color: #000;">${companyDetails.address}</p>
-            <p style="margin: 0 0 4px 0; font-size: 14px; color: #000;">${companyDetails.city}${companyDetails.state ? ', ' + companyDetails.state : ''}${companyDetails.pincode ? ' - ' + companyDetails.pincode : ''}</p>
-            <p style="margin: 0; font-size: 14px; color: #000;">CONTACT: ${companyDetails.phone} | EMAIL: ${companyDetails.email}</p>
-          </div>
+      <div style="line-height:1.25;">
+        <h1 style="margin:0; font-size:26px; font-weight:700;">
+          ${companyDetails.name}
+        </h1>
+        <p style="margin:6px 0 2px 0; font-size:14px; color:#333;">
+          ${companyDetails.address}
+        </p>
+        ${companyDetails.city || companyDetails.state || companyDetails.pincode ? `
+          <p style="margin:2px 0; font-size:14px; color:#333;">
+            ${companyDetails.city || ''}${companyDetails.state ? ', ' + companyDetails.state : ''}${companyDetails.pincode ? ' - ' + companyDetails.pincode : ''}
+          </p>
+        ` : ''}
+        <p style="margin:0 0 2px 0; font-size:14px; color:#333;">
+          CONTACT: ${companyDetails.phone} ${companyDetails.email ? '| EMAIL: ' + companyDetails.email : ''}
+        </p>
+        ${companyDetails.gst_number ? `
+          <p style="margin:4px 0 0 0; font-size:14px; color:#333; font-weight:700;">
+            GSTIN: ${companyDetails.gst_number}
+          </p>
+        ` : ''}
+      </div>
+    </div>
+  </div>
 
-          <div style="text-align: center; margin-bottom: 15px; padding: 8px; border: 2px solid #000;">
-            <h2 style="font-size: 20px; font-weight: bold; margin: 0; color: #000; letter-spacing: 1px;">PROFORMA INVOICE</h2>
-          </div>
+  <!-- Proforma Invoice Title - Centered below company info -->
+  <div style="text-align: center; margin: 15px 0 20px 0; padding: 8px; border: 2px solid #000; page-break-inside: avoid;">
+    <h2 style="font-size: 20px; font-weight: bold; margin: 0; color: #000; letter-spacing: 1px;">PROFORMA INVOICE</h2>
+  </div>
 
-          <!-- Customer and Invoice Details -->
-          <table style="width: 100%; margin-bottom: 15px; border: 1px solid #000;">
+  <!-- Customer and Invoice Details -->
+  <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #000; page-break-inside: avoid;">
+    <table style="width: 100%; border-collapse: collapse;">
+      <tr>
+        <td style="width: 60%; vertical-align: top; padding-right: 20px;">
+          <strong style="font-size: 15px;">BILL TO:</strong><br>
+          <span style="font-size: 14px; font-weight: bold;">${customerDetails.name}</span><br>
+          ${customerDetails.address ? `<span style="font-size: 14px;">${customerDetails.address}</span><br>` : ''}
+          ${customerDetails.phone ? `<strong style="font-size: 14px;">Phone:</strong> <span style="font-size: 14px;">${customerDetails.phone}</span><br>` : ''}
+          ${siteAddress ? `
+            <div style="margin-top: 10px;">
+              <strong style="font-size: 14px;">SITE ADDRESS:</strong><br>
+              <span style="font-size: 14px;">${siteAddress}</span>
+            </div>
+          ` : ''}
+        </td>
+        <td style="width: 40%; vertical-align: top; text-align: right;">
+          <table style="width: 100%; border-collapse: collapse;">
             <tr>
-              <td style="width: 55%; vertical-align: top; padding: 12px; border-right: 1px solid #000;">
-                <p style="margin: 0 0 6px 0; font-size: 13px; font-weight: bold; color: #000;">BILL TO:</p>
-                <p style="margin: 0 0 4px 0; font-size: 14px; font-weight: bold;">${customerDetails.name}</p>
-                ${customerDetails.address ? `<p style="margin: 0 0 4px 0; font-size: 13px; color: #000;">${customerDetails.address}</p>` : ''}
-                ${customerDetails.phone ? `<p style="margin: 0; font-size: 13px; color: #000;"><strong>Phone:</strong> ${customerDetails.phone}</p>` : ''}
-                ${siteAddress ? `<p style="margin: 8px 0 0 0; font-size: 13px; font-weight: bold; color: #000;">SITE ADDRESS:</p><p style="margin: 2px 0 0 0; font-size: 13px; color: #000;">${siteAddress}</p>` : ''}
-              </td>
-              <td style="width: 45%; vertical-align: top; padding: 12px;">
-                <table style="width: 100%; border-collapse: collapse;">
-                  <tr>
-                    <td style="padding: 4px 0; font-size: 13px; font-weight: bold; color: #000;">Invoice No:</td>
-                    <td style="padding: 4px 0; font-size: 13px; text-align: right;">${invoiceNumber}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 4px 0; font-size: 13px; font-weight: bold; color: #000;">Date:</td>
-                    <td style="padding: 4px 0; font-size: 13px; text-align: right;">${new Date(invoiceDate).toLocaleDateString('en-GB')}</td>
-                  </tr>
-                </table>
-              </td>
+              <td style="padding: 4px 0; font-size: 14px; font-weight: bold; color: #000; text-align: left;">Invoice No:</td>
+              <td style="padding: 4px 0; font-size: 14px; text-align: right;">${invoiceNumber}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0 4px 0; font-size: 14px; font-weight: bold; color: #000; text-align: left;">Date:</td>
+              <td style="padding: 8px 0 4px 0; font-size: 14px; text-align: right;">${new Date(invoiceDate).toLocaleDateString('en-GB')}</td>
             </tr>
           </table>
+        </td>
+      </tr>
+    </table>
+  </div>
 
-          <!-- Items Table -->
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 0;">
-            <thead style="display: table-header-group;">
-              <tr>
-                <th style="border: 1px solid #000; padding: 10px 8px; text-align: center; font-size: 13px; font-weight: bold; width: 8%; background: #fff;">S.No</th>
-                <th style="border: 1px solid #000; padding: 10px 8px; text-align: left; font-size: 13px; font-weight: bold; width: 32%; background: #fff;">Description</th>
-                <th style="border: 1px solid #000; padding: 10px 8px; text-align: center; font-size: 13px; font-weight: bold; width: 12%; background: #fff;">Quantity</th>
-                <th style="border: 1px solid #000; padding: 10px 8px; text-align: center; font-size: 13px; font-weight: bold; width: 12%; background: #fff;">Unit</th>
-                <th style="border: 1px solid #000; padding: 10px 8px; text-align: right; font-size: 13px; font-weight: bold; width: 18%; background: #fff;">Rate (₹)</th>
-                <th style="border: 1px solid #000; padding: 10px 8px; text-align: right; font-size: 13px; font-weight: bold; width: 18%; background: #fff;">Amount (₹)</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${invoiceItems.map((item, index) => `
-                <tr style="page-break-inside: avoid; break-inside: avoid;">
-                  <td style="border: 1px solid #000; padding: 9px 8px; text-align: center; font-size: 13px;">${index + 1}</td>
-                  <td style="border: 1px solid #000; padding: 9px 8px; font-size: 13px;">${item.description}</td>
-                  <td style="border: 1px solid #000; padding: 9px 8px; text-align: center; font-size: 13px;">${item.quantity}</td>
-                  <td style="border: 1px solid #000; padding: 9px 8px; text-align: center; font-size: 13px;">${item.unit}</td>
-                  <td style="border: 1px solid #000; padding: 9px 8px; text-align: right; font-size: 13px;">${formatIndianCurrency(item.rate)}</td>
-                  <td style="border: 1px solid #000; padding: 9px 8px; text-align: right; font-size: 13px; font-weight: bold;">${formatIndianCurrency(item.amount)}</td>
-                </tr>
-              `).join('')}
-              <tr style="page-break-inside: avoid; break-inside: avoid;">
-                <td colspan="5" style="border: 1px solid #000; padding: 10px 8px; text-align: right; font-size: 14px; font-weight: bold; background: #fff;">TOTAL:</td>
-                <td style="border: 1px solid #000; padding: 10px 8px; text-align: right; font-size: 14px; font-weight: bold; background: #fff;">₹${formatIndianCurrency(calculateSubtotal())}</td>
-              </tr>
-            </tbody>
-          </table>
+  <!-- Items Table -->
+  <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px;">
+    <thead style="display: table-header-group;">
+      <tr style="background-color: #f8f9fa;">
+        <th style="border: 1px solid #000; padding: 10px 8px; text-align: center; font-weight: bold; font-size: 13px; width: 8%;">S.No</th>
+        <th style="border: 1px solid #000; padding: 10px 8px; text-align: left; font-weight: bold; font-size: 13px; width: 32%;">Description</th>
+        <th style="border: 1px solid #000; padding: 10px 8px; text-align: center; font-weight: bold; font-size: 13px; width: 12%;">Quantity</th>
+        <th style="border: 1px solid #000; padding: 10px 8px; text-align: center; font-weight: bold; font-size: 13px; width: 12%;">Unit</th>
+        <th style="border: 1px solid #000; padding: 10px 8px; text-align: right; font-weight: bold; font-size: 13px; width: 18%;">Rate (₹)</th>
+        <th style="border: 1px solid #000; padding: 10px 8px; text-align: right; font-weight: bold; font-size: 13px; width: 18%;">Amount (₹)</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${invoiceItems.map((item, index) => `
+        <tr style="page-break-inside: avoid;">
+          <td style="border: 1px solid #000; padding: 9px 8px; text-align: center; font-size: 13px;">${index + 1}</td>
+          <td style="border: 1px solid #000; padding: 9px 8px; font-size: 13px;">${item.description}</td>
+          <td style="border: 1px solid #000; padding: 9px 8px; text-align: center; font-size: 13px;">${item.quantity}</td>
+          <td style="border: 1px solid #000; padding: 9px 8px; text-align: center; font-size: 13px;">${item.unit}</td>
+          <td style="border: 1px solid #000; padding: 9px 8px; text-align: right; font-size: 13px;">${formatIndianCurrency(item.rate)}</td>
+          <td style="border: 1px solid #000; padding: 9px 8px; text-align: right; font-size: 13px; font-weight: bold;">${formatIndianCurrency(item.amount)}</td>
+        </tr>
+      `).join('')}
+      <tr style="page-break-inside: avoid;">
+        <td colspan="5" style="border: 1px solid #000; padding: 10px 8px; text-align: right; font-size: 14px; font-weight: bold; background: #f8f9fa;">TOTAL:</td>
+        <td style="border: 1px solid #000; padding: 10px 8px; text-align: right; font-size: 14px; font-weight: bold; background: #f8f9fa;">₹${formatIndianCurrency(calculateSubtotal())}</td>
+      </tr>
+    </tbody>
+  </table>
 
-          <div style="margin-bottom: 15px;"></div>
+  <!-- Payment Terms -->
+  ${paymentTerms ? `
+    <div style="margin-top: 30px; page-break-inside: avoid; min-height: 150px;">
+      <div style="padding: 12px; border: 1px solid #000;" class="keep-together">
+        <p style="margin: 0 0 6px 0; font-size: 13px; font-weight: bold; color: #000;">PAYMENT TERMS:</p>
+        <p style="margin: 0; font-size: 13px; color: #000; line-height: 1.6;">${paymentTerms.split('\n').filter(line => line.trim()).map(line => line.trim()).join('<br>')}</p>
+      </div>
+  ` : ''}
 
-          <!-- Payment Terms -->
-          ${paymentTerms ? `
-            <div style="margin-top: 15px; page-break-inside: avoid; break-inside: avoid; padding: 12px; border: 1px solid #000;" class="keep-together">
-              <p style="margin: 0 0 6px 0; font-size: 13px; font-weight: bold; color: #000;">PAYMENT TERMS:</p>
-              <p style="margin: 0; font-size: 13px; color: #000; line-height: 1.6;">${paymentTerms.split('\n').filter(line => line.trim()).map(line => line.trim()).join('<br>')}</p>
-            </div>
-          ` : ''}
+  <!-- Notes -->
+  ${notes ? `
+    <div style="margin-top: 12px; page-break-inside: avoid; padding: 12px; border: 1px dashed #000;" class="keep-together">
+      <p style="margin: 0 0 6px 0; font-size: 13px; font-weight: bold; color: #000;">NOTES:</p>
+      <p style="margin: 0; font-size: 13px; color: #000; line-height: 1.6;">${notes.split('\n').filter(line => line.trim()).map(line => line.trim()).join('<br>')}</p>
+    </div>
+  ` : ''}
 
-          <!-- Notes -->
-          ${notes ? `
-            <div style="margin-top: 12px; page-break-inside: avoid; break-inside: avoid; padding: 12px; border: 1px dashed #000;" class="keep-together">
-              <p style="margin: 0 0 6px 0; font-size: 13px; font-weight: bold; color: #000;">NOTES:</p>
-              <p style="margin: 0; font-size: 13px; color: #000; line-height: 1.6;">${notes.split('\n').filter(line => line.trim()).map(line => line.trim()).join('<br>')}</p>
-            </div>
-          ` : ''}
-
-          <!-- Footer -->
-          <div style="margin-top: 25px; text-align: center; border-top: 1px solid #000; padding-top: 12px;">
-            <p style="margin: 0; font-size: 12px; color: #000;">For any queries, please contact: ${companyDetails.phone} | ${companyDetails.email}</p>
-            <p style="margin: 5px 0 0 0; font-size: 12px; color: #000;">Thank you for your business!</p>
-          </div>
-        </div>
-      `;
-
+  <!-- Footer -->
+  <div style="margin-top: 40px; text-align: center; border-top: 1px solid #000; padding-top: 15px; padding-bottom: 15px; page-break-inside: avoid;">
+    <p style="margin: 0; font-size: 13px; color: #666;">For any queries, please contact: ${companyDetails.phone} ${companyDetails.email ? '| ' + companyDetails.email : ''}</p>
+    <p style="margin: 5px 0 0 0; font-size: 13px; color: #666;">Thank you for your business!</p>
+  </div>
+</div>
+`;
       // Create a temporary div to hold the content
       const element = document.createElement('div');
       element.innerHTML = proformaContent;
@@ -265,7 +397,7 @@ const ProformaInvoiceGenerator = () => {
       // Generate and download PDF
       await html2pdf().set(opt).from(element).save();
 
-      toast.success('Proforma Invoice PDF downloaded successfully!');
+      toast.success('Proforma Invoice downloaded successfully!');
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast.error('Failed to generate PDF. Please try again.');
@@ -281,6 +413,7 @@ const ProformaInvoiceGenerator = () => {
     setSiteAddress('');
     setInvoiceItems([{ id: 1, description: '', quantity: 1, unit: '', rate: 0, amount: 0 }]);
     setInvoiceNumber(`P-${Math.floor(1000 + Math.random() * 9000)}`);
+    setInvoiceDate(new Date().toISOString().split('T')[0]);
     setPaymentTerms('50% advance payment, 50% before delivery.');
     setNotes('This is a proforma invoice and not a demand for payment. Prices are subject to change without prior notice. Valid for 15 days from the date of issue.');
   };
@@ -293,7 +426,7 @@ const ProformaInvoiceGenerator = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-        {/* Header - Mobile Optimized */}
+        {/* Header with Enhanced Styling */}
         <header className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div className="space-y-1">
@@ -304,21 +437,22 @@ const ProformaInvoiceGenerator = () => {
                 </h1>
               </div>
               <p className="text-sm sm:text-base text-gray-600 ml-8 sm:ml-9 lg:ml-10">
-                Generate proforma invoices for customer estimates
+                Generate professional proforma invoices with company branding
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <button
                 onClick={resetForm}
-                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                Reset
+                <RefreshCw className="h-4 w-4" />
+                <span>Reset</span>
               </button>
               <button
                 onClick={downloadProformaPDF}
-                disabled={downloading}
-                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                disabled={downloading || loadingUser}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-sm hover:shadow-md"
               >
                 {downloading ? (
                   <>
@@ -337,6 +471,8 @@ const ProformaInvoiceGenerator = () => {
             </div>
           </div>
         </header>
+
+
 
         {/* Customer & Invoice Details Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
@@ -463,9 +599,7 @@ const ProformaInvoiceGenerator = () => {
                     rows="3"
                     placeholder="Enter site/project address where goods/services will be delivered"
                   />
-                  <p className="text-xs sm:text-sm text-gray-500">
-                    This will appear separately from the customer's address on the invoice
-                  </p>
+             
                 </div>
               </div>
             </div>
@@ -475,7 +609,7 @@ const ProformaInvoiceGenerator = () => {
           <section className="bg-white rounded-lg sm:rounded-xl border border-gray-200 shadow-sm">
             <div className="p-4 sm:p-6">
               <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 flex-shrink-0" />
+                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 flex-shrink-0" />
                 Invoice Details
               </h2>
 
@@ -505,7 +639,7 @@ const ProformaInvoiceGenerator = () => {
                   />
                 </div>
 
-                <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-100">
                   <p className="text-base sm:text-lg font-semibold text-blue-800 text-center">
                     Subtotal: ₹{calculateSubtotal().toFixed(2)}
                   </p>
@@ -524,7 +658,7 @@ const ProformaInvoiceGenerator = () => {
               </h2>
               <button
                 onClick={addInvoiceItem}
-                className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="inline-flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md"
               >
                 <Plus className="h-4 w-4" />
                 Add Item
@@ -535,9 +669,8 @@ const ProformaInvoiceGenerator = () => {
               {invoiceItems.map((item) => (
                 <div
                   key={item.id}
-                  className="p-3 sm:p-4 border border-gray-200 rounded-lg space-y-3"
+                  className="p-3 sm:p-4 border border-gray-200 rounded-lg space-y-3 hover:border-gray-300 transition-colors"
                 >
-                  {/* Mobile: Stack all fields vertically */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
                     {/* Description - Full width on mobile */}
                     <div className="sm:col-span-2 lg:col-span-1">
@@ -605,7 +738,7 @@ const ProformaInvoiceGenerator = () => {
                         type="text"
                         value={item.amount.toFixed(2)}
                         readOnly
-                        className="w-full px-2.5 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                        className="w-full px-2.5 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 text-gray-600 font-medium"
                       />
                     </div>
 
@@ -614,7 +747,7 @@ const ProformaInvoiceGenerator = () => {
                       {invoiceItems.length > 1 && (
                         <button
                           onClick={() => removeInvoiceItem(item.id)}
-                          className="w-full sm:w-auto px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center gap-2"
+                          className="w-full sm:w-auto px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center gap-2 border border-red-200 hover:border-red-300"
                         >
                           <Trash2 className="h-4 w-4" />
                           <span className="sm:hidden text-sm">Remove</span>

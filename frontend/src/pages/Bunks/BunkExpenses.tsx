@@ -128,33 +128,7 @@ const BunkExpenses = () => {
 
   return (
     <div className="space-y-4">
-      {/* Stats Summary */}
-      <div className="bg-white rounded-lg border p-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-gray-900">{expenses.length}</div>
-            <div className="text-sm text-gray-600">Total Expenses</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(expenses.reduce((sum, expense) => sum + expense.amount, 0))}
-            </div>
-            <div className="text-sm text-gray-600">Total Amount</div>
-          </div>
-          {/* <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">
-              {expenses.reduce((sum, expense) => sum + (expense.fuel_quantity || 0), 0).toFixed(2)}L
-            </div>
-            <div className="text-sm text-gray-600">Total Fuel</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-orange-600">
-              ₹{(expenses.reduce((sum, expense) => sum + (expense.fuel_price_per_liter || 0), 0) / expenses.length).toFixed(2)}
-            </div>
-            <div className="text-sm text-gray-600">Avg Price/L</div>
-          </div> */}
-        </div>
-      </div>
+   
 
       {/* Expenses List */}
       <div className="space-y-3">

@@ -1,3 +1,5 @@
+import { api } from "../api/client";
+
 const VAPID_PUBLIC_KEY =
   "BOdLlP7NcuJyyzpEvzsNhj5oCVc3EpW7sMwUqn-2SSKVglaixJXif8n27ffBt6z_v0zn1ERIEA02WQkQi73VvaM";
 
@@ -16,7 +18,7 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray;
 }
 
-export async function registerForPush(api: any) {
+export async function registerForPush() {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
     console.warn("Push not supported");
     return;

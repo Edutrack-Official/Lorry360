@@ -79,35 +79,40 @@ const getAttendanceById = async (id, owner_id) => {
 };
 
 const updateAttendance = async (id, owner_id, updateData) => {
-  // Check if status is being updated to 'absent'
+
+  const updateQuery = { ...updateData };
+
+  // If status is 'absent', remove lorry_id
   if (updateData.status === 'absent') {
-    updateData.lorry_id = null;
+    updateQuery.$unset = { lorry_id: 1 };
+    delete updateQuery.lorry_id;
   }
-  
-  // If status is being updated to non-absent and lorry_id is not provided
-  if (updateData.status && updateData.status !== 'absent' && !updateData.lorry_id) {
-    // Check the existing record's lorry_id
-    const existing = await Attendance.findOne({ _id: id, owner_id });
-    if (!existing.lorry_id) {
-      const err = new Error('Lorry ID is required for non-absent attendance');
-      err.status = 400;
-      throw err;
+
+  // If status is non-absent, ensure lorry_id exists
+  if (updateData.status && updateData.status !== 'absent') {
+    if (!updateData.lorry_id) {
+      const existing = await Attendance.findOne({ _id: id, owner_id });
+      if (!existing?.lorry_id) {
+        const err = new Error('Lorry ID is required for non-absent attendance');
+        err.status = 400;
+        throw err;
+      }
     }
   }
 
   const updatedAttendance = await Attendance.findOneAndUpdate(
     { _id: id, owner_id },
-    updateData,
+    updateQuery,
     { new: true, runValidators: true }
   )
-    .populate('driver_id', 'name phone salary_per_duty salary_per_trip')
-    .populate('lorry_id', 'registration_number nick_name');
+    .populate('driver_id', 'name phone salary_per_duty salary_per_trip');
 
   if (!updatedAttendance) {
     const err = new Error('Attendance record not found or update failed');
     err.status = 404;
     throw err;
   }
+
   return updatedAttendance;
 };
 

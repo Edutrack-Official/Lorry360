@@ -335,7 +335,7 @@ const AttendanceTab: React.FC<AttendanceTabProps> = ({ driverId }) => {
                             </button>
                         </div>
 
-                        <button
+                        {/* <button
                             onClick={() => setShowFilters(!showFilters)}
                             className={`inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg transition-colors ${showFilters
                                 ? 'bg-blue-100 text-blue-700'
@@ -344,7 +344,7 @@ const AttendanceTab: React.FC<AttendanceTabProps> = ({ driverId }) => {
                         >
                             <Filter className="h-4 w-4 flex-shrink-0" />
                             <span className="hidden sm:inline">Filters</span>
-                        </button>
+                        </button> */}
                     </div>
                 </div>
 

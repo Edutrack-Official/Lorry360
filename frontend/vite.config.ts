@@ -9,6 +9,9 @@ export default defineConfig({
         target: 'http://localhost:7071',
         changeOrigin: true
       }
-    }
+    },
+    allowedHosts: [
+      'proautomation-sylvester-semielevated.ngrok-free.dev'
+    ]
   }
 })
