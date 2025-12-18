@@ -71,7 +71,7 @@ function urlBase64ToUint8Array(base64String: string) {
   return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
 }
 
-export async function registerForPush(api: any) {
+export async function registerForPush() {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
     console.warn("Push not supported");
     return;

@@ -17,10 +17,7 @@ const attendanceSchema = new mongoose.Schema({
 
   lorry_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Lorry',
-     required: function() {
-      return this.status !== 'absent';
-    }
+    ref: 'Lorry'
   },
   
   date: {
@@ -54,15 +51,5 @@ const attendanceSchema = new mongoose.Schema({
 
 // Compound index to ensure one attendance record per driver per day
 attendanceSchema.index({ driver_id: 1, date: 1 }, { unique: true });
-
-
-// Validation middleware
-attendanceSchema.pre('save', function(next) {
-  // If status is 'absent', set lorry_id to null
-  if (this.status === 'absent') {
-    this.lorry_id = null;
-  }
-  next();
-});
 
 module.exports = mongoose.model('Attendance', attendanceSchema);

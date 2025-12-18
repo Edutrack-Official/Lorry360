@@ -124,15 +124,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         const userData = response.data.data;
         setUserProfile(userData);
 
+        console.log('Fetched user profile:', userData);
         // Handle logo URL
         if (userData.logo) {
           // Check if logo is a URL or a base64 string
-          if (userData.logo.startsWith('http') || userData.logo.startsWith('data:')) {
             setLogoUrl(userData.logo);
-          } else if (userData.logo.startsWith('/')) {
-            // If it's a relative path, construct full URL
-            setLogoUrl(`${window.location.origin}${userData.logo}`);
-          }
+        
         }
       } else {
         throw new Error(response.data.error || 'Failed to load profile');

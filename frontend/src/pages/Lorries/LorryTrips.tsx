@@ -482,8 +482,10 @@ const LorryTrips = () => {
     } else if (trip.collab_owner_id) {
       return {
         type: 'collaborative',
-        name: trip.collab_owner_id.company_name || trip.collab_owner_id.name,
-        icon: Building,
+name: (trip.collab_owner_id.company_name && trip.collab_owner_id.name) 
+  ? `${trip.collab_owner_id.company_name} - ${trip.collab_owner_id.name}`
+  : trip.collab_owner_id.company_name || trip.collab_owner_id.name,
+          icon: Building,
         label: 'Collab Owner'
       };
     }
@@ -1397,7 +1399,7 @@ const LorryTrips = () => {
                                     className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-blue-600 hover:bg-blue-50"
                                   >
                                     <Copy className="h-4 w-4 flex-shrink-0" />
-                                    <span>Clone This Trip</span>
+                                    <span>Clone</span>
                                   </button>
 
                                   <button
