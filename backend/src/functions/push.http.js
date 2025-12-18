@@ -46,6 +46,7 @@
 //     }
 //   }
 // });
+
 const { app } = require("@azure/functions");
 const connectDB = require("../utils/db");
 const { verifyToken } = require("../middleware/auth.middleware");
