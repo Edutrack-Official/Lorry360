@@ -57,8 +57,8 @@ const getDashboardStats = async (ownerId) => {
       monthlyExpenses,
       salaries
     ] = await Promise.all([
-      // 1. Lorry Stats - Only active
-      Lorry.find({ owner_id: ownerId, isActive: true }).select('status').lean(),
+      // 1. Lorry Stats
+      Lorry.find({ owner_id: ownerId }).select('status').lean(),
       
       // 2. Driver Stats - Only active
       Driver.find({ owner_id: ownerId, isActive: true }).select('status').lean(),
