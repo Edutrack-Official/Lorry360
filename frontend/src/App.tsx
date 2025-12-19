@@ -9,7 +9,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute, { OwnerRoute } from './AdminRoute'; // Add this import
 import Lorries from './pages/Lorries/Lorries';
 import ManageLorryForm from './pages/Lorries/ManageLorryForm';
-import ResultsPage from './pages/Resultes/ResultsPage';
 import NotFound from './pages/NotFound';
 import Customers from './pages/Customers/Customers';
 import ManageCustomerForm from './pages/Customers/ManageCustomerForm';
@@ -62,8 +61,6 @@ import CollaborationInvoiceGenerator from './pages/CollaborationInvoiceGenerator
 
 
 
-// import PartnerCollaboratorsTab from './pages/Partner/CollaborationTab';
-
 function App() {
   return (
     <AuthProvider>
@@ -86,15 +83,7 @@ function App() {
 
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-            {/* Results - Full screen without nav */}
-            <Route
-              path="/results/:courseId/:testId"
-              element={
-                <ProtectedRoute>
-                  <ResultsPage />
-                </ProtectedRoute>
-              }
-            />
+     
 
             {/* All other routes with Layout */}
             <Route
