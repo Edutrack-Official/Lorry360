@@ -18,13 +18,11 @@
 
 // module.exports = { saveSubscription };
 
-// controllers/push.controller.js
-
 
 const PushSubscription = require("../models/pushSubscription.model");
 
 /**
- * 🔔 Save / Rebind subscription
+ * 🔔 Save / Rebind subscription (LOGIN)
  */
 const saveSubscription = async (owner_id, deviceId, subscription) => {
   if (!deviceId || !subscription?.endpoint) {
@@ -34,11 +32,11 @@ const saveSubscription = async (owner_id, deviceId, subscription) => {
   }
 
   await PushSubscription.findOneAndUpdate(
-    { endpoint: subscription.endpoint },   // 🔥 FIX
+    { device_id: deviceId },   // 🔥 device identity
     {
-      endpoint: subscription.endpoint,
       device_id: deviceId,
       owner_id,
+      endpoint: subscription.endpoint,
       subscription,
       is_active: true,
       last_seen_at: new Date()
@@ -55,7 +53,7 @@ const saveSubscription = async (owner_id, deviceId, subscription) => {
 const detachSubscription = async (deviceId) => {
   if (!deviceId) return;
 
-  await PushSubscription.updateMany(
+  await PushSubscription.updateOne(
     { device_id: deviceId },
     {
       $set: {

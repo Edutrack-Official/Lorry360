@@ -18,7 +18,7 @@ const sendOnboardingEmail = async ({ toEmail, name, role, password }) => {
               <p>You have been onboarded to our platform as a <strong>Owner</strong>.</p>
               <p><strong>Email:</strong> ${toEmail}<br/><strong>Password:</strong> ${password}</p>
               <p>Please log in and change your password after your first login.</p>
-              <p>Thanks,<br/>Team</p>
+              <p>Thanks,<br/>LUMA360 Team</p>
             </body>
           </html>`,
       },
@@ -90,7 +90,7 @@ const sendPasswordResetEmail = async ({ toEmail, name, otp }) => {
               <p>You requested a password reset. Use the following OTP to reset your password:</p>
               <h2 style="color: #4CAF50; letter-spacing: 5px; font-family: monospace;">${otp}</h2>
               <p>If you did not request this, please ignore this email.</p>
-              <p>Thanks,<br/>Team</p>
+              <p>Thanks,<br/>LUMA360 Team</p>
             </body>
           </html>`,
       },

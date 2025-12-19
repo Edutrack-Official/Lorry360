@@ -91,6 +91,7 @@ const LorryDetails = () => {
       console.error("Failed to fetch trips:", error);
     }
   };
+  
 
    const fetchExpenses = async () => {
     try {
@@ -111,6 +112,9 @@ const LorryDetails = () => {
     }
   }, [lorryId]);
 
+  
+
+  
   const handleDeleteLorry = async () => {
     if (!window.confirm(`Are you sure you want to delete ${lorry?.registration_number}? This action cannot be undone.`)) {
       return;
@@ -178,7 +182,7 @@ const LorryDetails = () => {
   };
 
   const calculateStats = () => {
-    console.log("trips",completedtrips)
+    console.log("trips", completedtrips)
     const totalTrips = completedtrips.length;
     const totalExpenses = expenses.length;
     const totalProfit = completedtrips.reduce((sum, trip) => sum + trip.profit, 0);
@@ -342,132 +346,9 @@ const LorryDetails = () => {
         </nav>
       </div>
 
-      {/* Content */}
-      <div className="p-4 sm:p-6">
-        {activeTab === 'overview' ? (
-          <div className="space-y-4">
-            {/* Recent Trips */}
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="px-4 py-3 sm:px-5 sm:py-4 border-b border-gray-200 flex items-center justify-between">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <Package className="h-5 w-5 text-blue-600" />
-                  Recent Trips
-                </h3>
-                <Link
-                  to={`/lorries/${lorryId}/trips`}
-                  className="text-xs sm:text-sm text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  View All →
-                </Link>
-              </div>
-              
-              <div className="p-4 sm:p-5">
-                {trips.length > 0 ? (
-                  <div className="space-y-3">
-                    {trips.map((trip) => (
-                      <div key={trip._id} className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-sm sm:text-base text-gray-900 truncate">
-                              {trip.trip_number}
-                            </p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Calendar className="h-3 w-3 text-gray-400" />
-                              <p className="text-xs text-gray-600">{formatDate(trip.trip_date)}</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className={`font-bold text-sm sm:text-base ${trip.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {formatCurrency(trip.profit)}
-                            </p>
-                            <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 mt-1 capitalize">
-                              {trip.status}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 sm:py-12">
-                    <Package className="h-12 w-12 sm:h-16 sm:w-16 text-gray-300 mx-auto mb-3" />
-                    <p className="text-sm sm:text-base text-gray-600 mb-4">No trips recorded yet</p>
-                    <Link
-                      to={`/trips/create?lorry=${lorryId}`}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add First Trip
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </div>
 
-            {/* Recent Expenses */}
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="px-4 py-3 sm:px-5 sm:py-4 border-b border-gray-200 flex items-center justify-between">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <IndianRupee className="h-5 w-5 text-green-600" />
-                  Recent Expenses
-                </h3>
-                <Link
-                  to={`/lorries/${lorryId}/expenses`}
-                  className="text-xs sm:text-sm text-green-600 hover:text-green-700 font-medium"
-                >
-                  View All →
-                </Link>
-              </div>
-              
-              <div className="p-4 sm:p-5">
-                {expenses.length > 0 ? (
-                  <div className="space-y-3">
-                    {expenses.map((expense) => {
-                      const config = getCategoryConfig(expense.category);
-                      return (
-                        <div key={expense._id} className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                              <span className={`inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg text-xs font-semibold border ${config.color}`}>
-                                {config.label}
-                              </span>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <Calendar className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                                  <p className="text-xs text-gray-600 truncate">
-                                    {formatDate(expense.date)}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                            <p className="font-bold text-sm sm:text-base text-red-600">
-                              {formatCurrency(expense.amount)}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 sm:py-12">
-                    <IndianRupee className="h-12 w-12 sm:h-16 sm:w-16 text-gray-300 mx-auto mb-3" />
-                    <p className="text-sm sm:text-base text-gray-600 mb-4">No expenses recorded yet</p>
-                    <Link
-                      to={`/expenses/create?lorry=${lorryId}`}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add First Expense
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        ) : (
           <Outlet />
-        )}
-      </div>
+        
     </div>
   );
 };
