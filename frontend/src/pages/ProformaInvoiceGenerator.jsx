@@ -302,12 +302,10 @@ const proformaContent = `
         <td style="width: 40%; vertical-align: top; text-align: right;">
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
-              <td style="padding: 4px 0; font-size: 14px; font-weight: bold; color: #000; text-align: left;">Invoice No:</td>
-              <td style="padding: 4px 0; font-size: 14px; text-align: right;">${invoiceNumber}</td>
+              <td style="padding: 4px 0; font-size: 14px; font-weight: bold; color: #000; text-align: right;">Invoice No: ${invoiceNumber}</td>
             </tr>
             <tr>
-              <td style="padding: 8px 0 4px 0; font-size: 14px; font-weight: bold; color: #000; text-align: left;">Date:</td>
-              <td style="padding: 8px 0 4px 0; font-size: 14px; text-align: right;">${new Date(invoiceDate).toLocaleDateString('en-GB')}</td>
+              <td style="padding: 8px 0 4px 0; font-size: 14px; font-weight: bold; color: #000; text-align: right;">Date: ${new Date(invoiceDate).toLocaleDateString('en-GB')}</td>
             </tr>
           </table>
         </td>

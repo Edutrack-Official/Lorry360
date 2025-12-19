@@ -50,12 +50,12 @@ const CustomerTrips = () => {
 
   const fetchCustomerTrips = async () => {
     if (!customerId) return;
-    
+
     try {
       const res = await api.get(`/trips/customer/${customerId}`);
-    const customerTrips = (res.data.data?.trips || []).filter(
-  (trip: any) => trip.status === "completed"
-);
+      const customerTrips = (res.data.data?.trips || []).filter(
+        (trip: any) => trip.status === "completed"
+      );
       setTrips(customerTrips);
     } catch (error: any) {
       console.error("Failed to fetch customer trips:", error);
@@ -124,8 +124,8 @@ const CustomerTrips = () => {
   return (
     <div className="space-y-3 sm:space-y-4">
       {trips.map((trip) => (
-        <div 
-          key={trip._id} 
+        <div
+          key={trip._id}
           className="bg-white border rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow"
         >
           {/* Header */}
@@ -204,19 +204,19 @@ const CustomerTrips = () => {
           {/* Financial Summary */}
           <div className="grid grid-cols-3 gap-2 pt-3 border-t border-gray-100">
             <div className="text-center">
-              <div className="text-xs text-gray-500 mb-0.5">Customer Amount</div>
+              <div className="text-xs text-gray-500 mb-1">Customer </div>
               <div className="text-sm sm:text-base font-semibold text-green-600">
                 {formatCurrency(trip.customer_amount)}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-gray-500 mb-0.5">Crusher Amount</div>
+              <div className="text-xs text-gray-500 mb-1">Crusher </div>
               <div className="text-sm sm:text-base font-semibold text-orange-600">
                 {formatCurrency(trip.crusher_amount)}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-gray-500 mb-0.5">Profit Amount</div>
+              <div className="text-xs text-gray-500 mb-1">Profit </div>
               <div className={`text-sm sm:text-base font-semibold ${trip.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {formatCurrency(trip.profit)}
               </div>

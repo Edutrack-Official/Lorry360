@@ -46,7 +46,7 @@ const Customers = () => {
   const [searchText, setSearchText] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
   const [showActionMenu, setShowActionMenu] = useState<string | null>(null);
-  
+
   // Delete state variables
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedCustomerDelete, setSelectedCustomerDelete] = useState<{
@@ -54,7 +54,7 @@ const Customers = () => {
     name: string;
   } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  
+
   const navigate = useNavigate();
 
   const fetchCustomers = async () => {
@@ -95,7 +95,7 @@ const Customers = () => {
 
   const handleConfirmDelete = async () => {
     if (!selectedCustomerDelete) return;
-    
+
     setIsDeleting(true);
     try {
       await api.delete(`/customers/delete/${selectedCustomerDelete.id}`);
@@ -216,8 +216,8 @@ const Customers = () => {
               <button
                 onClick={() => setFilterStatus("all")}
                 className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filterStatus === "all"
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white border border-gray-300 text-gray-700'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white border border-gray-300 text-gray-700'
                   }`}
               >
                 All ({customers.length})
@@ -225,8 +225,8 @@ const Customers = () => {
               <button
                 onClick={() => setFilterStatus("active")}
                 className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filterStatus === "active"
-                    ? 'bg-green-600 text-white'
-                    : 'bg-white border border-gray-300 text-gray-700'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-white border border-gray-300 text-gray-700'
                   }`}
               >
                 Active ({customers.filter(c => c.isActive).length})
@@ -234,8 +234,8 @@ const Customers = () => {
               <button
                 onClick={() => setFilterStatus("inactive")}
                 className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filterStatus === "inactive"
-                    ? 'bg-red-600 text-white'
-                    : 'bg-white border border-gray-300 text-gray-700'
+                  ? 'bg-red-600 text-white'
+                  : 'bg-white border border-gray-300 text-gray-700'
                   }`}
               >
                 Inactive ({customers.filter(c => !c.isActive).length})
@@ -249,8 +249,8 @@ const Customers = () => {
             <button
               onClick={() => setFilterStatus("all")}
               className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filterStatus === "all"
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white border border-gray-300 text-gray-700'
+                ? 'bg-blue-600 text-white'
+                : 'bg-white border border-gray-300 text-gray-700'
                 }`}
             >
               All ({customers.length})
@@ -258,8 +258,8 @@ const Customers = () => {
             <button
               onClick={() => setFilterStatus("active")}
               className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filterStatus === "active"
-                  ? 'bg-green-600 text-white'
-                  : 'bg-white border border-gray-300 text-gray-700'
+                ? 'bg-green-600 text-white'
+                : 'bg-white border border-gray-300 text-gray-700'
                 }`}
             >
               Active ({customers.filter(c => c.isActive).length})
@@ -267,8 +267,8 @@ const Customers = () => {
             <button
               onClick={() => setFilterStatus("inactive")}
               className={`px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${filterStatus === "inactive"
-                  ? 'bg-red-600 text-white'
-                  : 'bg-white border border-gray-300 text-gray-700'
+                ? 'bg-red-600 text-white'
+                : 'bg-white border border-gray-300 text-gray-700'
                 }`}
             >
               Inactive ({customers.filter(c => !c.isActive).length})
@@ -441,137 +441,70 @@ const Customers = () => {
               className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <User className="h-6 w-6 text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-gray-900">
-                        {selectedCustomer.name}
-                      </h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${getStatusConfig(selectedCustomer.isActive).color}`}>
-                          {getStatusConfig(selectedCustomer.isActive).label}
-                        </span>
-                        <p className="text-gray-600">Customer Details</p>
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setSelectedCustomer(null)}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    ✕
-                  </button>
-                </div>
+             <div className="p-4 sm:p-6">
+  <div className="flex items-start justify-between mb-4 sm:mb-6">
+    <div className="flex items-start gap-2 sm:gap-3 flex-1">
+      <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg flex-shrink-0">
+        <User className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="text-base sm:text-lg font-bold text-gray-900 break-words">
+            {selectedCustomer.name}
+          </h3>
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusConfig(selectedCustomer.isActive).color}`}>
+            {getStatusConfig(selectedCustomer.isActive).label}
+          </span>
+        </div>
+      </div>
+    </div>
+    <button
+      onClick={() => setSelectedCustomer(null)}
+      className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0 ml-2"
+    >
+      ✕
+    </button>
+  </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Contact Information */}
-                  <div className="space-y-4">
-                    <h4 className="font-semibold text-gray-900 border-b border-gray-200 pb-2">
-                      Contact Information
-                    </h4>
+  <div className="space-y-4">
+    {/* Contact Information */}
+    <div className="space-y-2.5">
+      <h4 className="text-xs sm:text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+        Contact Information
+      </h4>
 
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Phone</label>
-                      <div className="flex items-center gap-2 mt-1 text-gray-900">
-                        <Phone className="h-4 w-4 text-gray-400" />
-                        {selectedCustomer.phone}
-                      </div>
-                    </div>
+      <div className="flex items-center gap-2 text-sm text-gray-900">
+        <Phone className="h-4 w-4 text-gray-400 flex-shrink-0" />
+        <span className="break-all">{selectedCustomer.phone}</span>
+      </div>
 
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Address</label>
-                      <div className="flex items-start gap-2 mt-1 text-gray-900">
-                        <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                        <span>{selectedCustomer.address}</span>
-                      </div>
-                    </div>
-                  </div>
+      <div className="flex items-start gap-2 text-sm text-gray-900">
+        <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+        <span className="break-words">{selectedCustomer.address}</span>
+      </div>
+    </div>
 
-                  {/* Status & Timestamps */}
-                  <div className="space-y-4">
-                    <h4 className="font-semibold text-gray-900 border-b border-gray-200 pb-2">
-                      Status Information
-                    </h4>
-
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Current Status</label>
-                      <div className="mt-1">
-                        <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border ${getStatusConfig(selectedCustomer.isActive).color}`}>
-                          {selectedCustomer.isActive ? "Active" : "Inactive"}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Created</label>
-                      <p className="text-gray-900 mt-1">
-                        {new Date(selectedCustomer.createdAt).toLocaleString()}
-                      </p>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Last Updated</label>
-                      <p className="text-gray-900 mt-1">
-                        {new Date(selectedCustomer.updatedAt).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Site Addresses */}
-                  {selectedCustomer.site_addresses.length > 0 && (
-                    <div className="md:col-span-2">
-                      <h4 className="font-semibold text-gray-900 border-b border-gray-200 pb-2 mb-4">
-                        Site Addresses ({selectedCustomer.site_addresses.length})
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {selectedCustomer.site_addresses.map((site, index) => (
-                          <div
-                            key={index}
-                            className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200"
-                          >
-                            <MapPin className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                            <span className="text-sm text-gray-700">{site}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
-                  <button
-                    onClick={() => navigate(`/customers/edit/${selectedCustomer._id}`)}
-                    className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                  >
-                    Edit Customer
-                  </button>
-                  <button
-                    onClick={() => handleToggleStatus(selectedCustomer._id, selectedCustomer.isActive)}
-                    className={`flex-1 py-2.5 rounded-lg transition-colors font-medium ${selectedCustomer.isActive
-                        ? 'bg-red-100 text-red-600 hover:bg-red-200'
-                        : 'bg-green-100 text-green-600 hover:bg-green-200'
-                      }`}
-                  >
-                    {selectedCustomer.isActive ? "Deactivate" : "Activate"}
-                  </button>
-                  <button
-                    onClick={() => handleDeleteClick(selectedCustomer._id, selectedCustomer.name)}
-                    className="flex-1 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
-                  >
-                    Delete Customer
-                  </button>
-                  <button
-                    onClick={() => setSelectedCustomer(null)}
-                    className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
+    {/* Site Addresses */}
+    {selectedCustomer.site_addresses.length > 0 && (
+      <div>
+        <h4 className="text-xs sm:text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2 mb-2.5">
+          Site Addresses ({selectedCustomer.site_addresses.length})
+        </h4>
+        <div className="space-y-2">
+          {selectedCustomer.site_addresses.map((site, index) => (
+            <div
+              key={index}
+              className="flex items-start gap-2 p-2.5 bg-gray-50 rounded-lg border border-gray-200"
+            >
+              <MapPin className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+              <span className="text-xs sm:text-sm text-gray-700 break-words">{site}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+</div>
             </motion.div>
           </motion.div>
         )}
@@ -588,7 +521,7 @@ const Customers = () => {
         title="Delete Customer"
         message={`Are you sure you want to delete this customer?`}
         isLoading={isDeleting}
-        itemName={selectedCustomerDelete ? 
+        itemName={selectedCustomerDelete ?
           `Customer: ${selectedCustomerDelete.name}`
           : ""
         }
