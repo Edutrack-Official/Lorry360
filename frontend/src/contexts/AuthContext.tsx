@@ -310,7 +310,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   useEffect(() => {
   if (user && token) {
-    registerForPush(axios).catch((err) => {
+    registerForPush().catch((err) => {
       console.error("Push registration failed:", err);
     });
   }
