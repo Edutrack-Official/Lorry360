@@ -57,90 +57,96 @@ const getDashboardStats = async (ownerId) => {
       monthlyExpenses,
       salaries
     ] = await Promise.all([
-      // 1. Lorry Stats
-      Lorry.find({ owner_id: ownerId }).select('status').lean(),
+      // 1. Lorry Stats - Only active
+      Lorry.find({ owner_id: ownerId, isActive: true }).select('status').lean(),
       
-      // 2. Driver Stats
-      Driver.find({ owner_id: ownerId }).select('status').lean(),
+      // 2. Driver Stats - Only active
+      Driver.find({ owner_id: ownerId, isActive: true }).select('status').lean(),
       
-      // 3. Crusher Stats
-      Crusher.find({ owner_id: ownerId }).countDocuments(),
+      // 3. Crusher Stats - Only active
+      Crusher.find({ owner_id: ownerId, isActive: true }).countDocuments(),
       
-      // 4. Customer Stats
-      Customer.find({ owner_id: ownerId }).select('isActive').lean(),
+      // 4. Customer Stats - Only active
+      Customer.find({ owner_id: ownerId, isActive: true }).select('isActive').lean(),
       
-      // 5. All Trips (basic info only)
-      Trip.find({ owner_id: ownerId })
+      // 5. All Trips (basic info only) - Only active
+      Trip.find({ owner_id: ownerId, isActive: true })
         .select('trip_date customer_id collab_owner_id status')
         .lean(),
       
-      // 6. Current Month Trips (with financials)
+      // 6. Current Month Trips (with financials) - Only active
       Trip.find({ 
         owner_id: ownerId,
+        isActive: true,
         trip_date: { $gte: currentMonth.firstDay, $lte: currentMonth.lastDay },
         status: { $in: ['completed'] }
       })
       .select('crusher_amount customer_amount profit no_of_unit_crusher no_of_unit_customer')
       .lean(),
       
-      // 7. Today's Trips
+      // 7. Today's Trips - Only active
       Trip.find({ 
         owner_id: ownerId,
+        isActive: true,
         trip_date: { $gte: today.start, $lte: today.end }
       }).countDocuments(),
       
-      // 8. Customer Payments (settlements)
+      // 8. Customer Payments (settlements) - Only active
       Payment.find({ 
         owner_id: ownerId,
+        isActive: true,
         payment_type: 'from_customer'
       }).select('amount collab_payment_status').lean(),
       
-      // 9. Pending Customer Payments
+      // 9. Pending Customer Payments - Only active
       Payment.find({ 
         owner_id: ownerId,
+        isActive: true,
         payment_type: 'from_customer',
         collab_payment_status: 'pending'
       }).select('amount').lean(),
       
-      // 10. Collaboration Stats
+      // 10. Collaboration Stats - Only active
       Collaboration.find({
+        isActive: true,
         $or: [
           { from_owner_id: ownerId },
           { to_owner_id: ownerId }
         ]
       }).select('status from_owner_id to_owner_id').lean(),
       
-      // 11. Monthly Expenses
+      // 11. Monthly Expenses - Only active
       Expense.find({ 
         owner_id: ownerId,
+        isActive: true,
         date: { $gte: currentMonth.firstDay, $lte: currentMonth.lastDay }
       }).select('amount').lean(),
       
-      // 12. Salary Data (NEW)
-      Salary.find({ owner_id: ownerId })
+      // 12. Salary Data - Only active
+      Salary.find({ owner_id: ownerId, isActive: true })
         .select('advance_balance advance_transactions bonus amountpaid')
         .lean()
     ]);
 
     // Calculate statistics
     
-    // Lorries
+    // Lorries - Now all are active, but check status
     const activeLorries = lorries.filter(l => l.status === 'active').length;
     const inactiveLorries = lorries.filter(l => l.status === 'inactive').length;
     
-    // Drivers
+    // Drivers - Now all are active, but check status
     const activeDrivers = drivers.filter(d => d.status === 'active').length;
     const inactiveDrivers = drivers.filter(d => d.status === 'inactive').length;
     
-    // Customers
-    const activeCustomers = customers.filter(c => c.isActive).length;
+    // Customers - Now all are active
+    const activeCustomers = customers.filter(c => c.isActive).length; // This should equal customers.length
     
-    // Trips
+    // Trips - Filter by status for active trips
     const completedTrips = allTrips.filter(t => t.status === 'completed').length;
     const customerTrips = allTrips.filter(t => t.customer_id).length;
     const collaborativeTrips = allTrips.filter(t => t.collab_owner_id).length;
     
-    // Financials from current month
+    // Financials from current month (already filtered by isActive)
     const financialStats = currentMonthTrips.reduce((acc, trip) => ({
       totalRevenue: acc.totalRevenue + (trip.customer_amount || 0),
       totalCost: acc.totalCost + (trip.crusher_amount || 0),
@@ -155,12 +161,12 @@ const getDashboardStats = async (ownerId) => {
       totalCustomerUnits: 0
     });
     
-    // Settlements
+    // Settlements (already filtered by isActive)
     const totalSettlementAmount = customerPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
     const pendingSettlementAmount = pendingCustomerPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
     const completedSettlements = customerPayments.filter(p => p.collab_payment_status === 'approved').length;
     
-    // Collaborations
+    // Collaborations (already filtered by isActive)
     const activeCollaborations = collaborations.filter(c => c.status === 'active').length;
     const pendingReceived = collaborations.filter(c => 
       c.to_owner_id.toString() === ownerId.toString() && c.status === 'pending'
@@ -169,10 +175,10 @@ const getDashboardStats = async (ownerId) => {
       c.from_owner_id.toString() === ownerId.toString() && c.status === 'pending'
     ).length;
     
-    // Expenses
+    // Expenses (already filtered by isActive)
     const totalExpenses = monthlyExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
     
-    // Salary Calculations (NEW)
+    // Salary Calculations (already filtered by isActive)
     let totalAdvanceGiven = 0;
     let totalAdvanceDeducted = 0;
     let totalBonusPaid = 0;
@@ -241,19 +247,23 @@ const getDashboardStats = async (ownerId) => {
         lorries: {
           total: lorries.length,
           active: activeLorries,
-          inactive: inactiveLorries
+          inactive: inactiveLorries,
+          note: "All are isActive: true"
         },
         drivers: {
           total: drivers.length,
           active: activeDrivers,
-          inactive: inactiveDrivers
+          inactive: inactiveDrivers,
+          note: "All are isActive: true"
         },
         crushers: {
-          total: crushers
+          total: crushers,
+          note: "All are isActive: true"
         },
         customers: {
           total: customers.length,
-          active: activeCustomers
+          active: activeCustomers,
+          note: "All are isActive: true"
         }
       },
       trips: {
@@ -261,7 +271,8 @@ const getDashboardStats = async (ownerId) => {
         today: todayTrips,
         thisMonth: currentMonthTrips.length,
         customer: customerTrips,
-        collaborative: collaborativeTrips
+        collaborative: collaborativeTrips,
+        note: "All are isActive: true"
       },
       settlements: {
         total: customerPayments.length,
@@ -269,12 +280,14 @@ const getDashboardStats = async (ownerId) => {
         completed: completedSettlements,
         totalAmount: totalSettlementAmount,
         dueAmount: pendingSettlementAmount,
-        paidAmount: totalSettlementAmount - pendingSettlementAmount
+        paidAmount: totalSettlementAmount - pendingSettlementAmount,
+        note: "All are isActive: true"
       },
       collaborations: {
         active: activeCollaborations,
         pendingReceived,
-        pendingSent
+        pendingSent,
+        note: "All are isActive: true"
       },
       salary: {
         totalRecords: salaries.length,
@@ -293,7 +306,8 @@ const getDashboardStats = async (ownerId) => {
           totalBonusPaid: formatCurrency(totalBonusPaid),
           totalSalaryPaid: formatCurrency(totalSalaryPaid),
           totalCashPaid: formatCurrency(totalCashPaid)
-        }
+        },
+        note: "All are isActive: true"
       },
       financials: {
         totalRevenue: financialStats.totalRevenue,
@@ -318,14 +332,20 @@ const getDashboardStats = async (ownerId) => {
           totalOperationalCost: formatCurrency(totalOperationalCost),
           netProfit: formatCurrency(financialStats.totalProfit - totalExpenses),
           netProfitAfterAllExpenses: formatCurrency(netProfitAfterAll)
-        }
+        },
+        note: "All based on isActive: true records"
       },
       metrics: {
         tripCompletionRate: allTrips.length > 0 ? Math.round((completedTrips / allTrips.length) * 100) : 0,
         lorryUtilization: lorries.length > 0 ? Math.round((activeLorries / lorries.length) * 100) : 0,
         customerRetention: customers.length > 0 ? Math.round((activeCustomers / customers.length) * 100) : 0,
         advanceUtilization: totalAdvanceGiven > 0 ? Math.round((totalAdvanceDeducted / totalAdvanceGiven) * 100) : 0,
-        salaryToRevenueRatio: financialStats.totalRevenue > 0 ? Math.round((totalSalaryPaid / financialStats.totalRevenue) * 100) : 0
+        salaryToRevenueRatio: financialStats.totalRevenue > 0 ? Math.round((totalSalaryPaid / financialStats.totalRevenue) * 100) : 0,
+        note: "All based on isActive: true records"
+      },
+      filtersApplied: {
+        isActive: true,
+        owner_id: ownerId
       },
       lastUpdated: new Date().toISOString(),
       generatedAt: new Date().toLocaleString('en-IN', { 
@@ -335,12 +355,17 @@ const getDashboardStats = async (ownerId) => {
       })
     };
 
-    console.log(`Dashboard data prepared for owner ${ownerId}:`, {
+    console.log(`Dashboard data prepared for owner ${ownerId} (isActive: true):`, {
       trips: dashboardData.trips.total,
       revenue: dashboardData.financials.formatted.totalRevenue,
       profit: dashboardData.financials.formatted.totalProfit,
       salaryPaid: dashboardData.salary.formatted.totalSalaryPaid,
-      advanceBalance: dashboardData.salary.formatted.totalAdvanceBalance
+      advanceBalance: dashboardData.salary.formatted.totalAdvanceBalance,
+      activeEntities: {
+        lorries: dashboardData.entities.lorries.active,
+        drivers: dashboardData.entities.drivers.active,
+        customers: dashboardData.entities.customers.active
+      }
     });
     
     return dashboardData;
