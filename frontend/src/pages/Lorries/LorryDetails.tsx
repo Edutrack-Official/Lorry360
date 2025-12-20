@@ -455,7 +455,7 @@ const LorryDetails = () => {
     try {
       const res = await api.get(`/expenses/lorry/${lorryId}`);
       const expensesData = res.data.data?.expenses || [];
-      setExpenses(expensesData.slice(0, 5));
+      setExpenses(expensesData);
     } catch (error: any) {
       console.error("Failed to fetch expenses:", error);
     }
