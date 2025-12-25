@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import api from '../../api/client';
-import { Save, X, Truck, Calendar, FileText, Loader2, Building2, Fuel } from 'lucide-react';
+import { Save, X, Truck, Calendar, FileText, Loader2, Building2, Fuel, Upload, File, Image as ImageIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import BackButton from '../../components/BackButton';
 
@@ -11,8 +11,9 @@ interface ExpenseFormData {
   category: 'fuel' | 'maintenance' | 'repair' | 'toll' | 'fine' | 'other';
   amount: number;
   description: string;
-  payment_mode: 'cash' | 'bank' | 'upi' | 'credit'; // Added 'credit' here
+  payment_mode: 'cash' | 'bank' | 'upi' | 'credit';
   bunk_id?: string;
+  attachments?: File[];
 }
 
 interface FormErrors {
@@ -22,6 +23,7 @@ interface FormErrors {
   amount?: string;
   payment_mode?: string;
   bunk_id?: string;
+  attachments?: string;
 }
 
 interface Lorry {
@@ -51,6 +53,7 @@ const ExpenseForm = () => {
     description: '',
     payment_mode: 'cash',
     bunk_id: bunkId || '',
+    attachments: [],
   });
 
   const [lorries, setLorries] = useState<Lorry[]>([]);
@@ -148,6 +151,7 @@ const ExpenseForm = () => {
         description: expense.description || '',
         payment_mode: expense.payment_mode,
         bunk_id: expense.bunk_id?._id || expense.bunk_id || '',
+        attachments: [],
       });
 
       // If editing and no lorryName set, use the expense's lorry info
@@ -160,6 +164,69 @@ const ExpenseForm = () => {
     } catch (error: any) {
       toast.error('Failed to fetch expense details');
     }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const selectedFiles = Array.from(files);
+    const validFiles: File[] = [];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
+
+    for (const file of selectedFiles) {
+      // Check file type
+      if (!allowedTypes.includes(file.type)) {
+        toast.error(`${file.name}: Only images (JPEG, PNG, GIF) and PDF files are allowed`);
+        continue;
+      }
+
+      // Check file size
+      if (file.size > maxSize) {
+        toast.error(`${file.name}: File size must be less than 5MB`);
+        continue;
+      }
+
+      validFiles.push(file);
+    }
+
+    if (validFiles.length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        attachments: [...(prev.attachments || []), ...validFiles]
+      }));
+
+      // Clear any attachment errors
+      if (errors.attachments) {
+        setErrors(prev => ({ ...prev, attachments: undefined }));
+      }
+    }
+
+    // Reset the input
+    e.target.value = '';
+  };
+
+  const removeFile = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      attachments: prev.attachments?.filter((_, i) => i !== index) || []
+    }));
+  };
+
+  const getFileIcon = (file: File) => {
+    if (file.type.startsWith('image/')) {
+      return <ImageIcon className="h-5 w-5 text-blue-600" />;
+    }
+    return <File className="h-5 w-5 text-red-600" />;
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
   const validate = (): boolean => {
@@ -206,18 +273,41 @@ const ExpenseForm = () => {
     setLoading(true);
 
     try {
-      const submitData = { ...formData };
+      const submitFormData = new FormData();
+      
+      // Append all form fields
+      submitFormData.append('lorry_id', formData.lorry_id);
+      submitFormData.append('date', formData.date);
+      submitFormData.append('category', formData.category);
+      submitFormData.append('amount', formData.amount.toString());
+      submitFormData.append('description', formData.description);
+      submitFormData.append('payment_mode', formData.payment_mode);
 
       // Clear bunk_id if category is not fuel
-      if (submitData.category !== 'fuel') {
-        submitData.bunk_id = undefined;
+      if (formData.category === 'fuel' && formData.bunk_id) {
+        submitFormData.append('bunk_id', formData.bunk_id);
+      }
+
+      // Append files
+      if (formData.attachments && formData.attachments.length > 0) {
+        formData.attachments.forEach((file) => {
+          submitFormData.append('attachments', file);
+        });
       }
 
       if (isEditing) {
-        await api.put(`/expenses/update/${expenseId}`, submitData);
+        await api.put(`/expenses/update/${expenseId}`, submitFormData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
         toast.success('Expense updated successfully');
       } else {
-        await api.post('/expenses/create', submitData);
+        await api.post('/expenses/create', submitFormData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
         toast.success('Expense created successfully');
       }
 
@@ -488,6 +578,78 @@ const ExpenseForm = () => {
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
               placeholder="Enter expense details..."
             />
+          </div>
+
+          {/* File Upload Section */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <Upload className="h-4 w-4 inline mr-2" />
+              Attachments (Optional)
+            </label>
+            <div className="space-y-3">
+              {/* Upload Button */}
+              <div className="flex items-center justify-center w-full">
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <Upload className="h-8 w-8 mb-2 text-gray-500" />
+                    <p className="mb-2 text-sm text-gray-500">
+                      <span className="font-semibold">Click to upload</span> or drag and drop
+                    </p>
+                    <p className="text-xs text-gray-500">Images (PNG, JPG, GIF) or PDF (Max 5MB each)</p>
+                  </div>
+                  <input
+                    type="file"
+                    className="hidden"
+                    multiple
+                    accept="image/*,.pdf"
+                    onChange={handleFileChange}
+                  />
+                </label>
+              </div>
+
+              {/* File List */}
+              {formData.attachments && formData.attachments.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-700">
+                    Selected Files ({formData.attachments.length})
+                  </p>
+                  <div className="space-y-2">
+                    {formData.attachments.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg"
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          {getFileIcon(file)}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {file.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {formatFileSize(file.size)}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeFile(index)}
+                          className="ml-2 p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {errors.attachments && (
+                <p className="mt-2 text-sm text-red-600 flex items-start gap-1">
+                  <span className="text-red-500 font-bold">•</span>
+                  {errors.attachments}
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Submit Buttons */}
