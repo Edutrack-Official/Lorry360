@@ -99,6 +99,26 @@ const tripSchema = new mongoose.Schema({
     required: [true, 'Customer amount is required'],
     min: 0
   },
+
+   include_gst: {
+    type: Boolean,
+    default: false
+  },
+  
+  gst_values: {
+    SGST: {
+      type: String, // Store as string like "2.5%"
+      default: "2.5%"
+    },
+    CGST: {
+      type: String,
+      default: "2.5%"
+    },
+    IGST: {
+      type: String,
+      default: "0%"
+    }
+  },
   
   // Profit (auto-calculated)
   profit: {

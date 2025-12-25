@@ -33,7 +33,13 @@ interface FormData {
   customer_id: string;
   collab_owner_id: string;
   location: string;
-  customer_amount: number;
+  customer_amount: number; // Final amount with GST (sent to backend)
+  include_gst: boolean;
+  gst_values: {
+    SGST: string;
+    CGST: string;
+    IGST: string;
+  };
   trip_date: string;
   notes: string;
   dc_number: string;
@@ -101,7 +107,13 @@ const TripForm = () => {
     customer_id: "",
     collab_owner_id: "",
     location: "",
-    customer_amount: 0,
+    customer_amount: 0, // This will hold final amount with GST
+    include_gst: false,
+    gst_values: {
+      SGST: "2.5%",
+      CGST: "2.5%",
+      IGST: "0%"
+    },
     trip_date: new Date().toISOString().split('T')[0],
     notes: "",
     dc_number: ""
@@ -123,6 +135,16 @@ const TripForm = () => {
   const [lorryName, setLorryName] = useState("");
   const [isCustomMaterial, setIsCustomMaterial] = useState(false);
   const [destinationType, setDestinationType] = useState<'customer' | 'collaborative'>('customer');
+
+  // New state variables for GST
+  const [includeGst, setIncludeGst] = useState(false);
+  const [gstValues, setGstValues] = useState({
+    SGST: "2.5%",
+    CGST: "2.5%",
+    IGST: "0%"
+  });
+  const [customerAmountWithoutGst, setCustomerAmountWithoutGst] = useState(0); // Frontend only
+  const [finalCustomerAmount, setFinalCustomerAmount] = useState(0); // Will be sent to backend
 
   const isEditMode = Boolean(tripId);
 
@@ -146,6 +168,43 @@ const TripForm = () => {
       setLorryName("Lorry ID: " + lorryId);
     }
   }, [lorryId]);
+
+  // Calculate GST whenever relevant values change
+  useEffect(() => {
+    const calculateGst = () => {
+      if (includeGst) {
+        // Extract percentage values
+        const sgstPercent = parseFloat(gstValues.SGST.replace('%', '') || '0');
+        const cgstPercent = parseFloat(gstValues.CGST.replace('%', '') || '0');
+        const igstPercent = parseFloat(gstValues.IGST.replace('%', '') || '0');
+        const totalGstPercent = sgstPercent + cgstPercent + igstPercent;
+
+        // Calculate GST amount
+        const gstAmount = (customerAmountWithoutGst * totalGstPercent) / 100;
+
+        // Calculate final amount with GST
+        const finalAmount = customerAmountWithoutGst + gstAmount;
+
+        setFinalCustomerAmount(finalAmount);
+        setFormData(prev => ({ ...prev, customer_amount: finalAmount }));
+      } else {
+        // If GST not included, final amount is the same as customer amount without GST
+        setFinalCustomerAmount(customerAmountWithoutGst);
+        setFormData(prev => ({ ...prev, customer_amount: customerAmountWithoutGst }));
+      }
+    };
+
+    calculateGst();
+  }, [includeGst, gstValues, customerAmountWithoutGst]);
+
+  // Update formData when include_gst or gst_values change
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      include_gst: includeGst,
+      gst_values: gstValues
+    }));
+  }, [includeGst, gstValues]);
 
   // Fetch form data and collaborations
   useEffect(() => {
@@ -175,6 +234,28 @@ const TripForm = () => {
           const isCollaborative = !!tripData.collab_owner_id;
           setDestinationType(isCollaborative ? 'collaborative' : 'customer');
 
+          // Calculate original amount without GST if GST is included
+          let customerAmountWithoutGstValue = tripData.customer_amount;
+
+          if (tripData.include_gst) {
+            // Extract percentage values from GST strings
+            const sgstPercent = parseFloat(tripData.gst_values?.SGST?.replace('%', '') || '0');
+            const cgstPercent = parseFloat(tripData.gst_values?.CGST?.replace('%', '') || '0');
+            const igstPercent = parseFloat(tripData.gst_values?.IGST?.replace('%', '') || '0');
+            const totalGstPercent = sgstPercent + cgstPercent + igstPercent;
+
+            // Calculate original amount without GST with proper rounding to avoid floating point errors
+            if (totalGstPercent > 0) {
+              customerAmountWithoutGstValue = Math.round((tripData.customer_amount / (1 + totalGstPercent / 100)) * 100) / 100;
+            }
+          }
+
+          // Set the frontend state for amount without GST
+          setCustomerAmountWithoutGst(customerAmountWithoutGstValue);
+
+          // Set final amount (with GST) to customer_amount field
+          setFinalCustomerAmount(tripData.customer_amount);
+
           setFormData({
             lorry_id: tripData.lorry_id?._id || lorryId || "",
             driver_id: tripData.driver_id?._id || "",
@@ -187,11 +268,25 @@ const TripForm = () => {
             customer_id: tripData.customer_id?._id || "",
             collab_owner_id: tripData.collab_owner_id?._id || "",
             location: tripData.location || "",
-            customer_amount: tripData.customer_amount || 0,
+            customer_amount: tripData.customer_amount || 0, // This is amount WITH GST
+            include_gst: tripData.include_gst || false,
+            gst_values: tripData.gst_values || {
+              SGST: "2.5%",
+              CGST: "2.5%",
+              IGST: "0%"
+            },
             trip_date: tripData.trip_date ? new Date(tripData.trip_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
             notes: tripData.notes || "",
             dc_number: tripData.dc_number || ""
           });
+
+          // Set GST toggle state
+          setIncludeGst(tripData.include_gst || false);
+
+          // Set GST values
+          if (tripData.gst_values) {
+            setGstValues(tripData.gst_values);
+          }
 
           // Set customer addresses if customer is selected
           if (tripData.customer_id?._id) {
@@ -359,10 +454,10 @@ const TripForm = () => {
       hasChanges = true;
     }
 
-    // Clear error for customer_amount
-    if (formData.customer_amount > 0 && errors.customer_amount) {
-      // Check if customer_amount is greater than crusher_amount
-      if (formData.customer_amount >= formData.crusher_amount) {
+    // Clear error for customer_amount (check both customerAmountWithoutGst and finalCustomerAmount)
+    if (customerAmountWithoutGst > 0 && errors.customer_amount) {
+      // Check if final amount is greater than crusher amount
+      if (finalCustomerAmount >= formData.crusher_amount) {
         delete newErrors.customer_amount;
         hasChanges = true;
       }
@@ -377,7 +472,7 @@ const TripForm = () => {
     if (hasChanges) {
       setErrors(newErrors);
     }
-  }, [formData, destinationType, errors]);
+  }, [formData, destinationType, errors, customerAmountWithoutGst, finalCustomerAmount]);
 
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -407,6 +502,31 @@ const TripForm = () => {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleCustomerAmountWithoutGstChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
+    if (!isNaN(value)) {
+      setCustomerAmountWithoutGst(value);
+    }
+  };
+
+  const handleGstValueChange = (field: 'SGST' | 'CGST' | 'IGST', value: string) => {
+    // Remove any non-numeric and decimal characters except %
+    const cleanedValue = value.replace(/[^0-9.%]/g, '');
+
+    // Ensure value ends with % if it contains a number
+    if (cleanedValue && !cleanedValue.includes('%')) {
+      setGstValues(prev => ({
+        ...prev,
+        [field]: cleanedValue + '%'
+      }));
+    } else {
+      setGstValues(prev => ({
+        ...prev,
+        [field]: cleanedValue
+      }));
+    }
   };
 
   const handleMaterialInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -496,9 +616,21 @@ const TripForm = () => {
     if (formData.no_of_unit_crusher <= 0) newErrors.no_of_unit_crusher = "Crusher units must be greater than 0";
     if (formData.no_of_unit_customer <= 0) newErrors.no_of_unit_customer = "Customer units must be greater than 0";
     if (formData.crusher_amount <= 0) newErrors.crusher_amount = "Crusher amount must be greater than 0";
-    if (formData.customer_amount <= 0) newErrors.customer_amount = "Customer amount must be greater than 0";
+    if (customerAmountWithoutGst <= 0) newErrors.customer_amount = "Customer amount must be greater than 0";
     if (!formData.trip_date) newErrors.trip_date = "Trip date is required";
-    if (formData.customer_amount < formData.crusher_amount) newErrors.customer_amount = "Customer amount must be greater than crusher amount";
+    if (finalCustomerAmount < formData.crusher_amount) newErrors.customer_amount = "Final amount must be greater than crusher amount";
+
+    // Validate GST percentages if GST is included
+    if (includeGst) {
+      const sgst = parseFloat(gstValues.SGST.replace('%', '') || '0');
+      const cgst = parseFloat(gstValues.CGST.replace('%', '') || '0');
+
+      if (sgst <= 0) newErrors.sgst = "SGST must be greater than 0%";
+      if (cgst <= 0) newErrors.cgst = "CGST must be greater than 0%";
+
+      if (sgst > 100) newErrors.sgst = "SGST cannot exceed 100%";
+      if (cgst > 100) newErrors.cgst = "CGST cannot exceed 100%";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -512,19 +644,27 @@ const TripForm = () => {
       return;
     }
 
+    // Ensure formData has the latest GST values
+    const submitData = {
+      ...formData,
+      customer_amount: finalCustomerAmount,
+      include_gst: includeGst,
+      gst_values: gstValues
+    };
+
     setSubmitting(true);
     try {
       if (isEditMode) {
         if (destinationType == 'customer') {
-          formData.collab_owner_id = "";
+          submitData.collab_owner_id = "";
         }
         else {
-          formData.customer_id = "";
+          submitData.customer_id = "";
         }
-        await api.put(`/trips/update/${tripId}`, formData);
+        await api.put(`/trips/update/${tripId}`, submitData);
         toast.success("Trip updated successfully");
       } else {
-        await api.post("/trips/create", formData);
+        await api.post("/trips/create", submitData);
         toast.success("Trip created successfully");
       }
 
@@ -553,8 +693,18 @@ const TripForm = () => {
     }
   };
 
-  const profit = formData.customer_amount - formData.crusher_amount;
+  const profit = finalCustomerAmount - formData.crusher_amount;
   const collaborativePartners = getCollaborativePartners(user?.id);
+
+  // Calculate GST amount for display
+  const calculateGstAmount = () => {
+    if (!includeGst) return 0;
+    const sgstPercent = parseFloat(gstValues.SGST.replace('%', '') || '0');
+    const cgstPercent = parseFloat(gstValues.CGST.replace('%', '') || '0');
+    return (customerAmountWithoutGst * (sgstPercent + cgstPercent)) / 100;
+  };
+
+  const gstAmount = calculateGstAmount();
 
   if (loading) {
     return (
@@ -923,7 +1073,7 @@ const TripForm = () => {
                 />
                 {errors.crusher_amount && <p className="mt-1 text-sm text-red-600">{errors.crusher_amount}</p>}
                 <p className="mt-1 text-sm text-gray-500">
-                  Auto: {formData.rate_per_unit} × {formData.no_of_unit_crusher} = ₹{formData.crusher_amount}
+                  Auto: {formData.rate_per_unit} × {formData.no_of_unit_crusher} = ₹{formData.crusher_amount.toFixed(2)}
                 </p>
               </div>
 
@@ -945,46 +1095,154 @@ const TripForm = () => {
                 {errors.no_of_unit_customer && <p className="mt-1 text-sm text-red-600">{errors.no_of_unit_customer}</p>}
               </div>
 
-              {/* Customer Amount (User Input) */}
+              {/* Customer Amount Without GST (Frontend only) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <IndianRupee className="h-4 w-4 inline mr-2" />
-                  Customer Amount *
+                  Customer Amount (Without GST) *
                 </label>
                 <input
                   type="number"
-                  name="customer_amount"
-                  value={formData.customer_amount || ''}
-                  onChange={handleNumberChange}
+                  value={customerAmountWithoutGst || ''}
+                  onChange={handleCustomerAmountWithoutGstChange}
                   className="w-full input input-bordered"
                   min="0"
                   step="0.01"
-                  placeholder="Enter customer amount"
+                  placeholder="Enter customer amount without GST"
                 />
                 {errors.customer_amount && <p className="mt-1 text-sm text-red-600">{errors.customer_amount}</p>}
+              </div>
+
+              {/* GST Toggle */}
+              <div className="lg:col-span-2">
+                <div className="flex items-center gap-3 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setIncludeGst(!includeGst)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${includeGst ? 'bg-blue-600' : 'bg-gray-300'
+                      }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${includeGst ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                    />
+                  </button>
+                  <label
+                    onClick={() => setIncludeGst(!includeGst)}
+                    className="text-sm font-medium text-gray-700 cursor-pointer select-none"
+                  >
+                    Include GST
+                  </label>
+                </div>
+
+                {/* GST Fields - Only show when includeGst is true */}
+                {includeGst && (
+                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <h4 className="text-sm font-medium text-gray-700 mb-3">GST Details</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          SGST (%)
+                        </label>
+                        <input
+                          type="text"
+                          value={gstValues.SGST}
+                          onChange={(e) => handleGstValueChange('SGST', e.target.value)}
+                          className="w-full input input-bordered"
+                          placeholder="2.5%"
+                        />
+                        {errors.sgst && <p className="mt-1 text-sm text-red-600">{errors.sgst}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          CGST (%)
+                        </label>
+                        <input
+                          type="text"
+                          value={gstValues.CGST}
+                          onChange={(e) => handleGstValueChange('CGST', e.target.value)}
+                          className="w-full input input-bordered"
+                          placeholder="2.5%"
+                        />
+                        {errors.cgst && <p className="mt-1 text-sm text-red-600">{errors.cgst}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          IGST (%)
+                        </label>
+                        <input
+                          type="text"
+                          value={gstValues.IGST}
+                          onChange={(e) => handleGstValueChange('IGST', e.target.value)}
+                          className="w-full input input-bordered"
+                          placeholder="0%"
+                          disabled
+                        />
+                        <p className="mt-1 text-xs text-gray-500">Currently not in use</p>
+                      </div>
+                    </div>
+
+                    {/* GST Calculation Preview */}
+                    {/* <div className="mt-4 p-3 bg-white rounded-lg border">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <div className="text-gray-600">Amount without GST:</div>
+                          <div className="font-semibold">₹{customerAmountWithoutGst.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                        </div>
+                        <div>
+                          <div className="text-gray-600">GST ({parseFloat(gstValues.SGST.replace('%', '')) + parseFloat(gstValues.CGST.replace('%', ''))}%):</div>
+                          <div className="font-semibold text-orange-600">
+                            ₹{gstAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-gray-600">Final Amount (with GST):</div>
+                          <div className="font-semibold text-green-600">
+                            ₹{finalCustomerAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </div>
+                        </div>
+                      </div>
+                    </div> */}
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Profit Preview */}
-            {(formData.customer_amount > 0 || formData.crusher_amount > 0) && (
+            {(finalCustomerAmount > 0 || formData.crusher_amount > 0) && (
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Profit Preview</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
                   <div className="text-center p-4 bg-white rounded-lg border">
-                    <div className="text-gray-600 mb-1">Customer Amount</div>
-                    <div className="font-bold text-green-600 text-lg">₹{formData.customer_amount.toLocaleString()}</div>
+                    <div className="text-gray-600 mb-1">Amount without GST</div>
+                    <div className="font-bold text-gray-700 text-lg">
+                      ₹{customerAmountWithoutGst.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                  <div className="text-center p-4 bg-white rounded-lg border">
+                    <div className="text-gray-600 mb-1">Final Amount {includeGst ? '(with GST)' : ''}</div>
+                    <div className="font-bold text-green-600 text-lg">
+                      ₹{finalCustomerAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
                   </div>
                   <div className="text-center p-4 bg-white rounded-lg border">
                     <div className="text-gray-600 mb-1">Crusher Amount</div>
-                    <div className="font-bold text-orange-600 text-lg">₹{formData.crusher_amount.toLocaleString()}</div>
+                    <div className="font-bold text-orange-600 text-lg">
+                      ₹{formData.crusher_amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
                   </div>
                   <div className="text-center p-4 bg-white rounded-lg border">
                     <div className="text-gray-600 mb-1">Estimated Profit</div>
                     <div className={`font-bold text-lg ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      ₹{profit.toLocaleString()}
+                      ₹{profit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                   </div>
                 </div>
+                {includeGst && (
+                  <div className="mt-4 text-sm text-gray-600 text-center">
+                    GST Breakdown: SGST: {gstValues.SGST}, CGST: {gstValues.CGST}
+                  </div>
+                )}
               </div>
             )}
 
