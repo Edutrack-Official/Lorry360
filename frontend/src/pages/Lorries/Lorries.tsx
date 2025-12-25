@@ -421,8 +421,7 @@ const Lorries = () => {
                     </div>
 
                     {/* Status Badge */}
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium border ${statusConfig.color}">
-                      <StatusIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+<div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium border ${statusConfig.color}`}>                      <StatusIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       {statusConfig.label}
                     </div>
                   </div>
