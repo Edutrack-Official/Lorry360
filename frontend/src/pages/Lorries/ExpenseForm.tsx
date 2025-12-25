@@ -13,7 +13,7 @@ interface ExpenseFormData {
   description: string;
   payment_mode: 'cash' | 'bank' | 'upi' | 'credit';
   bunk_id?: string;
-  attachments?: File[];
+  proof?: File | null;
 }
 
 interface FormErrors {
@@ -23,7 +23,7 @@ interface FormErrors {
   amount?: string;
   payment_mode?: string;
   bunk_id?: string;
-  attachments?: string;
+  proof?: string;
 }
 
 interface Lorry {
@@ -53,7 +53,7 @@ const ExpenseForm = () => {
     description: '',
     payment_mode: 'cash',
     bunk_id: bunkId || '',
-    attachments: [],
+    proof: null,
   });
 
   const [lorries, setLorries] = useState<Lorry[]>([]);
@@ -64,6 +64,7 @@ const ExpenseForm = () => {
   const [lorryName, setLorryName] = useState("");
   const [errors, setErrors] = useState<FormErrors>({});
   const [showFuelDetails, setShowFuelDetails] = useState(false);
+  const [existingProofUrl, setExistingProofUrl] = useState<string | null>(null);
 
   // Get today's date in YYYY-MM-DD format for max date
   const today = new Date().toISOString().split('T')[0];
@@ -151,8 +152,13 @@ const ExpenseForm = () => {
         description: expense.description || '',
         payment_mode: expense.payment_mode,
         bunk_id: expense.bunk_id?._id || expense.bunk_id || '',
-        attachments: [],
+        proof: null,
       });
+
+      // Store existing proof URL
+      if (expense.proof) {
+        setExistingProofUrl(expense.proof);
+      }
 
       // If editing and no lorryName set, use the expense's lorry info
       if (!lorryName && expense.lorry_id) {
@@ -170,48 +176,52 @@ const ExpenseForm = () => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const selectedFiles = Array.from(files);
-    const validFiles: File[] = [];
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
+    const file = files[0]; // Only take first file
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    const allowedTypes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'image/heic',
+      'application/pdf'
+    ];
 
-    for (const file of selectedFiles) {
-      // Check file type
-      if (!allowedTypes.includes(file.type)) {
-        toast.error(`${file.name}: Only images (JPEG, PNG, GIF) and PDF files are allowed`);
-        continue;
-      }
-
-      // Check file size
-      if (file.size > maxSize) {
-        toast.error(`${file.name}: File size must be less than 5MB`);
-        continue;
-      }
-
-      validFiles.push(file);
+    // Check file type
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Only images (JPEG, PNG, GIF, WebP, HEIC) and PDF files are allowed');
+      e.target.value = '';
+      return;
     }
 
-    if (validFiles.length > 0) {
-      setFormData(prev => ({
-        ...prev,
-        attachments: [...(prev.attachments || []), ...validFiles]
-      }));
+    // Check file size
+    if (file.size > maxSize) {
+      toast.error('File size must be less than 10MB');
+      e.target.value = '';
+      return;
+    }
 
-      // Clear any attachment errors
-      if (errors.attachments) {
-        setErrors(prev => ({ ...prev, attachments: undefined }));
-      }
+    setFormData(prev => ({
+      ...prev,
+      proof: file
+    }));
+
+    // Clear any proof errors
+    if (errors.proof) {
+      setErrors(prev => ({ ...prev, proof: undefined }));
     }
 
     // Reset the input
     e.target.value = '';
   };
 
-  const removeFile = (index: number) => {
+  const removeFile = () => {
     setFormData(prev => ({
       ...prev,
-      attachments: prev.attachments?.filter((_, i) => i !== index) || []
+      proof: null
     }));
+    setExistingProofUrl(null);
   };
 
   const getFileIcon = (file: File) => {
@@ -283,16 +293,14 @@ const ExpenseForm = () => {
       submitFormData.append('description', formData.description);
       submitFormData.append('payment_mode', formData.payment_mode);
 
-      // Clear bunk_id if category is not fuel
+      // Append bunk_id only for fuel category
       if (formData.category === 'fuel' && formData.bunk_id) {
         submitFormData.append('bunk_id', formData.bunk_id);
       }
 
-      // Append files
-      if (formData.attachments && formData.attachments.length > 0) {
-        formData.attachments.forEach((file) => {
-          submitFormData.append('attachments', file);
-        });
+      // Append proof file if selected
+      if (formData.proof) {
+        submitFormData.append('proof', formData.proof);
       }
 
       if (isEditing) {
@@ -379,7 +387,6 @@ const ExpenseForm = () => {
               Lorry *
             </label>
             {lorryId ? (
-              // Display lorry name (read-only) when coming from lorry page
               <>
                 <div className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
                   {lorryName || "Loading..."}
@@ -387,7 +394,6 @@ const ExpenseForm = () => {
                 <input type="hidden" name="lorry_id" value={formData.lorry_id} />
               </>
             ) : (
-              // Show dropdown when creating expense from general expenses page
               <>
                 <select
                   name="lorry_id"
@@ -526,11 +532,12 @@ const ExpenseForm = () => {
             )}
           </div>
 
+          {/* Payment Mode */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Payment Mode *
             </label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {(
                 formData.category === 'fuel'
                   ? ['cash', 'bank', 'upi', 'credit'] as const
@@ -584,69 +591,93 @@ const ExpenseForm = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <Upload className="h-4 w-4 inline mr-2" />
-              Attachments (Optional)
+              Proof Document (Optional)
             </label>
             <div className="space-y-3">
-              {/* Upload Button */}
-              <div className="flex items-center justify-center w-full">
-                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <Upload className="h-8 w-8 mb-2 text-gray-500" />
-                    <p className="mb-2 text-sm text-gray-500">
-                      <span className="font-semibold">Click to upload</span> or drag and drop
-                    </p>
-                    <p className="text-xs text-gray-500">Images (PNG, JPG, GIF) or PDF (Max 5MB each)</p>
-                  </div>
-                  <input
-                    type="file"
-                    className="hidden"
-                    multiple
-                    accept="image/*,.pdf"
-                    onChange={handleFileChange}
-                  />
-                </label>
-              </div>
-
-              {/* File List */}
-              {formData.attachments && formData.attachments.length > 0 && (
+              {/* Show existing proof or upload button */}
+              {!formData.proof && !existingProofUrl ? (
+                <div className="flex items-center justify-center w-full">
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <Upload className="h-8 w-8 mb-2 text-gray-500" />
+                      <p className="mb-2 text-sm text-gray-500">
+                        <span className="font-semibold">Click to upload</span> or drag and drop
+                      </p>
+                      <p className="text-xs text-gray-500">Images (PNG, JPG, GIF, WebP, HEIC) or PDF (Max 10MB)</p>
+                    </div>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*,.pdf"
+                      onChange={handleFileChange}
+                    />
+                  </label>
+                </div>
+              ) : (
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-gray-700">
-                    Selected Files ({formData.attachments.length})
+                    {formData.proof ? 'New File Selected' : 'Current Proof'}
                   </p>
-                  <div className="space-y-2">
-                    {formData.attachments.map((file, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg"
-                      >
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          {getFileIcon(file)}
+                  <div className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      {formData.proof ? (
+                        <>
+                          {getFileIcon(formData.proof)}
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900 truncate">
-                              {file.name}
+                              {formData.proof.name}
                             </p>
                             <p className="text-xs text-gray-500">
-                              {formatFileSize(file.size)}
+                              {formatFileSize(formData.proof.size)}
                             </p>
                           </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeFile(index)}
-                          className="ml-2 p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
+                        </>
+                      ) : existingProofUrl ? (
+                        <>
+                          <File className="h-5 w-5 text-blue-600" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900">
+                              Existing Proof Document
+                            </p>
+                            <a
+                              href={existingProofUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 hover:underline"
+                            >
+                              View Document
+                            </a>
+                          </div>
+                        </>
+                      ) : null}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={removeFile}
+                      className="ml-2 p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
                   </div>
+                  {!formData.proof && (
+                    <label className="inline-flex items-center gap-2 px-4 py-2 text-sm bg-blue-50 text-blue-700 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
+                      <Upload className="h-4 w-4" />
+                      Replace with new file
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*,.pdf"
+                        onChange={handleFileChange}
+                      />
+                    </label>
+                  )}
                 </div>
               )}
 
-              {errors.attachments && (
+              {errors.proof && (
                 <p className="mt-2 text-sm text-red-600 flex items-start gap-1">
                   <span className="text-red-500 font-bold">•</span>
-                  {errors.attachments}
+                  {errors.proof}
                 </p>
               )}
             </div>
@@ -685,7 +716,7 @@ const ExpenseForm = () => {
         </form>
       </div>
     </div>
-    </div >
+    </div>
   );
 };
 
