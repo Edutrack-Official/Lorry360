@@ -693,6 +693,97 @@ app.http('getInvoiceData', {
 });
 
 
+app.http('getCrusherInvoiceData', {
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  route: 'trips/crusher-invoice-data',
+  handler: async (request) => {
+    try {
+      await connectDB();
+      
+      const { decoded: user, newAccessToken } = await verifyToken(request);
+
+      // Only owners can access invoice data
+      if (user.role !== 'owner') {
+        return {
+          status: 403,
+          jsonBody: { success: false, error: 'Access denied. Owner role required.' },
+        };
+      }
+
+      const url = new URL(request.url);
+      const crusher_id = url.searchParams.get('crusher_id');
+      const from_date = url.searchParams.get('from_date');
+      const to_date = url.searchParams.get('to_date');
+      const include_inactive = url.searchParams.get('include_inactive') === 'true';
+      
+      // Validate required parameters
+      if (!crusher_id || !from_date || !to_date) {
+        return {
+          status: 400,
+          jsonBody: { 
+            success: false, 
+            error: 'Crusher ID, from date and to date are required' 
+          },
+        };
+      }
+
+      // Validate date format
+      if (isNaN(new Date(from_date)) || isNaN(new Date(to_date))) {
+        return {
+          status: 400,
+          jsonBody: { 
+            success: false, 
+            error: 'Invalid date format. Use YYYY-MM-DD format' 
+          },
+        };
+      }
+
+      // Validate from_date is not after to_date
+      if (new Date(from_date) > new Date(to_date)) {
+        return {
+          status: 400,
+          jsonBody: { 
+            success: false, 
+            error: 'From date cannot be after to date' 
+          },
+        };
+      }
+
+      const result = await getCrusherInvoiceData(
+        user.userId, 
+        crusher_id, 
+        from_date, 
+        to_date,
+        include_inactive
+      );
+
+      const response = { 
+        status: 200, 
+        jsonBody: { 
+          success: true, 
+          data: result 
+        } 
+      };
+      
+      if (newAccessToken) {
+        response.jsonBody.newAccessToken = newAccessToken;
+      }
+      
+      return response;
+    } catch (err) {
+      console.error('Crusher invoice error:', err);
+      return {
+        status: err.status || 500,
+        jsonBody: { 
+          success: false, 
+          error: err.message || 'Failed to generate crusher invoice data' 
+        },
+      };
+    }
+  },
+});
+
 app.http('getCollaborationInvoiceData', {
   methods: ['GET'],
   authLevel: 'anonymous',

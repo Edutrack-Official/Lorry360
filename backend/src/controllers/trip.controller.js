@@ -3038,6 +3038,363 @@ const getCollaborationInvoiceData = async (owner_id, partner_owner_id, from_date
   }
 };
 
+
+const getCrusherInvoiceData = async (owner_id, crusher_id, from_date, to_date, include_inactive = false) => {
+  try {
+    // 1. Get current user (owner) details
+    const owner = await User.findById(owner_id).select('name company_name address city state pincode phone logo gst_number');
+    
+    if (!owner) {
+      const err = new Error('Owner not found');
+      err.status = 404;
+      throw err;
+    }
+
+    // 2. Get crusher details
+    const crusher = await Crusher.findOne({ 
+      _id: crusher_id, 
+      owner_id,
+      isActive: true
+    }).select('name phone address materials');
+
+    if (!crusher) {
+      const err = new Error('Crusher not found or is inactive');
+      err.status = 404;
+      throw err;
+    }
+
+    // 3. Get trips to this crusher in the date range
+    const tripsQuery = {
+      owner_id,
+      crusher_id,
+      isActive: !include_inactive ? true : { $exists: true },
+      trip_date: { 
+        $gte: new Date(from_date), 
+        $lte: new Date(to_date) 
+      },
+      status: { $in: ['delivered', 'completed'] }
+    };
+
+    const trips = await Trip.find(tripsQuery)
+      .populate('lorry_id', 'registration_number nick_name')
+      .populate('driver_id', 'name phone')
+      .populate('customer_id', 'name phone address')
+      .populate('collab_owner_id', 'name company_name phone')
+      .sort({ trip_date: 1 });
+
+    if (trips.length === 0) {
+      const err = new Error('No trips found for the selected crusher in the specified date range');
+      err.status = 404;
+      throw err;
+    }
+
+    // 4. Get all payments TO crusher within the date range
+    const payments = await Payment.find({
+      owner_id,
+      crusher_id,
+      payment_type: 'to_crusher',
+      isActive: true,
+      payment_date: { 
+        $gte: new Date(from_date), 
+        $lte: new Date(to_date) 
+      }
+    }).sort({ payment_date: 1 });
+
+    // 5. Group trips by material, customer, and rate (Crusher perspective)
+    const groupedTrips = {};
+    
+    trips.forEach(trip => {
+      const tripDate = trip.trip_date.toISOString().split('T')[0];
+      // Group by material, customer, and rate (for crusher)
+      const customerName = trip.customer_id?.name || trip.collab_owner_id?.name || 'Unknown';
+      const groupKey = `${tripDate}_${trip.material_name}_${customerName}_${trip.rate_per_unit}`;
+      
+      if (!groupedTrips[groupKey]) {
+        groupedTrips[groupKey] = {
+          date: tripDate,
+          material_name: trip.material_name,
+          customer_name: customerName,
+          rate_per_unit: trip.rate_per_unit,
+          crusher_amount_per_unit: trip.rate_per_unit, // Same as rate for crusher
+          no_of_loads: 0,
+          total_units: 0,
+          total_amount: 0,
+          trips: []
+        };
+      }
+      
+      groupedTrips[groupKey].no_of_loads += 1;
+      groupedTrips[groupKey].total_units += trip.no_of_unit_crusher; // Crusher units
+      groupedTrips[groupKey].total_amount += trip.crusher_amount; // Amount paid to crusher
+      groupedTrips[groupKey].trips.push(trip);
+      
+      // Keep the earliest date for the group
+      if (new Date(tripDate) < new Date(groupedTrips[groupKey].date)) {
+        groupedTrips[groupKey].date = tripDate;
+      }
+    });
+
+    // Convert to array and sort by date
+    const groupedTripArray = Object.values(groupedTrips).sort((a, b) => 
+      new Date(a.date) - new Date(b.date)
+    );
+
+    // 6. Get running balance (total crusher_amount from previous trips minus payments to crusher)
+    const previousTripsQuery = {
+      owner_id,
+      crusher_id,
+      isActive: !include_inactive ? true : { $exists: true },
+      trip_date: { $lt: new Date(from_date) },
+      status: { $in: ['delivered', 'completed'] }
+    };
+
+    const previousTrips = await Trip.find(previousTripsQuery);
+    const previousPayments = await Payment.find({
+      owner_id,
+      crusher_id,
+      payment_type: 'to_crusher',
+      isActive: true,
+      payment_date: { $lt: new Date(from_date) }
+    });
+
+    const previousTripsAmount = previousTrips.reduce((sum, trip) => sum + trip.crusher_amount, 0);
+    const previousPaymentsAmount = previousPayments.reduce((sum, payment) => sum + payment.amount, 0);
+    let runningBalance = previousTripsAmount - previousPaymentsAmount;
+
+    // 7. Create table rows
+    const tableRows = [];
+    let currentBalance = runningBalance;
+
+    // Add "BALANCE AS OF [from_date - 1 day]" at the top
+    const fromDateObj = new Date(from_date);
+    const previousDay = new Date(fromDateObj);
+    previousDay.setDate(fromDateObj.getDate() - 1);
+    
+    const openingBalanceRow = {
+      s_no: '',
+      date: '',
+      particular: `BALANCE AS OF ${previousDay.toLocaleDateString('en-IN')}`,
+      customer: '',
+      material: '',
+      rate_per_unit: '',
+      units: '',
+      no_of_loads: '',
+      total_amount: '',
+      amount_paid: '',
+      balance: `₹${runningBalance.toLocaleString('en-IN')}`,
+      is_balance_row: true,
+      is_opening_balance: true,
+      note: `Amount due to ${crusher.name}`
+    };
+    tableRows.push(openingBalanceRow);
+
+    // Combine trips and payments
+    const allTransactions = [
+      ...groupedTripArray.map(group => ({
+        type: 'grouped_trip',
+        date: group.date,
+        data: group,
+        sortDate: new Date(group.date)
+      })),
+      ...payments.map(payment => ({
+        type: 'payment',
+        date: payment.payment_date,
+        data: payment,
+        sortDate: new Date(payment.payment_date)
+      }))
+    ].sort((a, b) => a.sortDate - b.sortDate);
+
+    // Generate table rows with running balance
+    allTransactions.forEach(transaction => {
+      if (transaction.type === 'grouped_trip') {
+        const group = transaction.data;
+        
+        const row = {
+          s_no: tableRows.length,
+          date: transaction.date,
+          particular: 'TRIP',
+          customer: group.customer_name,
+          material: group.material_name,
+          rate_per_unit: `₹${group.rate_per_unit.toLocaleString('en-IN')}`,
+          units: `${group.total_units} Unit(s)`,
+          no_of_loads: group.no_of_loads,
+          total_amount: `₹${group.total_amount.toLocaleString('en-IN')}`,
+          amount_paid: '-',
+          balance: `₹${(currentBalance + group.total_amount).toLocaleString('en-IN')}`,
+          is_grouped: true,
+          group_details: group.trips.map(trip => ({
+            trip_id: trip._id,
+            trip_number: trip.trip_number,
+            customer: trip.customer_id?.name || trip.collab_owner_id?.name,
+            units: trip.no_of_unit_crusher,
+            amount: trip.crusher_amount,
+            lorry: trip.lorry_id?.registration_number,
+            driver: trip.driver_id?.name,
+            date: trip.trip_date,
+            is_active: trip.isActive
+          }))
+        };
+
+        tableRows.push(row);
+        currentBalance += group.total_amount;
+      } else if (transaction.type === 'payment') {
+        const payment = transaction.data;
+        
+        const row = {
+          s_no: tableRows.length,
+          date: transaction.date.toISOString().split('T')[0],
+          particular: 'PAYMENT TO CRUSHER',
+          customer: '-',
+          material: '-',
+          rate_per_unit: '-',
+          units: '-',
+          no_of_loads: '-',
+          total_amount: '-',
+          amount_paid: `₹${payment.amount.toLocaleString('en-IN')}`,
+          balance: `₹${(currentBalance - payment.amount).toLocaleString('en-IN')}`,
+          is_payment: true,
+          payment_id: payment._id
+        };
+
+        tableRows.push(row);
+        currentBalance -= payment.amount;
+      }
+    });
+
+    // Add "BALANCE AS OF [to_date]" at the bottom
+    const closingBalanceRow = {
+      s_no: '',
+      date: '',
+      particular: `BALANCE AS OF ${new Date(to_date).toLocaleDateString('en-IN')}`,
+      customer: '',
+      material: '',
+      rate_per_unit: '',
+      units: '',
+      no_of_loads: '',
+      total_amount: '',
+      amount_paid: '',
+      balance: `₹${currentBalance.toLocaleString('en-IN')}`,
+      is_balance_row: true,
+      is_closing_balance: true,
+      note: `Amount due to ${crusher.name}`
+    };
+    tableRows.push(closingBalanceRow);
+
+    // 8. Calculate totals
+    const totalCrusherAmount = trips.reduce((sum, trip) => sum + trip.crusher_amount, 0);
+    const totalPaymentsAmount = payments.reduce((sum, payment) => sum + payment.amount, 0);
+
+    // 9. Prepare crusher invoice data
+    const invoiceData = {
+      // Supplier Information (company)
+      company: {
+        name: owner.company_name || owner.name,
+        address: owner.address,
+        city: owner.city,
+        state: owner.state,
+        pincode: owner.pincode,
+        phone: owner.phone,
+        full_address: `${owner.address}, ${owner.city}, ${owner.state} - ${owner.pincode}`,
+        logo: owner.logo || null,
+        gst_number: owner.gst_number || null
+      },
+      
+      // Crusher Information
+      crusher: {
+        name: crusher.name,
+        address: crusher.address,
+        phone: crusher.phone,
+        materials: crusher.materials || [],
+        is_active: crusher.isActive
+      },
+      
+      // Invoice Details
+      invoice_details: {
+        invoice_number: `CRU-INV-${Date.now()}`,
+        invoice_type: 'CRUSHER_INVOICE',
+        date: new Date().toISOString().split('T')[0],
+        from_date: from_date,
+        to_date: to_date,
+        period: `${new Date(from_date).toLocaleDateString('en-IN')} to ${new Date(to_date).toLocaleDateString('en-IN')}`,
+        opening_balance_date: previousDay.toISOString().split('T')[0],
+        closing_balance_date: to_date,
+        include_inactive_trips: include_inactive,
+        note: include_inactive ? 'Includes inactive trips' : 'Active trips only'
+      },
+      
+      // Table Data
+      table_data: {
+        headers: [
+          'S.No', 'Date', 'Particular', 'Customer', 'Material', 
+          'Rate/Unit', 'Units', 'No of Loads', 'Total Amount', 'Amount Paid', 'Balance'
+        ],
+        rows: tableRows,
+        summary: {
+          opening_balance: `₹${runningBalance.toLocaleString('en-IN')}`,
+          total_transactions: tableRows.length - 2,
+          total_trips: trips.length,
+          total_grouped_entries: groupedTripArray.length,
+          total_payments: payments.length,
+          total_crusher_amount: `₹${totalCrusherAmount.toLocaleString('en-IN')}`,
+          total_paid: `₹${totalPaymentsAmount.toLocaleString('en-IN')}`,
+          closing_balance: `₹${currentBalance.toLocaleString('en-IN')}`,
+          balance_due: currentBalance > 0 ? `₹${currentBalance.toLocaleString('en-IN')}` : 'Paid in full',
+          active_trips_only: !include_inactive
+        }
+      },
+      
+      // Financial Summary (Crusher perspective)
+      financial_summary: {
+        opening_balance: runningBalance,
+        total_material_supplied: totalCrusherAmount,
+        total_payments_made: totalPaymentsAmount,
+        closing_balance: currentBalance,
+        amount_due: currentBalance > 0 ? currentBalance : 0
+      },
+      
+      // Additional Information
+      additional_info: {
+        notes: 'All amounts in Indian Rupees',
+        terms: 'Payment is made against material supply',
+        data_status: include_inactive ? 'Includes all trips (active and inactive)' : 'Active trips only',
+        type: 'Crusher Payment Statement'
+      },
+      
+      // Raw data for reference
+      raw_data: {
+        trips: trips.map(trip => ({
+          id: trip._id,
+          trip_number: trip.trip_number,
+          date: trip.trip_date,
+          material: trip.material_name,
+          customer: trip.customer_id?.name || trip.collab_owner_id?.name || 'Unknown',
+          crusher_units: trip.no_of_unit_crusher,
+          rate: trip.rate_per_unit,
+          crusher_amount: trip.crusher_amount,
+          is_active: trip.isActive,
+          editable: trip.isActive
+        })),
+        payments: payments.map(payment => ({
+          id: payment._id,
+          payment_number: payment.payment_number,
+          date: payment.payment_date,
+          amount: payment.amount,
+          mode: payment.payment_mode,
+          is_active: payment.isActive,
+          editable: payment.isActive
+        })),
+        grouped_trips: groupedTripArray
+      }
+    };
+
+    return invoiceData;
+
+  } catch (error) {
+    console.error('Error fetching crusher invoice data:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   createTrip,
   getAllTrips,
@@ -3058,5 +3415,6 @@ module.exports = {
   updateTripPricesForMultipleTrips,
   bulkUpdateTripStatus,
   updateCollabTripStatus ,
-  getCollaborationInvoiceData
+  getCollaborationInvoiceData,
+  getCrusherInvoiceData 
 };

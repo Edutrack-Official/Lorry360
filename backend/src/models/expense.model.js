@@ -47,7 +47,11 @@ const expenseSchema = new mongoose.Schema({
     enum: ['cash', 'bank', 'upi','credit'],
     default: 'cash'
   },
-  
+   proof: {
+    type: String,
+    default: null,
+    trim: true,
+  },
   isActive: {
     type: Boolean,
     default: true

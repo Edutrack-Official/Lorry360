@@ -1,9 +1,12 @@
+// controllers/expense.controller.js
 const Expense = require('../models/expense.model');
-const {
-  createPayment,
-} = require('./payment.controller');
+const { 
+  uploadExpenseProofToBlob, 
+  deleteExpenseProofFromBlob 
+} = require('../utils/azureExpenseStorage');
 
-const createExpense = async (expenseData) => {
+// ✅ Create expense with proof upload
+const createExpense = async (expenseData, proofFile = null) => {
   const {
     owner_id,
     lorry_id,
@@ -32,6 +35,12 @@ const createExpense = async (expenseData) => {
   // Clear bunk_id if category is not fuel
   const finalBunkId = category === 'fuel' ? bunk_id : null;
 
+  // Upload proof file if provided
+  let proofUrl = null;
+  if (proofFile) {
+    proofUrl = await uploadExpenseProofToBlob(proofFile, owner_id);
+  }
+
   const newExpense = new Expense({
     owner_id,
     lorry_id,
@@ -40,40 +49,15 @@ const createExpense = async (expenseData) => {
     category,
     amount,
     description,
-    payment_mode
+    payment_mode,
+    proof: proofUrl
   });
 
   await newExpense.save();
-
-  // If it's a fuel expense with non-credit payment, create a payment
-  // if (category === 'fuel' && payment_mode !== 'credit' && finalBunkId) {
-  //   try {
-  //     const paymentData = {
-  //       owner_id,
-  //       payment_type: 'to_bunk', // Bunk payment type
-  //       bunk_id: finalBunkId,
-  //       amount,
-  //       payment_date: date || new Date(),
-  //       payment_mode,
-  //       notes: description,
-  //       // Note: No customer_id, crusher_id, or collab_owner_id for bunk payments
-  //     };
-
-  //     // Create payment for bunk
-  //     await createPayment(paymentData);
-  //     console.log(`Payment created for fuel expense ${newExpense._id}`);
-  //   } catch (paymentError) {
-  //     // Log the error but don't fail the expense creation
-  //     console.error('Failed to create payment for fuel expense:', paymentError);
-  //     // Optionally, you could add this to the expense document:
-  //     newExpense.payment_creation_error = paymentError.message;
-  //     await newExpense.save();
-  //   }
-  // }
-
   return newExpense;
 };
 
+// ✅ Get all expenses
 const getAllExpenses = async (owner_id, filterParams = {}) => {
   const { 
     lorry_id, 
@@ -113,6 +97,7 @@ const getAllExpenses = async (owner_id, filterParams = {}) => {
   };
 };
 
+// ✅ Get expense by ID
 const getExpenseById = async (id, owner_id, include_inactive = false) => {
   const query = { 
     _id: id, 
@@ -135,7 +120,8 @@ const getExpenseById = async (id, owner_id, include_inactive = false) => {
   return expense;
 };
 
-const updateExpense = async (id, owner_id, updateData) => {
+// ✅ Update expense with proof handling
+const updateExpense = async (id, owner_id, updateData, proofFile = null, deleteProof = false) => {
   const { category, bunk_id } = updateData;
   
   // Validate bunk_id if category is being changed to fuel
@@ -149,6 +135,31 @@ const updateExpense = async (id, owner_id, updateData) => {
   const processedData = { ...updateData };
   if (category && category !== 'fuel') {
     processedData.bunk_id = null;
+  }
+
+  // Get existing expense first
+  const existingExpense = await Expense.findOne({ _id: id, owner_id, isActive: true });
+  if (!existingExpense) {
+    const err = new Error('Expense not found');
+    err.status = 404;
+    throw err;
+  }
+
+  // Handle proof deletion
+  if (deleteProof && existingExpense.proof) {
+    await deleteExpenseProofFromBlob(existingExpense.proof);
+    processedData.proof = null;
+  }
+
+  // Handle new proof upload
+  if (proofFile) {
+    // Delete old proof if exists
+    if (existingExpense.proof) {
+      await deleteExpenseProofFromBlob(existingExpense.proof);
+    }
+    // Upload new proof
+    const proofUrl = await uploadExpenseProofToBlob(proofFile, owner_id, id);
+    processedData.proof = proofUrl;
   }
 
   const updatedExpense = await Expense.findOneAndUpdate(
@@ -167,7 +178,21 @@ const updateExpense = async (id, owner_id, updateData) => {
   return updatedExpense;
 };
 
+// ✅ Delete expense with proof cleanup
 const deleteExpense = async (id, owner_id) => {
+  // Get expense first to delete proof file
+  const expense = await Expense.findOne({ _id: id, owner_id, isActive: true });
+  if (!expense) {
+    const err = new Error('Expense not found');
+    err.status = 404;
+    throw err;
+  }
+
+  // Delete proof file if exists
+  if (expense.proof) {
+    await deleteExpenseProofFromBlob(expense.proof);
+  }
+
   // Soft delete - set isActive to false
   const deletedExpense = await Expense.findOneAndUpdate(
     { _id: id, owner_id, isActive: true },
@@ -186,7 +211,7 @@ const deleteExpense = async (id, owner_id) => {
   };
 };
 
-// Get expense statistics
+// ✅ Get expense statistics
 const getExpenseStats = async (owner_id, period = 'month') => {
   const now = new Date();
   let startDate;
@@ -247,11 +272,11 @@ const getExpenseStats = async (owner_id, period = 'month') => {
     average_expense: totalExpenses > 0 ? totalAmount / totalExpenses : 0,
     category_breakdown: categoryStats,
     lorry_breakdown: lorryStats,
-    bunk_breakdown: bunkStats // New: bunk breakdown for fuel expenses
+    bunk_breakdown: bunkStats
   };
 };
 
-// Get expenses by lorry
+// ✅ Get expenses by lorry
 const getExpensesByLorry = async (owner_id, lorry_id, filterParams = {}) => {
   const { category, include_inactive = false } = filterParams;
   
@@ -299,7 +324,7 @@ const getExpensesByLorry = async (owner_id, lorry_id, filterParams = {}) => {
   };
 };
 
-// New: Get expenses by bunk
+// ✅ Get expenses by bunk
 const getExpensesByBunk = async (owner_id, bunk_id, filterParams = {}) => {
   const { start_date, end_date, include_inactive = false } = filterParams;
   
@@ -342,7 +367,7 @@ const getExpensesByBunk = async (owner_id, bunk_id, filterParams = {}) => {
   };
 };
 
-// New: Get fuel expenses summary
+// ✅ Get fuel expenses summary
 const getFuelExpensesSummary = async (owner_id, filterParams = {}) => {
   const { start_date, end_date } = filterParams;
   
