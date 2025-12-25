@@ -1,6 +1,6 @@
-
-import React from "react";
+import React, { useState } from "react";
 import styled from "styled-components";
+import { Eye, EyeOff } from "lucide-react";
 
 interface FloatingInputProps {
   type?: string;
@@ -17,21 +17,40 @@ const FloatingInput: React.FC<FloatingInputProps> = ({
   onChange,
   label,
 }) => {
+  const [showPassword, setShowPassword] = useState(false);
+  const isPassword = type === "password";
+  const inputType = isPassword ? (showPassword ? "text" : "password") : type;
+
   return (
     <StyledWrapper>
       <div className="input-container">
         <input
-          type={type}
+          type={inputType}
           id={name}
           name={name}
           value={value}
           onChange={onChange}
-          placeholder=" "  // 👈 important for :placeholder-shown trick
+          placeholder=" "
         />
         <label htmlFor={name} className="label">
           {label}
         </label>
         <div className="underline" />
+        
+        {isPassword && (
+          <button
+            type="button"
+            className="toggle-password"
+            onClick={() => setShowPassword(!showPassword)}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
+            {showPassword ? (
+              <EyeOff className="eye-icon" />
+            ) : (
+              <Eye className="eye-icon" />
+            )}
+          </button>
+        )}
       </div>
     </StyledWrapper>
   );
@@ -48,7 +67,7 @@ const StyledWrapper = styled.div`
     width: 100%;
     border: none;
     border-bottom: 2px solid #ccc;
-    padding: 10px 0;
+    padding: 10px 40px 10px 0;
     background-color: transparent;
     outline: none;
   }
@@ -63,12 +82,11 @@ const StyledWrapper = styled.div`
     pointer-events: none;
   }
 
-  /* 👇 Fix floating issue: works when not empty OR focused */
   .input-container input:focus ~ .label,
   .input-container input:not(:placeholder-shown) ~ .label {
     top: -12px;
     font-size: 13px;
-    color: #2563eb; /* Tailwind blue-600 */
+    color: #2563eb;
   }
 
   .input-container .underline {
@@ -85,6 +103,48 @@ const StyledWrapper = styled.div`
   .input-container input:focus ~ .underline,
   .input-container input:not(:placeholder-shown) ~ .underline {
     transform: scaleX(1);
+  }
+
+  .toggle-password {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    transition: color 0.2s ease;
+  }
+
+  .toggle-password:hover {
+    color: #2563eb;
+  }
+
+  .toggle-password:focus {
+    outline: none;
+    color: #2563eb;
+  }
+
+  .eye-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Ensure button is visible on mobile */
+  @media (max-width: 640px) {
+    .toggle-password {
+      padding: 12px;
+    }
+    
+    .eye-icon {
+      width: 22px;
+      height: 22px;
+    }
   }
 `;
 
