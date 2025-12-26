@@ -50,10 +50,10 @@ const createTrip = async (tripData) => {
     isActive: true // Added: New trips are always active
   };
 
-   // Add GST fields if provided
+  // Add GST fields if provided
   if (include_gst !== undefined) {
     dbData.include_gst = include_gst;
-    
+
     // If include_gst is true, set default GST values if not provided
     if (include_gst) {
       dbData.gst_values = {
@@ -63,17 +63,17 @@ const createTrip = async (tripData) => {
       };
     }
   }
-  
+
   // If gst_values is provided separately, use it
   if (gst_values) {
     dbData.gst_values = gst_values;
   }
 
-   // Add GST fields if provided
+  // Add GST fields if provided
   if (is_customer_amount_inclusive_gst !== undefined) {
     dbData.is_customer_amount_inclusive_gst = is_customer_amount_inclusive_gst;
   }
-  
+
   if (customer_gst_percentage !== undefined) {
     dbData.customer_gst_percentage = customer_gst_percentage;
   }
@@ -89,9 +89,9 @@ const createTrip = async (tripData) => {
   }
 
   // Validate required fields
-  if (!owner_id || !lorry_id || !driver_id || !crusher_id || !material_name || 
-      !rate_per_unit || !no_of_unit_crusher || !no_of_unit_customer || !crusher_amount || 
-      !location || !customer_amount) {
+  if (!owner_id || !lorry_id || !driver_id || !crusher_id || !material_name ||
+    !rate_per_unit || !no_of_unit_crusher || !no_of_unit_customer || !crusher_amount ||
+    !location || !customer_amount) {
     const err = new Error('All required fields must be provided');
     err.status = 400;
     throw err;
@@ -108,12 +108,12 @@ const createTrip = async (tripData) => {
   let newTrip;
   let retryCount = 0;
   const maxRetries = 3;
-  
+
   while (retryCount < maxRetries) {
     try {
       const now = new Date();
       const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
-      
+
       // Find the highest trip number for current month with retry-safe method
       const highestTrip = await Trip.findOne(
         {
@@ -126,7 +126,7 @@ const createTrip = async (tripData) => {
         { trip_number: 1 },
         { sort: { trip_number: -1 } }
       );
-      
+
       let nextNumber = 1;
       if (highestTrip && highestTrip.trip_number) {
         // Extract the sequential number from the trip number
@@ -135,7 +135,7 @@ const createTrip = async (tripData) => {
           nextNumber = parseInt(match[1]) + 1;
         }
       }
-      
+
       const trip_number = `TR${yearMonth}${String(nextNumber).padStart(4, '0')}`;
 
       // Calculate profit
@@ -148,22 +148,22 @@ const createTrip = async (tripData) => {
       newTrip = new Trip(dbData);
       await newTrip.save();
       break; // Success - exit the retry loop
-      
+
     } catch (error) {
       retryCount++;
-      
+
       // If it's not a duplicate key error, or we've reached max retries, throw the error
       if (!error.message.includes('duplicate key') || retryCount >= maxRetries) {
         console.error(`Failed to create trip after ${retryCount} attempts:`, error.message);
-        
+
         // Create a more user-friendly error message
-        const err = new Error(retryCount >= maxRetries 
-          ? 'Unable to generate unique trip number. Please try again.' 
+        const err = new Error(retryCount >= maxRetries
+          ? 'Unable to generate unique trip number. Please try again.'
           : error.message);
         err.status = error.status || 500;
         throw err;
       }
-      
+
       // Wait a bit before retrying (exponential backoff)
       await new Promise(resolve => setTimeout(resolve, 100 * Math.pow(2, retryCount)));
       console.log(`Retrying trip creation (attempt ${retryCount + 1}/${maxRetries})...`);
@@ -174,22 +174,22 @@ const createTrip = async (tripData) => {
 };
 
 const getAllTrips = async (current_user_id, filterParams = {}) => {
-  const { 
-    status, 
-    start_date, 
-    end_date, 
-    lorry_id, 
-    driver_id, 
-    customer_id, 
-    collab_owner_id, 
-    trip_type, 
+  const {
+    status,
+    start_date,
+    end_date,
+    lorry_id,
+    driver_id,
+    customer_id,
+    collab_owner_id,
+    trip_type,
     crusher_id,
     fetch_mode = 'as_owner',
     include_inactive = false // Added: Optional parameter to include inactive trips
   } = filterParams;
-  
+
   let query = {};
-  
+
   if (fetch_mode === 'as_collaborator') {
     // When user is the collaborator (Partner Trips to Me)
     // Current user = collab_owner_id
@@ -197,33 +197,33 @@ const getAllTrips = async (current_user_id, filterParams = {}) => {
     if (!collab_owner_id) {
       throw new Error('collab_owner_id is required when fetch_mode is "as_collaborator"');
     }
-    
+
     query.collab_owner_id = current_user_id; // Current user is collaborator
     query.owner_id = collab_owner_id; // This is actually the partner (owner)
-    
+
   } else {
     // Default: user is the owner (My Trips to Partner)
     // Current user = owner_id
     query.owner_id = current_user_id; // Current user is owner
-    
+
     // If collab_owner_id is provided, filter by specific collaborator
     // If not provided and trip_type is collaborative, get all collaborative trips
     if (collab_owner_id) {
       query.collab_owner_id = collab_owner_id; // Specific partner
     }
   }
-  
+
   // Only show ACTIVE trips by default (unless include_inactive is true)
   if (!include_inactive) {
     query.isActive = true; // Added: Filter by active trips
   }
-  
+
   // Additional filters
   if (status) query.status = status;
   if (lorry_id) query.lorry_id = lorry_id;
   if (driver_id) query.driver_id = driver_id;
   if (crusher_id) query.crusher_id = crusher_id;
-  
+
   // Filter by destination type
   if (trip_type === 'customer') {
     query.customer_id = { $exists: true, $ne: null };
@@ -236,9 +236,9 @@ const getAllTrips = async (current_user_id, filterParams = {}) => {
       query.collab_owner_id = { $exists: true, $ne: null };
     }
   }
-  
+
   if (customer_id) query.customer_id = customer_id;
-  
+
   // Date range filter
   if (start_date || end_date) {
     query.trip_date = {};
@@ -264,14 +264,14 @@ const getAllTrips = async (current_user_id, filterParams = {}) => {
 // Get trips where I am the collaborative owner (trips delivered to me)
 const getCollaborativeTripsForMe = async (collab_owner_id, filterParams = {}) => {
   const { status, start_date, end_date, owner_id, include_inactive = false } = filterParams;
-  const query = { 
+  const query = {
     collab_owner_id,
     isActive: !include_inactive ? true : { $exists: true } // Added: Filter by active trips
   };
-  
+
   if (status) query.status = status;
   if (owner_id) query.owner_id = owner_id;
-  
+
   // Date range filter
   if (start_date || end_date) {
     query.trip_date = {};
@@ -293,16 +293,16 @@ const getCollaborativeTripsForMe = async (collab_owner_id, filterParams = {}) =>
 };
 
 const getTripById = async (id, owner_id, include_inactive = false) => {
-  const query = { 
-    _id: id, 
-    owner_id 
+  const query = {
+    _id: id,
+    owner_id
   };
-  
+
   // Only show ACTIVE trips by default (unless include_inactive is true)
   if (!include_inactive) {
     query.isActive = true; // Added: Filter by active trips
   }
-  
+
   const trip = await Trip.findOne(query)
     .populate('lorry_id', 'registration_number nick_name')
     .populate('driver_id', 'name phone')
@@ -320,16 +320,16 @@ const getTripById = async (id, owner_id, include_inactive = false) => {
 
 // Get trip by ID for collaborative owner (when I'm the destination)
 const getCollaborativeTripById = async (id, collab_owner_id, include_inactive = false) => {
-  const query = { 
-    _id: id, 
-    collab_owner_id 
+  const query = {
+    _id: id,
+    collab_owner_id
   };
-  
+
   // Only show ACTIVE trips by default (unless include_inactive is true)
   if (!include_inactive) {
     query.isActive = true; // Added: Filter by active trips
   }
-  
+
   const trip = await Trip.findOne(query)
     .populate('lorry_id', 'registration_number nick_name')
     .populate('driver_id', 'name phone')
@@ -346,25 +346,25 @@ const getCollaborativeTripById = async (id, collab_owner_id, include_inactive = 
 
 const updateTrip = async (id, owner_id, updateData) => {
   console.log("updateData:", updateData);
-  
+
   // Make a copy to avoid mutating the original
   const processedData = { ...updateData };
-  
+
   // Handle empty strings - convert to null
   if (processedData.customer_id === "") {
     processedData.customer_id = null;
   }
-  
+
   if (processedData.collab_owner_id === "") {
     processedData.collab_owner_id = null;
   }
-  
+
   // Determine which destination to keep
   // If collab_owner_id has value, nullify customer_id
   if (processedData.collab_owner_id) {
     processedData.customer_id = null;
   }
-  
+
   // If customer_id has value, nullify collab_owner_id
   if (processedData.customer_id) {
     processedData.collab_owner_id = null;
@@ -391,25 +391,25 @@ const updateTrip = async (id, owner_id, updateData) => {
       // };
     }
   }
-  
+
   console.log("processedData:", processedData);
-  
+
   // Check if trip exists and is ACTIVE
-  const existingTrip = await Trip.findOne({ 
-    _id: id, 
+  const existingTrip = await Trip.findOne({
+    _id: id,
     owner_id,
     isActive: true // Added: Only update active trips
   });
 
 
-  
+
   if (!existingTrip) {
     const err = new Error('Trip not found or is inactive');
     err.status = 404;
     throw err;
   }
 
-  if(existingTrip.collab_trip_status == 'approved') {
+  if (existingTrip.collab_trip_status == 'approved') {
     const err = new Error('Cannot update an approved collaborative trip');
     err.status = 400;
     throw err;
@@ -417,12 +417,12 @@ const updateTrip = async (id, owner_id, updateData) => {
 
 
   // Check final state
-  const finalCustomerId = processedData.customer_id !== undefined 
-    ? processedData.customer_id 
+  const finalCustomerId = processedData.customer_id !== undefined
+    ? processedData.customer_id
     : existingTrip.customer_id;
-  
-  const finalCollabOwnerId = processedData.collab_owner_id !== undefined 
-    ? processedData.collab_owner_id 
+
+  const finalCollabOwnerId = processedData.collab_owner_id !== undefined
+    ? processedData.collab_owner_id
     : existingTrip.collab_owner_id;
 
   if (!finalCustomerId && !finalCollabOwnerId) {
@@ -439,8 +439,8 @@ const updateTrip = async (id, owner_id, updateData) => {
   }
 
   const updatedTrip = await Trip.findOneAndUpdate(
-    { 
-      _id: id, 
+    {
+      _id: id,
       owner_id,
       isActive: true // Added: Only update active trips
     },
@@ -458,18 +458,18 @@ const updateTrip = async (id, owner_id, updateData) => {
     err.status = 404;
     throw err;
   }
-  
+
   return updatedTrip;
 };
 
 const deleteTrip = async (id, owner_id) => {
   // Step 1: Check if trip exists and is ACTIVE
-  const trip = await Trip.findOne({ 
-    _id: id, 
+  const trip = await Trip.findOne({
+    _id: id,
     owner_id,
     isActive: true // Added: Only delete active trips
   });
-  
+
   if (!trip) {
     const err = new Error('Trip not found, is inactive, or delete failed');
     err.status = 404;
@@ -482,7 +482,7 @@ const deleteTrip = async (id, owner_id) => {
     { $set: { isActive: false } }
   );
 
-  return { 
+  return {
     message: 'Trip soft deleted successfully',
     trip_id: id,
     trip_number: trip.trip_number
@@ -491,10 +491,10 @@ const deleteTrip = async (id, owner_id) => {
 
 const updateTripStatus = async (id, owner_id, status) => {
   // First, find the existing trip to check its collab_trip_status
-  const existingTrip = await Trip.findOne({ 
-    _id: id, 
+  const existingTrip = await Trip.findOne({
+    _id: id,
     owner_id,
-    isActive: true 
+    isActive: true
   });
 
   if (!existingTrip) {
@@ -511,7 +511,7 @@ const updateTripStatus = async (id, owner_id, status) => {
   }
 
   const updateData = { status };
-  
+
   // Set timestamps based on status
   const now = new Date();
   switch (status) {
@@ -530,10 +530,10 @@ const updateTripStatus = async (id, owner_id, status) => {
   }
 
   const updatedTrip = await Trip.findOneAndUpdate(
-    { 
-      _id: id, 
+    {
+      _id: id,
       owner_id,
-      isActive: true 
+      isActive: true
     },
     updateData,
     { new: true, runValidators: true }
@@ -586,7 +586,7 @@ const getTripStats = async (owner_id, period = 'month') => {
   const totalRevenue = trips.reduce((sum, trip) => sum + trip.customer_amount, 0);
   const totalCost = trips.reduce((sum, trip) => sum + trip.crusher_amount, 0);
   const totalProfit = trips.reduce((sum, trip) => sum + trip.profit, 0);
-  
+
   // Calculate total units
   const totalCrusherUnits = trips.reduce((sum, trip) => sum + trip.no_of_unit_crusher, 0);
   const totalCustomerUnits = trips.reduce((sum, trip) => sum + trip.no_of_unit_customer, 0);
@@ -608,7 +608,7 @@ const getTripStats = async (owner_id, period = 'month') => {
 
 // Get trips analytics with collaborative support
 const getTripsAnalytics = async (owner_id, start_date, end_date, include_inactive = false) => {
-  const query = { 
+  const query = {
     owner_id,
     isActive: !include_inactive ? true : { $exists: true }, // Added: Filter by active trips
     trip_date: {
@@ -717,29 +717,29 @@ const getTripFormData = async (owner_id) => {
     Customer.find({ owner_id, isActive: true })
       .select('name address site_addresses')
       .sort({ name: 1 }),
-    
+
     // Drivers with only name
     Driver.find({ owner_id, status: 'active', isActive: true })
       .select('name')
       .sort({ name: 1 }),
-    
+
     // Crushers with name and materials
     Crusher.find({ owner_id, isActive: true }) // Added: isActive filter
       .select('name materials')
       .sort({ name: 1 }),
-    
+
     // Lorries with registration number and nick name
     Lorry.find({ owner_id, isActive: true })
       .select('registration_number nick_name')
       .sort({ registration_number: 1 }),
-    
+
     // Collaborative owners (other users I collaborate with)
-    User.find({ 
+    User.find({
       _id: { $ne: owner_id },
-      isActive: true 
+      isActive: true
     })
-    .select('name company_name phone email')
-    .sort({ name: 1 })
+      .select('name company_name phone email')
+      .sort({ name: 1 })
   ]);
 
   // Prepare the response data with only required fields
@@ -779,14 +779,14 @@ const getTripFormData = async (owner_id) => {
 // Get all trips for a specific customer (with owner security)
 const getTripsByCustomerId = async (owner_id, customer_id, filterParams = {}) => {
   const { status, start_date, end_date, include_inactive = false } = filterParams;
-  const query = { 
+  const query = {
     owner_id, // Security: Only show trips belonging to this owner
     customer_id,
     isActive: !include_inactive ? true : { $exists: true } // Added: Filter by active trips
   };
-  
+
   if (status) query.status = status;
-  
+
   // Date range filter
   if (start_date || end_date) {
     query.trip_date = {};
@@ -811,14 +811,14 @@ const getTripsByCustomerId = async (owner_id, customer_id, filterParams = {}) =>
 // Get all trips for a specific crusher (with owner security)
 const getTripsByCrusherId = async (owner_id, crusher_id, filterParams = {}) => {
   const { status, start_date, end_date, include_inactive = false } = filterParams;
-  const query = { 
+  const query = {
     owner_id, // Security: Only show trips belonging to this owner
     crusher_id,
     isActive: !include_inactive ? true : { $exists: true } // Added: Filter by active trips
   };
-  
+
   if (status) query.status = status;
-  
+
   // Date range filter
   if (start_date || end_date) {
     query.trip_date = {};
@@ -845,7 +845,7 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date, include
   try {
     // 1. Get current user (owner) details for company header
     const owner = await User.findById(owner_id).select('name company_name address city state pincode phone logo gst_number');
-    
+
     console.log("Owner details:", owner);
     if (!owner) {
       const err = new Error('Owner not found');
@@ -854,8 +854,8 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date, include
     }
 
     // 2. Get customer details
-    const customer = await Customer.findOne({ 
-      _id: customer_id, 
+    const customer = await Customer.findOne({
+      _id: customer_id,
       owner_id,
       isActive: true // Added: Only active customers
     }).select('name phone address site_addresses');
@@ -871,9 +871,9 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date, include
       owner_id,
       customer_id,
       isActive: !include_inactive ? true : { $exists: true }, // Added: Filter by active trips
-      trip_date: { 
-        $gte: new Date(from_date), 
-        $lte: new Date(to_date) 
+      trip_date: {
+        $gte: new Date(from_date),
+        $lte: new Date(to_date)
       },
       status: { $in: ['delivered', 'completed'] }
     };
@@ -896,19 +896,19 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date, include
       customer_id,
       payment_type: 'from_customer',
       isActive: true, // Added: Only active payments
-      payment_date: { 
-        $gte: new Date(from_date), 
-        $lte: new Date(to_date) 
+      payment_date: {
+        $gte: new Date(from_date),
+        $lte: new Date(to_date)
       }
     }).sort({ payment_date: 1 });
 
     // 5. Group trips by material, quantity, location, price AND customer_amount (exact match)
     const groupedTrips = {};
-    
+
     trips.forEach(trip => {
       const tripDate = trip.trip_date.toISOString().split('T')[0];
       const groupKey = `${tripDate}_${trip.material_name}_${trip.no_of_unit_customer}_${trip.location}_${trip.rate_per_unit}_${trip.customer_amount}`;
-      
+
       if (!groupedTrips[groupKey]) {
         groupedTrips[groupKey] = {
           date: tripDate,
@@ -922,12 +922,12 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date, include
           trips: []
         };
       }
-      
+
       // Keep the same quantity (don't sum), just count loads and sum amounts
       groupedTrips[groupKey].no_of_loads += 1;
       groupedTrips[groupKey].total_amount += trip.customer_amount;
       groupedTrips[groupKey].trips.push(trip);
-      
+
       // Keep the earliest date for the group
       if (new Date(tripDate) < new Date(groupedTrips[groupKey].date)) {
         groupedTrips[groupKey].date = tripDate;
@@ -935,7 +935,7 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date, include
     });
 
     // Convert to array and sort by date
-    const groupedTripArray = Object.values(groupedTrips).sort((a, b) => 
+    const groupedTripArray = Object.values(groupedTrips).sort((a, b) =>
       new Date(a.date) - new Date(b.date)
     );
 
@@ -970,7 +970,7 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date, include
     const fromDateObj = new Date(from_date);
     const previousDay = new Date(fromDateObj);
     previousDay.setDate(fromDateObj.getDate() - 1);
-    
+
     const openingBalanceRow = {
       s_no: '',
       date: '',
@@ -1008,7 +1008,7 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date, include
     allTransactions.forEach(transaction => {
       if (transaction.type === 'grouped_trip') {
         const group = transaction.data;
-        
+
         const row = {
           s_no: tableRows.length,
           date: transaction.date,
@@ -1037,7 +1037,7 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date, include
         currentBalance += group.total_amount;
       } else if (transaction.type === 'payment') {
         const payment = transaction.data;
-        
+
         const row = {
           s_no: tableRows.length,
           date: transaction.date.toISOString().split('T')[0],
@@ -1093,7 +1093,7 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date, include
         logo: owner.logo || null,
         gst_number: owner.gst_number || null
       },
-      
+
       // Customer Information
       customer: {
         name: customer.name,
@@ -1102,7 +1102,7 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date, include
         site_addresses: customer.site_addresses || [],
         is_active: customer.isActive
       },
-      
+
       // Invoice Details
       invoice_details: {
         invoice_number: `INV-${Date.now()}`,
@@ -1115,11 +1115,11 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date, include
         include_inactive_trips: include_inactive,
         note: include_inactive ? 'Invoice includes inactive trips' : 'Invoice includes active trips only'
       },
-      
+
       // Table Data (formatted like your example)
       table_data: {
         headers: [
-          'S.No', 'Date', 'Particular', 'Quantity', 'Location', 
+          'S.No', 'Date', 'Particular', 'Quantity', 'Location',
           'Price', 'No of Loads', 'Total Amount', 'Amount Received', 'Balance'
         ],
         rows: tableRows,
@@ -1135,7 +1135,7 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date, include
           active_trips_only: !include_inactive
         }
       },
-      
+
       // Financial Summary
       financial_summary: {
         opening_balance: runningBalance,
@@ -1144,14 +1144,14 @@ const getInvoiceData = async (owner_id, customer_id, from_date, to_date, include
         closing_balance: currentBalance,
         amount_payable: currentBalance
       },
-      
+
       // Additional Information
       additional_info: {
         notes: 'All amounts in Indian Rupees',
         terms: 'Payment terms : weekly payment (7 days credit)',
         data_status: include_inactive ? 'Includes all trips (active and inactive)' : 'Active trips only'
       },
-      
+
       // Raw data for reference
       raw_data: {
         trips: trips.map(trip => ({
@@ -1206,20 +1206,20 @@ const cloneTrips = async (tripIds, owner_id, times = 1, options = {}) => {
     // Process in batches to avoid memory issues
     const BATCH_SIZE = 20;
     const results = [];
-    
+
     for (let i = 0; i < tripIds.length; i += BATCH_SIZE) {
       const batchTripIds = tripIds.slice(i, i + BATCH_SIZE);
-      
+
       // Process this batch
       const batchResult = await processBatch(
-        batchTripIds, 
-        owner_id, 
-        times, 
+        batchTripIds,
+        owner_id,
+        times,
         options
       );
-      
+
       results.push(...batchResult);
-      
+
       // Small delay between batches to avoid overwhelming the database
       if (i + BATCH_SIZE < tripIds.length) {
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -1229,8 +1229,8 @@ const cloneTrips = async (tripIds, owner_id, times = 1, options = {}) => {
     // Calculate summary
     const successfulResults = results.filter(r => r.success);
     const failedResults = results.filter(r => !r.success);
-    
-    const totalClonesCreated = successfulResults.reduce((sum, result) => 
+
+    const totalClonesCreated = successfulResults.reduce((sum, result) =>
       sum + (result.cloned_trips ? result.cloned_trips.length : 0), 0);
 
     return {
@@ -1258,18 +1258,18 @@ const cloneTrips = async (tripIds, owner_id, times = 1, options = {}) => {
 const processBatch = async (batchTripIds, owner_id, times, options) => {
   const session = await Trip.startSession();
   session.startTransaction();
-  
+
   try {
     // Fetch original trips for this batch
     const originalTrips = await Trip.find({
       _id: { $in: batchTripIds },
       owner_id
     })
-    .populate('lorry_id', 'registration_number nick_name')
-    .populate('driver_id', 'name phone')
-    .populate('crusher_id', 'name')
-    .populate('customer_id', 'name phone address')
-    .populate('collab_owner_id', 'name company_name phone email');
+      .populate('lorry_id', 'registration_number nick_name')
+      .populate('driver_id', 'name phone')
+      .populate('crusher_id', 'name')
+      .populate('customer_id', 'name phone address')
+      .populate('collab_owner_id', 'name company_name phone email');
 
     // Create map for quick lookup
     const tripMap = new Map();
@@ -1278,13 +1278,13 @@ const processBatch = async (batchTripIds, owner_id, times, options) => {
     // Get sequence range
     const now = new Date();
     const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
-    
+
     // Use a simple approach: get max and add batch size
     const lastTrip = await Trip.findOne({
       trip_number: new RegExp(`^TR${yearMonth}`)
     })
-    .sort({ trip_number: -1 })
-    .select('trip_number');
+      .sort({ trip_number: -1 })
+      .select('trip_number');
 
     let startSequence = 1;
     if (lastTrip && lastTrip.trip_number) {
@@ -1301,7 +1301,7 @@ const processBatch = async (batchTripIds, owner_id, times, options) => {
 
     for (const tripId of batchTripIds) {
       const originalTrip = tripMap.get(tripId);
-      
+
       if (!originalTrip) {
         batchResults.push({
           tripId,
@@ -1320,7 +1320,7 @@ const processBatch = async (batchTripIds, owner_id, times, options) => {
       delete tripDataObj.createdAt;
       delete tripDataObj.updatedAt;
       delete tripDataObj.collab_trip_status;
-      
+
       // Handle status and timestamps
       if (options.resetStatus) {
         tripDataObj.status = 'scheduled';
@@ -1333,7 +1333,7 @@ const processBatch = async (batchTripIds, owner_id, times, options) => {
         delete tripDataObj.loaded_at;
         delete tripDataObj.delivered_at;
         delete tripDataObj.completed_at;
-        
+
         if (tripDataObj.status === 'dispatched') {
           tripDataObj.dispatched_at = new Date();
         } else if (tripDataObj.status === 'loaded') {
@@ -1344,20 +1344,20 @@ const processBatch = async (batchTripIds, owner_id, times, options) => {
           tripDataObj.completed_at = new Date();
         }
       }
-      
+
       // Determine trip date
-      const tripDate = options.resetDate === true 
+      const tripDate = options.resetDate === true
         ? new Date(options.newTripDate)
         : tripDataObj.trip_date;
-      
+
       const clonedTripNumbers = [];
-      
+
       // Create clone operations
       for (let i = 0; i < times; i++) {
         const trip_number = `TR${yearMonth}${String(currentSequence).padStart(4, '0')}`;
         currentSequence++;
         clonedTripNumbers.push(trip_number);
-        
+
         bulkOps.push({
           insertOne: {
             document: {
@@ -1370,7 +1370,7 @@ const processBatch = async (batchTripIds, owner_id, times, options) => {
           }
         });
       }
-      
+
       // Store for later population
       batchResults.push({
         tripId,
@@ -1383,9 +1383,9 @@ const processBatch = async (batchTripIds, owner_id, times, options) => {
 
     // Execute bulk insert
     if (bulkOps.length > 0) {
-      await Trip.bulkWrite(bulkOps, { 
+      await Trip.bulkWrite(bulkOps, {
         ordered: false,
-        session 
+        session
       });
     }
 
@@ -1396,15 +1396,15 @@ const processBatch = async (batchTripIds, owner_id, times, options) => {
     for (const result of batchResults) {
       if (result.success === null) { // Only process those that were cloned
         try {
-          const clonedTrips = await Trip.find({ 
-            trip_number: { $in: result.clonedTripNumbers } 
+          const clonedTrips = await Trip.find({
+            trip_number: { $in: result.clonedTripNumbers }
           })
-          .populate('lorry_id', 'registration_number nick_name')
-          .populate('driver_id', 'name phone')
-          .populate('crusher_id', 'name')
-          .populate('customer_id', 'name phone')
-          .populate('collab_owner_id', 'name company_name phone')
-          .populate('owner_id', 'name company_name phone');
+            .populate('lorry_id', 'registration_number nick_name')
+            .populate('driver_id', 'name phone')
+            .populate('crusher_id', 'name')
+            .populate('customer_id', 'name phone')
+            .populate('collab_owner_id', 'name company_name phone')
+            .populate('owner_id', 'name company_name phone');
 
           result.success = true;
           result.cloned_trips = clonedTrips;
@@ -1416,11 +1416,11 @@ const processBatch = async (batchTripIds, owner_id, times, options) => {
           result.reset_status_applied = options.resetStatus || false;
           result.reset_date_applied = options.resetDate || false;
           result.number_of_clones = times;
-          
+
           // Clean up
           delete result.originalTrip;
           delete result.tripDataObj;
-          
+
         } catch (error) {
           result.success = false;
           result.error = `Failed to fetch cloned trips: ${error.message}`;
@@ -1697,7 +1697,7 @@ const bulkUpdateTripStatus = async (owner_id, statusData) => {
     // Prepare update data with timestamps
     const updateData = { status };
     const now = new Date();
-    
+
     // Set timestamps based on status
     switch (status) {
       case 'dispatched':
@@ -1745,10 +1745,10 @@ const bulkUpdateTripStatus = async (owner_id, statusData) => {
 
       const existingTripIds = existingTrips.map(t => t._id.toString());
       const nonExistingTripIds = tripIds.filter(id => !existingTripIds.includes(id));
-      
+
       const inactiveTrips = existingTrips.filter(t => !t.isActive);
       const alreadyInStatusTrips = existingTrips.filter(t => t.status === status);
-      
+
       return {
         success: false,
         message: 'No trips were updated',
@@ -1775,11 +1775,11 @@ const bulkUpdateTripStatus = async (owner_id, statusData) => {
       owner_id,
       isActive: true
     })
-    .populate('lorry_id', 'registration_number nick_name')
-    .populate('driver_id', 'name phone')
-    .populate('crusher_id', 'name')
-    .populate('customer_id', 'name phone')
-    .populate('collab_owner_id', 'name company_name phone');
+      .populate('lorry_id', 'registration_number nick_name')
+      .populate('driver_id', 'name phone')
+      .populate('crusher_id', 'name')
+      .populate('customer_id', 'name phone')
+      .populate('collab_owner_id', 'name company_name phone');
 
     // Calculate summary
     const tripsByMaterial = {};
@@ -1807,8 +1807,8 @@ const bulkUpdateTripStatus = async (owner_id, statusData) => {
         trips_by_material: tripsByMaterial,
         total_amount_updated: totalAmount,
         total_profit_updated: totalProfit,
-        timestamp_added: updateData.dispatched_at || updateData.loaded_at || 
-                         updateData.delivered_at || updateData.completed_at || null,
+        timestamp_added: updateData.dispatched_at || updateData.loaded_at ||
+          updateData.delivered_at || updateData.completed_at || null,
         updated_at: now
       },
       updated_trips: updatedTrips.map(trip => ({
@@ -1836,16 +1836,16 @@ const updateCollabTripStatus = async (tripId, collabOwnerId, requestingUserId, s
     const Trip = require('../models/trip.model');
 
     // Find the trip - must have collab_owner_id (collaborative trip)
-    const trip = await Trip.findOne({ 
+    const trip = await Trip.findOne({
       _id: tripId,
       isActive: true,
       collab_owner_id: { $exists: true, $ne: null }
     })
-    .populate('owner_id', 'name company_name')
-    .populate('collab_owner_id', 'name company_name')
-    .populate('lorry_id', 'registration_number nick_name')
-    .populate('driver_id', 'name phone')
-    .populate('crusher_id', 'name');
+      .populate('owner_id', 'name company_name')
+      .populate('collab_owner_id', 'name company_name')
+      .populate('lorry_id', 'registration_number nick_name')
+      .populate('driver_id', 'name phone')
+      .populate('crusher_id', 'name');
 
     if (!trip) {
       const error = new Error('Collaborative trip not found');
@@ -1889,16 +1889,16 @@ const updateCollabTripStatus = async (tripId, collabOwnerId, requestingUserId, s
 
 const getCollaborationInvoiceData = async (owner_id, partner_owner_id, from_date, to_date) => {
   try {
-    console.log("Fetching collaboration invoice data for:", { 
-      owner_id, 
-      partner_owner_id, 
-      from_date, 
-      to_date 
+    console.log("Fetching collaboration invoice data for:", {
+      owner_id,
+      partner_owner_id,
+      from_date,
+      to_date
     });
 
     // 1. Get current user (owner) details for company header
     const currentOwner = await User.findById(owner_id).select('name company_name address city state pincode phone logo gst_number');
-    
+
     if (!currentOwner) {
       const err = new Error('Current owner not found');
       err.status = 404;
@@ -1907,7 +1907,7 @@ const getCollaborationInvoiceData = async (owner_id, partner_owner_id, from_date
 
     // 2. Get partner owner details
     const partnerOwner = await User.findById(partner_owner_id).select('name company_name address city state pincode phone logo gst_number');
-    
+
     if (!partnerOwner) {
       const err = new Error('Partner owner not found');
       err.status = 404;
@@ -1935,9 +1935,9 @@ const getCollaborationInvoiceData = async (owner_id, partner_owner_id, from_date
       isActive: true,
       status: 'completed',
       collab_trip_status: 'approved',
-      trip_date: { 
-        $gte: new Date(from_date), 
-        $lte: new Date(to_date) 
+      trip_date: {
+        $gte: new Date(from_date),
+        $lte: new Date(to_date)
       }
     })
       .populate('customer_id', 'name')
@@ -1953,9 +1953,9 @@ const getCollaborationInvoiceData = async (owner_id, partner_owner_id, from_date
       isActive: true,
       status: 'completed',
       collab_trip_status: 'approved',
-      trip_date: { 
-        $gte: new Date(from_date), 
-        $lte: new Date(to_date) 
+      trip_date: {
+        $gte: new Date(from_date),
+        $lte: new Date(to_date)
       }
     })
       .populate('customer_id', 'name')
@@ -1971,9 +1971,9 @@ const getCollaborationInvoiceData = async (owner_id, partner_owner_id, from_date
       collab_owner_id: partner_owner_id,
       isActive: true,
       collab_payment_status: 'approved',
-      payment_date: { 
-        $gte: new Date(from_date), 
-        $lte: new Date(to_date) 
+      payment_date: {
+        $gte: new Date(from_date),
+        $lte: new Date(to_date)
       }
     })
       .populate('customer_id', 'name')
@@ -1986,9 +1986,9 @@ const getCollaborationInvoiceData = async (owner_id, partner_owner_id, from_date
       collab_owner_id: owner_id,
       isActive: true,
       collab_payment_status: 'approved',
-      payment_date: { 
-        $gte: new Date(from_date), 
-        $lte: new Date(to_date) 
+      payment_date: {
+        $gte: new Date(from_date),
+        $lte: new Date(to_date)
       }
     })
       .populate('customer_id', 'name')
@@ -1997,11 +1997,11 @@ const getCollaborationInvoiceData = async (owner_id, partner_owner_id, from_date
     // 8. Group trips by material, quantity, location, price AND customer_amount (exact match)
     const groupTrips = (trips) => {
       const grouped = {};
-      
+
       trips.forEach(trip => {
         const tripDate = trip.trip_date.toISOString().split('T')[0];
         const groupKey = `${tripDate}_${trip.material_name}_${trip.no_of_unit_customer}_${trip.location}_${trip.rate_per_unit}_${trip.customer_amount}`;
-        
+
         if (!grouped[groupKey]) {
           grouped[groupKey] = {
             date: tripDate,
@@ -2015,11 +2015,11 @@ const getCollaborationInvoiceData = async (owner_id, partner_owner_id, from_date
             trips: []
           };
         }
-        
+
         grouped[groupKey].no_of_loads += 1;
         grouped[groupKey].total_amount += trip.customer_amount;
         grouped[groupKey].trips.push(trip);
-        
+
         if (new Date(tripDate) < new Date(grouped[groupKey].date)) {
           grouped[groupKey].date = tripDate;
         }
@@ -2077,8 +2077,8 @@ const getCollaborationInvoiceData = async (owner_id, partner_owner_id, from_date
     // CORRECTED: Opening Balance from CURRENT USER's perspective
     // What partner owes me = (My trips for partner) - (Partner trips for me)
     // Adjusted for payments = What partner owes me - (My payments to partner) + (Partner payments to me)
-    const openingBalance = (previousMyTripsAmount - previousPartnerTripsAmount) - 
-                          (previousMyPaymentsAmount - previousPartnerPaymentsAmount);
+    const openingBalance = (previousMyTripsAmount - previousPartnerTripsAmount) -
+      (previousMyPaymentsAmount - previousPartnerPaymentsAmount);
 
     // 10. Create table rows
     const tableRows = [];
@@ -2088,7 +2088,7 @@ const getCollaborationInvoiceData = async (owner_id, partner_owner_id, from_date
     const fromDateObj = new Date(from_date);
     const previousDay = new Date(fromDateObj);
     previousDay.setDate(fromDateObj.getDate() - 1);
-    
+
     const openingBalanceRow = {
       s_no: '',
       date: '',
@@ -2157,7 +2157,7 @@ const getCollaborationInvoiceData = async (owner_id, partner_owner_id, from_date
 
       if (transaction.type === 'my_trip') {
         const group = transaction.data;
-        
+
         // My trip: Partner needs to pay me → Increases what partner owes me
         row = {
           s_no: tableRows.length,
@@ -2179,7 +2179,7 @@ const getCollaborationInvoiceData = async (owner_id, partner_owner_id, from_date
 
       } else if (transaction.type === 'partner_trip') {
         const group = transaction.data;
-        
+
         // Partner trip: I need to pay partner → Decreases what partner owes me
         row = {
           s_no: tableRows.length,
@@ -2199,52 +2199,52 @@ const getCollaborationInvoiceData = async (owner_id, partner_owner_id, from_date
 
         currentBalance -= group.total_amount;
 
-      } 
+      }
       else
-       if (transaction.type === 'my_payment') {
-  const payment = transaction.data;
-  
-  // My payment: I paid partner → Reduces what I owe → INCREASES balance (+)
-  row = {
-    s_no: tableRows.length,
-    date: transaction.date.toISOString().split('T')[0],
-    particular: `[PAID TO ${partnerOwner.name}] ${payment.notes || 'Payment'}`,
-    quantity: '-',
-    location: '-',
-    price: '-',
-    no_of_loads: '-',
-    total_amount: '-',
-    amount_received: `₹${payment.amount.toLocaleString('en-IN')}`,
-    balance: `₹${(currentBalance + payment.amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-    section: 'my_payments',
-    transaction_type: 'my_payment',
-    is_payment: true
-  };
+        if (transaction.type === 'my_payment') {
+          const payment = transaction.data;
 
-  currentBalance += payment.amount; // ADD payment amount (reduce my debt)
+          // My payment: I paid partner → Reduces what I owe → INCREASES balance (+)
+          row = {
+            s_no: tableRows.length,
+            date: transaction.date.toISOString().split('T')[0],
+            particular: `[PAID TO ${partnerOwner.name}] ${payment.notes || 'Payment'}`,
+            quantity: '-',
+            location: '-',
+            price: '-',
+            no_of_loads: '-',
+            total_amount: '-',
+            amount_received: `₹${payment.amount.toLocaleString('en-IN')}`,
+            balance: `₹${(currentBalance + payment.amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            section: 'my_payments',
+            transaction_type: 'my_payment',
+            is_payment: true
+          };
 
-} else if (transaction.type === 'partner_payment') {
-  const payment = transaction.data;
-  
-  // Partner payment: Partner paid me → Reduces what partner owes me → DECREASES balance (-)
-  row = {
-    s_no: tableRows.length,
-    date: transaction.date.toISOString().split('T')[0],
-    particular: `[RECEIVED FROM ${partnerOwner.name}] ${payment.notes || 'Payment'}`,
-    quantity: '-',
-    location: '-',
-    price: '-',
-    no_of_loads: '-',
-    total_amount: '-',
-    amount_received: `₹${payment.amount.toLocaleString('en-IN')}`,
-    balance: `₹${(currentBalance - payment.amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-    section: 'partner_payments',
-    transaction_type: 'partner_payment',
-    is_payment: true
-  };
+          currentBalance += payment.amount; // ADD payment amount (reduce my debt)
 
-  currentBalance -= payment.amount; // SUBTRACT payment amount (reduce partner's debt)
-}
+        } else if (transaction.type === 'partner_payment') {
+          const payment = transaction.data;
+
+          // Partner payment: Partner paid me → Reduces what partner owes me → DECREASES balance (-)
+          row = {
+            s_no: tableRows.length,
+            date: transaction.date.toISOString().split('T')[0],
+            particular: `[RECEIVED FROM ${partnerOwner.name}] ${payment.notes || 'Payment'}`,
+            quantity: '-',
+            location: '-',
+            price: '-',
+            no_of_loads: '-',
+            total_amount: '-',
+            amount_received: `₹${payment.amount.toLocaleString('en-IN')}`,
+            balance: `₹${(currentBalance - payment.amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            section: 'partner_payments',
+            transaction_type: 'partner_payment',
+            is_payment: true
+          };
+
+          currentBalance -= payment.amount; // SUBTRACT payment amount (reduce partner's debt)
+        }
 
       tableRows.push(row);
     });
@@ -2271,15 +2271,15 @@ const getCollaborationInvoiceData = async (owner_id, partner_owner_id, from_date
     const totalPartnerTripsAmount = partnerTrips.reduce((sum, trip) => sum + (trip.customer_amount || 0), 0);
     const totalMyPaymentsAmount = myPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
     const totalPartnerPaymentsAmount = partnerPayments.reduce((sum, payment) => sum + (payment.amount || 0), 0);
-    
+
     // Calculate net amounts
     const netTripAmount = totalMyTripsAmount - totalPartnerTripsAmount;
     const netPaymentAmount = totalPartnerPaymentsAmount - totalMyPaymentsAmount; // Partner payments minus my payments
-    
+
     // Determine who needs to pay based on FINAL balance
     let whoOwes = '';
     let amountOwed = Math.abs(currentBalance);
-    
+
     if (currentBalance > 0) {
       // Positive balance means partner owes me
       whoOwes = `${partnerOwner.name} needs to pay ${currentOwner.name}`;
@@ -2305,7 +2305,7 @@ const getCollaborationInvoiceData = async (owner_id, partner_owner_id, from_date
         logo: currentOwner.logo || null,
         gst_number: currentOwner.gst_number || null
       },
-      
+
       partner: {
         name: partnerOwner.name,
         address: partnerOwner.address,
@@ -2318,7 +2318,7 @@ const getCollaborationInvoiceData = async (owner_id, partner_owner_id, from_date
         gst_number: partnerOwner.gst_number || null,
         is_partner: true
       },
-      
+
       invoice_details: {
         invoice_number: `COL-INV-${Date.now()}`,
         date: new Date().toISOString().split('T')[0],
@@ -2330,10 +2330,10 @@ const getCollaborationInvoiceData = async (owner_id, partner_owner_id, from_date
         is_collaboration: true,
         type: 'collaboration_statement'
       },
-      
+
       table_data: {
         headers: [
-          'S.No', 'Date', 'Particular', 'Quantity', 'Location', 
+          'S.No', 'Date', 'Particular', 'Quantity', 'Location',
           'Price', 'No of Loads', 'Total Amount', 'Transaction Amount', 'Balance'
         ],
         rows: tableRows,
@@ -2354,7 +2354,7 @@ const getCollaborationInvoiceData = async (owner_id, partner_owner_id, from_date
           amount_to_pay: `₹${amountOwed.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
         }
       },
-      
+
       financial_summary: {
         opening_balance: openingBalance,
         total_my_trips: totalMyTripsAmount,
@@ -2367,7 +2367,7 @@ const getCollaborationInvoiceData = async (owner_id, partner_owner_id, from_date
         amount_payable: amountOwed,
         who_owes: currentBalance > 0 ? 'partner' : 'you'
       },
-      
+
       additional_info: {
         notes: 'All amounts in Indian Rupees',
         calculation_note: `Balance = (Your trips - Partner trips) - (Your payments - Partner payments)`,
@@ -2394,7 +2394,7 @@ const getCrusherInvoiceData = async (owner_id, crusher_id, from_date, to_date, i
   try {
     // 1. Get current user (owner) details
     const owner = await User.findById(owner_id).select('name company_name address city state pincode phone logo gst_number');
-    
+
     if (!owner) {
       const err = new Error('Owner not found');
       err.status = 404;
@@ -2402,8 +2402,8 @@ const getCrusherInvoiceData = async (owner_id, crusher_id, from_date, to_date, i
     }
 
     // 2. Get crusher details
-    const crusher = await Crusher.findOne({ 
-      _id: crusher_id, 
+    const crusher = await Crusher.findOne({
+      _id: crusher_id,
       owner_id,
       isActive: true
     }).select('name phone address materials');
@@ -2419,9 +2419,9 @@ const getCrusherInvoiceData = async (owner_id, crusher_id, from_date, to_date, i
       owner_id,
       crusher_id,
       isActive: !include_inactive ? true : { $exists: true },
-      trip_date: { 
-        $gte: new Date(from_date), 
-        $lte: new Date(to_date) 
+      trip_date: {
+        $gte: new Date(from_date),
+        $lte: new Date(to_date)
       },
       status: { $in: ['delivered', 'completed'] }
     };
@@ -2445,21 +2445,21 @@ const getCrusherInvoiceData = async (owner_id, crusher_id, from_date, to_date, i
       crusher_id,
       payment_type: 'to_crusher',
       isActive: true,
-      payment_date: { 
-        $gte: new Date(from_date), 
-        $lte: new Date(to_date) 
+      payment_date: {
+        $gte: new Date(from_date),
+        $lte: new Date(to_date)
       }
     }).sort({ payment_date: 1 });
 
     // 5. Group trips by material, customer, and rate (Crusher perspective)
     const groupedTrips = {};
-    
+
     trips.forEach(trip => {
       const tripDate = trip.trip_date.toISOString().split('T')[0];
       // Group by material, customer, and rate (for crusher)
       const customerName = trip.customer_id?.name || trip.collab_owner_id?.name || 'Unknown';
       const groupKey = `${tripDate}_${trip.material_name}_${customerName}_${trip.rate_per_unit}`;
-      
+
       if (!groupedTrips[groupKey]) {
         groupedTrips[groupKey] = {
           date: tripDate,
@@ -2473,12 +2473,12 @@ const getCrusherInvoiceData = async (owner_id, crusher_id, from_date, to_date, i
           trips: []
         };
       }
-      
+
       groupedTrips[groupKey].no_of_loads += 1;
       groupedTrips[groupKey].total_units += trip.no_of_unit_crusher; // Crusher units
       groupedTrips[groupKey].total_amount += trip.crusher_amount; // Amount paid to crusher
       groupedTrips[groupKey].trips.push(trip);
-      
+
       // Keep the earliest date for the group
       if (new Date(tripDate) < new Date(groupedTrips[groupKey].date)) {
         groupedTrips[groupKey].date = tripDate;
@@ -2486,7 +2486,7 @@ const getCrusherInvoiceData = async (owner_id, crusher_id, from_date, to_date, i
     });
 
     // Convert to array and sort by date
-    const groupedTripArray = Object.values(groupedTrips).sort((a, b) => 
+    const groupedTripArray = Object.values(groupedTrips).sort((a, b) =>
       new Date(a.date) - new Date(b.date)
     );
 
@@ -2520,7 +2520,7 @@ const getCrusherInvoiceData = async (owner_id, crusher_id, from_date, to_date, i
     const fromDateObj = new Date(from_date);
     const previousDay = new Date(fromDateObj);
     previousDay.setDate(fromDateObj.getDate() - 1);
-    
+
     const openingBalanceRow = {
       s_no: '',
       date: '',
@@ -2559,7 +2559,7 @@ const getCrusherInvoiceData = async (owner_id, crusher_id, from_date, to_date, i
     allTransactions.forEach(transaction => {
       if (transaction.type === 'grouped_trip') {
         const group = transaction.data;
-        
+
         const row = {
           s_no: tableRows.length,
           date: transaction.date,
@@ -2590,7 +2590,7 @@ const getCrusherInvoiceData = async (owner_id, crusher_id, from_date, to_date, i
         currentBalance += group.total_amount;
       } else if (transaction.type === 'payment') {
         const payment = transaction.data;
-        
+
         const row = {
           s_no: tableRows.length,
           date: transaction.date.toISOString().split('T')[0],
@@ -2649,7 +2649,7 @@ const getCrusherInvoiceData = async (owner_id, crusher_id, from_date, to_date, i
         logo: owner.logo || null,
         gst_number: owner.gst_number || null
       },
-      
+
       // Crusher Information
       crusher: {
         name: crusher.name,
@@ -2658,7 +2658,7 @@ const getCrusherInvoiceData = async (owner_id, crusher_id, from_date, to_date, i
         materials: crusher.materials || [],
         is_active: crusher.isActive
       },
-      
+
       // Invoice Details
       invoice_details: {
         invoice_number: `CRU-INV-${Date.now()}`,
@@ -2672,11 +2672,11 @@ const getCrusherInvoiceData = async (owner_id, crusher_id, from_date, to_date, i
         include_inactive_trips: include_inactive,
         note: include_inactive ? 'Includes inactive trips' : 'Active trips only'
       },
-      
+
       // Table Data
       table_data: {
         headers: [
-          'S.No', 'Date', 'Particular', 'Customer', 'Material', 
+          'S.No', 'Date', 'Particular', 'Customer', 'Material',
           'Rate/Unit', 'Units', 'No of Loads', 'Total Amount', 'Amount Paid', 'Balance'
         ],
         rows: tableRows,
@@ -2693,7 +2693,7 @@ const getCrusherInvoiceData = async (owner_id, crusher_id, from_date, to_date, i
           active_trips_only: !include_inactive
         }
       },
-      
+
       // Financial Summary (Crusher perspective)
       financial_summary: {
         opening_balance: runningBalance,
@@ -2702,7 +2702,7 @@ const getCrusherInvoiceData = async (owner_id, crusher_id, from_date, to_date, i
         closing_balance: currentBalance,
         amount_due: currentBalance > 0 ? currentBalance : 0
       },
-      
+
       // Additional Information
       additional_info: {
         notes: 'All amounts in Indian Rupees',
@@ -2710,7 +2710,7 @@ const getCrusherInvoiceData = async (owner_id, crusher_id, from_date, to_date, i
         data_status: include_inactive ? 'Includes all trips (active and inactive)' : 'Active trips only',
         type: 'Crusher Payment Statement'
       },
-      
+
       // Raw data for reference
       raw_data: {
         trips: trips.map(trip => ({
@@ -2746,6 +2746,259 @@ const getCrusherInvoiceData = async (owner_id, crusher_id, from_date, to_date, i
   }
 };
 
+const getGSTInvoiceData = async (owner_id, from_date, to_date, customer_id = null) => {
+  try {
+    // 1. Get owner details
+    const owner = await User.findById(owner_id).select('name company_name address city state pincode phone gst_number');
+
+    if (!owner) {
+      throw new Error('Owner not found');
+    }
+
+    // 2. Build query for GST trips
+    const tripsQuery = {
+      owner_id,
+      include_gst: true, // ONLY GST trips
+      isActive: true,
+      trip_date: {
+        $gte: new Date(from_date),
+        $lte: new Date(to_date)
+      },
+      status: { $in: ['delivered', 'completed'] }
+    };
+
+    // 3. If specific customer is provided, filter by that customer
+    if (customer_id) {
+      tripsQuery.customer_id = customer_id;
+    }
+
+    // 4. Get all GST trips in date range
+    const trips = await Trip.find(tripsQuery)
+      .populate('customer_id', 'name gst_number state address phone')
+      .populate('collab_owner_id', 'name gst_number state address phone')
+      .sort({ trip_date: 1 });
+
+    if (trips.length === 0) {
+      throw new Error('No GST trips found in the specified date range');
+    }
+
+    // 5. GROUP TRIPS BY CUSTOMER
+    const customersMap = {};
+
+    trips.forEach(trip => {
+      // Determine who is the customer
+      let customer;
+      let customerType;
+
+      if (trip.customer_id) {
+        customer = trip.customer_id;
+        customerType = 'customer';
+      } else if (trip.collab_owner_id) {
+        customer = trip.collab_owner_id;
+        customerType = 'collaborator';
+      } else {
+        return; // Skip if no customer
+      }
+
+      const customerId = customer._id.toString();
+
+      // Create customer entry if doesn't exist
+      if (!customersMap[customerId]) {
+        customersMap[customerId] = {
+          customer_id: customerId,
+          customer_name: customer.name,
+          customer_type: customerType,
+          gst_number: customer.gst_number || 'Not Provided',
+          state: customer.state,
+          address: customer.address,
+          phone: customer.phone,
+          total_trips: 0,
+          taxable_value: 0,
+          total_cgst: 0,
+          total_sgst: 0,
+          total_igst: 0,
+          total_gst: 0,
+          total_amount: 0,
+          trips_by_material: {},
+          trips: []
+        };
+      }
+
+      // Get GST values from trip
+      const sgstPercentage = parseFloat(trip.gst_values?.SGST?.replace('%', '') || '0');
+      const cgstPercentage = parseFloat(trip.gst_values?.CGST?.replace('%', '') || '0');
+      const igstPercentage = parseFloat(trip.gst_values?.IGST?.replace('%', '') || '0');
+      const gstRate = sgstPercentage + cgstPercentage + igstPercentage;
+
+      // IMPORTANT: trip.customer_amount is WITH GST (total amount)
+      const totalAmount = trip.customer_amount; // This is 6600 (with GST)
+      
+      // Calculate taxable amount by removing GST
+      // Formula: Taxable Amount = Total Amount / (1 + GST Rate/100)
+      const taxableAmount = totalAmount / (1 + (gstRate / 100));
+      
+      // Calculate GST amount
+      const gstAmount = totalAmount - taxableAmount;
+
+      // Calculate individual GST amounts proportionally
+      const sgstAmount = (gstAmount * sgstPercentage) / gstRate;
+      const cgstAmount = (gstAmount * cgstPercentage) / gstRate;
+      const igstAmount = (gstAmount * igstPercentage) / gstRate;
+
+      // Update customer totals
+      customersMap[customerId].total_trips += 1;
+      customersMap[customerId].taxable_value += taxableAmount;
+      customersMap[customerId].total_cgst += cgstAmount;
+      customersMap[customerId].total_sgst += sgstAmount;
+      customersMap[customerId].total_igst += igstAmount;
+      customersMap[customerId].total_gst += gstAmount;
+      customersMap[customerId].total_amount += totalAmount;
+
+      // Group by material within customer
+      const materialKey = trip.material_name;
+      if (!customersMap[customerId].trips_by_material[materialKey]) {
+        customersMap[customerId].trips_by_material[materialKey] = {
+          material_name: trip.material_name,
+          total_quantity: 0,
+          total_amount: 0,
+          trips: []
+        };
+      }
+
+      customersMap[customerId].trips_by_material[materialKey].total_quantity += trip.no_of_unit_customer;
+      customersMap[customerId].trips_by_material[materialKey].total_amount += totalAmount;
+
+      // Add individual GST amounts to each trip
+      customersMap[customerId].trips_by_material[materialKey].trips.push({
+        trip_id: trip._id,
+        trip_number: trip.trip_number,
+        date: trip.trip_date,
+        quantity: trip.no_of_unit_customer,
+        taxable_amount: taxableAmount,
+        cgst_amount: cgstAmount,
+        sgst_amount: sgstAmount,
+        igst_amount: igstAmount,
+        gst_amount: gstAmount,
+        total_amount: totalAmount,
+        gst_rate: `${gstRate}%`,
+        cgst_rate: `${cgstPercentage}%`,
+        sgst_rate: `${sgstPercentage}%`,
+        igst_rate: `${igstPercentage}%`
+      });
+
+      // Also keep all trips with individual GST breakdown
+      customersMap[customerId].trips.push({
+        trip_id: trip._id,
+        trip_number: trip.trip_number,
+        date: trip.trip_date,
+        material: trip.material_name,
+        quantity: trip.no_of_unit_customer,
+        taxable_amount: taxableAmount,
+        cgst_amount: cgstAmount,
+        sgst_amount: sgstAmount,
+        igst_amount: igstAmount,
+        gst_amount: gstAmount,
+        total_amount: totalAmount,
+        gst_rate: `${gstRate}%`,
+        cgst_rate: `${cgstPercentage}%`,
+        sgst_rate: `${sgstPercentage}%`,
+        igst_rate: `${igstPercentage}%`
+      });
+    });
+
+    // Convert to array
+    const customers = Object.values(customersMap);
+
+    // 6. Calculate overall totals
+    let overallTotals = {
+      total_customers: customers.length,
+      total_trips: trips.length,
+      total_taxable_value: 0,
+      total_cgst: 0,
+      total_sgst: 0,
+      total_igst: 0,
+      total_gst_amount: 0,
+      total_invoice_amount: 0
+    };
+
+    customers.forEach(cust => {
+      overallTotals.total_taxable_value += cust.taxable_value;
+      overallTotals.total_cgst += cust.total_cgst;
+      overallTotals.total_sgst += cust.total_sgst;
+      overallTotals.total_igst += cust.total_igst;
+      overallTotals.total_gst_amount += cust.total_gst;
+      overallTotals.total_invoice_amount += cust.total_amount;
+    });
+
+    // 7. Prepare the response
+    const gstInvoiceData = {
+      invoice_type: 'GST_SUMMARY_INVOICE',
+      invoice_number: `GST-SUMMARY-${Date.now().toString().slice(-6)}`,
+      invoice_date: new Date().toISOString().split('T')[0],
+      from_date: from_date,
+      to_date: to_date,
+      period: `${new Date(from_date).toLocaleDateString('en-IN')} to ${new Date(to_date).toLocaleDateString('en-IN')}`,
+
+      // Your company details
+      company: {
+        name: owner.company_name || owner.name,
+        address: owner.address,
+        city: owner.city,
+        state: owner.state,
+        pincode: owner.pincode,
+        phone: owner.phone,
+        gst_number: owner.gst_number || 'Not Provided'
+      },
+
+      // Customers grouped data with GST breakdown
+      customers: customers.map(cust => ({
+        customer_id: cust.customer_id,
+        customer_name: cust.customer_name,
+        customer_type: cust.customer_type,
+        gst_number: cust.gst_number,
+        state: cust.state,
+        address: cust.address,
+        phone: cust.phone,
+        summary: {
+          total_trips: cust.total_trips,
+          taxable_value: cust.taxable_value.toFixed(2),
+          cgst_amount: cust.total_cgst.toFixed(2),
+          sgst_amount: cust.total_sgst.toFixed(2),
+          igst_amount: cust.total_igst.toFixed(2),
+          gst_amount: cust.total_gst.toFixed(2),
+          total_amount: cust.total_amount.toFixed(2)
+        },
+        materials: Object.values(cust.trips_by_material).map(mat => ({
+          material_name: mat.material_name,
+          total_quantity: mat.total_quantity.toFixed(2),
+          total_amount: mat.total_amount.toFixed(2),
+          trip_count: mat.trips.length
+        })),
+        // For detailed view with GST breakdown
+        trips: cust.trips.slice(0, 10)
+      })),
+
+      // Overall summary with GST breakdown
+      summary: {
+        total_customers: overallTotals.total_customers,
+        total_trips: overallTotals.total_trips,
+        total_taxable_value: overallTotals.total_taxable_value.toFixed(2),
+        total_cgst: overallTotals.total_cgst.toFixed(2),
+        total_sgst: overallTotals.total_sgst.toFixed(2),
+        total_igst: overallTotals.total_igst.toFixed(2),
+        total_gst_amount: overallTotals.total_gst_amount.toFixed(2),
+        total_invoice_amount: overallTotals.total_invoice_amount.toFixed(2)
+      }
+    };
+
+    return gstInvoiceData;
+
+  } catch (error) {
+    console.error('Error generating GST invoice:', error);
+    throw error;
+  }
+};
+
 module.exports = {
   createTrip,
   getAllTrips,
@@ -2765,7 +3018,8 @@ module.exports = {
   bulkSoftDeleteTrips,
   updateTripPricesForMultipleTrips,
   bulkUpdateTripStatus,
-  updateCollabTripStatus ,
+  updateCollabTripStatus,
   getCollaborationInvoiceData,
-  getCrusherInvoiceData 
+  getCrusherInvoiceData,
+  getGSTInvoiceData
 };

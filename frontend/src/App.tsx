@@ -58,6 +58,7 @@ import BunkPayments from './pages/Bunks/BunkPayments';
 import BunkPaymentForm from './pages/Bunks/BunkPaymentForm';
 import ProfilePage from './pages/ProfilePage';
 import CollaborationInvoiceGenerator from './pages/CollaborationInvoiceGenerator';
+import GSTInvoiceGenerator from './pages/GSTInvoiceGenerator';
 
 
 
@@ -101,6 +102,7 @@ function App() {
                       <Route path="/lorries/create" element={<OwnerRoute><ManageLorryForm /></OwnerRoute>} />
                       <Route path="/lorries/edit/:id" element={<OwnerRoute><ManageLorryForm /></OwnerRoute>} />
                       <Route path="/invoice" element={<OwnerRoute><InvoiceGenerator /></OwnerRoute>} />
+                      <Route path="/gst-invoice" element={<OwnerRoute><GSTInvoiceGenerator /></OwnerRoute>} />
                       <Route path="/proinvoice" element={<OwnerRoute><ProformaInvoiceGenerator /></OwnerRoute>} />
 
 

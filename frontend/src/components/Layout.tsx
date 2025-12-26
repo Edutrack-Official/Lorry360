@@ -32,7 +32,8 @@ import {
   Fuel,
   Building,
   User,
-  Store
+  Store,
+  Receipt
 } from "lucide-react";
 
 const RailTooltip: React.FC<{ label: string }> = ({ label }) => (
@@ -170,6 +171,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: "Bunks", href: "/bunks", icon: Fuel, roles: ["owner"], color: "amber" },
     { name: "Invoice", href: "/invoice", icon: FileCheck, roles: ["owner"], color: "cyan" },
     { name: "Proforma Invoice", href: "/proinvoice", icon: FileText, roles: ["owner"], color: "cyan" },
+    { name: "GST Invoice", href: "/gst-invoice", icon: Receipt, roles: ["owner"], color: "emerald" }
     // { name: "Settings", href: "/settings", icon: Settings, roles: ["owner"], color: "gray" },
 
   ];
