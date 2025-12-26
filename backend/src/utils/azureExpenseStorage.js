@@ -31,7 +31,7 @@ const getContainerClient = async () => {
 };
 
 // Upload expense proof to Azure Blob Storage
-const uploadExpenseProofToBlob = async (file, ownerId, expenseId = null) => {
+const uploadExpenseProofToBlob = async (file) => {
   if (!file || !file.buffer) {
     console.log('No file or buffer provided for upload');
     return null;
@@ -66,29 +66,20 @@ const uploadExpenseProofToBlob = async (file, ownerId, expenseId = null) => {
       fileExtension = mimeToExt[file.mimetype] || 'jpg';
     }
 
-    // Create blob path structure
-    let blobName;
-    if (expenseId) {
-      // If expenseId provided: ownerId/expenseId/timestamp-random.ext
-      blobName = `${ownerId}/${expenseId}/${timestamp}-${randomString}.${fileExtension}`;
-    } else {
-      // If no expenseId yet: ownerId/timestamp-random.ext
-      blobName = `${ownerId}/${timestamp}-${randomString}.${fileExtension}`;
-    }
-
-    // Clean blob name (remove any problematic characters)
-    blobName = blobName.replace(/[^a-zA-Z0-9\-._\/]/g, '-');
+    // Create simple blob name: timestamp-random.ext
+    const blobName = `${timestamp}-${randomString}.${fileExtension}`;
 
     const blockBlobClient = containerClient.getBlockBlobClient(blobName);
     
     // Determine content type
     const contentType = file.mimetype || 'application/octet-stream';
     
-    // Upload the file
+    // Upload the file with Cool tier
     await blockBlobClient.uploadData(file.buffer, {
       blobHTTPHeaders: { 
         blobContentType: contentType 
-      }
+      },
+      tier: 'Cool'
     });
 
     console.log(`✅ Expense proof uploaded: ${blobName}`);
@@ -125,6 +116,9 @@ const deleteExpenseProofFromBlob = async (proofUrl) => {
         } else {
           blobName = pathParts.join('/');
         }
+      } else {
+        // Only one part, that's the blob name
+        blobName = pathParts[0];
       }
     } else {
       // Assume it's just the blob name
@@ -159,14 +153,19 @@ const deleteExpenseProofFromBlob = async (proofUrl) => {
 const generateSasUrl = async (blobUrl, expiryInMinutes = 60) => {
   try {
     // Extract blob name from URL
-    const url = new URL(blobUrl);
-    const pathParts = url.pathname.split('/').filter(part => part);
-    
     let blobName;
-    if (pathParts[0] === EXPENSE_PROOFS_CONTAINER_NAME) {
-      blobName = pathParts.slice(1).join('/');
+    
+    if (blobUrl.includes('.blob.core.windows.net/')) {
+      const url = new URL(blobUrl);
+      const pathParts = url.pathname.split('/').filter(part => part);
+      
+      if (pathParts[0] === EXPENSE_PROOFS_CONTAINER_NAME) {
+        blobName = pathParts.slice(1).join('/');
+      } else {
+        blobName = pathParts.join('/');
+      }
     } else {
-      blobName = pathParts.join('/');
+      blobName = blobUrl;
     }
 
     if (!blobName) {
@@ -212,6 +211,10 @@ const blobExists = async (blobUrl) => {
 // Helper to extract blob name from URL
 const extractBlobName = (url) => {
   try {
+    if (!url.includes('://')) {
+      return url; // Already a blob name
+    }
+    
     const urlObj = new URL(url);
     const pathParts = urlObj.pathname.split('/').filter(part => part);
     
@@ -225,16 +228,14 @@ const extractBlobName = (url) => {
   }
 };
 
-// List all proofs for an owner (optional, for admin)
-const listOwnerProofs = async (ownerId) => {
+// List all proofs (for admin)
+const listAllProofs = async () => {
   try {
     const containerClient = await getContainerClient();
     const blobs = [];
     
-    // List blobs with prefix (ownerId/)
-    const prefix = `${ownerId}/`;
-    
-    for await (const blob of containerClient.listBlobsFlat({ prefix })) {
+    // List all blobs
+    for await (const blob of containerClient.listBlobsFlat()) {
       blobs.push({
         name: blob.name,
         url: `${containerClient.url}/${blob.name}`,
@@ -245,8 +246,59 @@ const listOwnerProofs = async (ownerId) => {
     
     return blobs;
   } catch (error) {
-    console.error('❌ Error listing owner proofs:', error.message);
+    console.error('❌ Error listing proofs:', error.message);
     throw new Error('Failed to list expense proofs');
+  }
+};
+
+// List proofs by filename pattern
+const listProofsByPattern = async (pattern) => {
+  try {
+    const containerClient = await getContainerClient();
+    const blobs = [];
+    
+    // List all blobs and filter by pattern
+    for await (const blob of containerClient.listBlobsFlat()) {
+      if (blob.name.includes(pattern)) {
+        blobs.push({
+          name: blob.name,
+          url: `${containerClient.url}/${blob.name}`,
+          size: blob.properties.contentLength,
+          lastModified: blob.properties.lastModified
+        });
+      }
+    }
+    
+    return blobs;
+  } catch (error) {
+    console.error('❌ Error listing proofs by pattern:', error.message);
+    throw new Error('Failed to list expense proofs');
+  }
+};
+
+// Get blob metadata
+const getBlobMetadata = async (blobUrl) => {
+  try {
+    const blobName = extractBlobName(blobUrl);
+    if (!blobName) return null;
+
+    const containerClient = await getContainerClient();
+    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+    
+    const properties = await blockBlobClient.getProperties();
+    
+    return {
+      name: blobName,
+      url: blockBlobClient.url,
+      size: properties.contentLength,
+      contentType: properties.contentType,
+      lastModified: properties.lastModified,
+      metadata: properties.metadata || {},
+      accessTier: properties.accessTier
+    };
+  } catch (error) {
+    console.error('❌ Error getting blob metadata:', error.message);
+    return null;
   }
 };
 
@@ -256,5 +308,7 @@ module.exports = {
   generateSasUrl,
   blobExists,
   extractBlobName,
-  listOwnerProofs
+  listAllProofs,
+  listProofsByPattern,
+  getBlobMetadata
 };
