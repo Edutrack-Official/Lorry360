@@ -198,14 +198,13 @@ const Login: React.FC = () => {
               
               <div className="w-full max-w-md relative z-10">
                 <div className="text-center mb-8">
-                  <h3 className="mb-3 text-3xl font-bold text-gray-900">
-                    Manage. Track. Optimize.
-                  </h3>
-                  <p className="text-gray-600">
-                    Monitor your fleet, track shipments, and optimize routes—all from one powerful dashboard.
-                  </p>
-                </div>
-
+  <h3 className="mb-2 text-3xl font-bold text-gray-900">
+    All-in-One Transport Solution
+  </h3>
+  <p className="text-gray-600">
+    Manage trips, drivers, customers and GST invoicing—all from one dashboard.
+  </p>
+</div>
               </div>
             </div>
           </div>

@@ -759,246 +759,252 @@ const GSTInvoiceGenerator = () => {
     });
   };
 
-  const downloadGSTInvoice = async () => {
-    if (!fromDate || !toDate) {
-      toast.error('Please select date range');
-      return;
+const downloadGSTInvoice = async () => {
+  if (!fromDate || !toDate) {
+    toast.error('Please select date range');
+    return;
+  }
+
+  if (new Date(fromDate) > new Date(toDate)) {
+    toast.error('From date cannot be after to date');
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    // Get GST invoice data from backend
+    const res = await api.get(
+      `/trips/gst-invoice-data?from_date=${fromDate}&to_date=${toDate}`
+    );
+
+    if (!res.data.success) {
+      throw new Error(res.data.error || 'Failed to generate GST invoice');
     }
 
-    if (new Date(fromDate) > new Date(toDate)) {
-      toast.error('From date cannot be after to date');
-      return;
-    }
+    const invoiceData = res.data.data;
+    
+    // Import html2pdf dynamically
+    const html2pdf = (await import('html2pdf.js')).default;
+    
+    // Get company data
+    const companyData = invoiceData?.company || {};
 
-    setLoading(true);
+    // Prepare invoice content with improved styling from other template
+    const invoiceContent = `
+      <div style="font-family: Arial, sans-serif; color: #000; width: 100%; box-sizing: border-box;">
+        <!-- Header Section with page break control and flex layout -->
+        <div style="margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 15px; page-break-inside: avoid; display: flex; justify-content: space-between; align-items: flex-start;">
+          <!-- Company Info - Left -->
+          <div style="display:flex; align-items:center; gap:18px; margin-bottom:8px;">
+            ${companyData?.logo ? `
+              <img 
+                src="${companyData.logo}" 
+                alt="Company Logo"
+                crossorigin="anonymous"
+                style="
+                  width:90px;
+                  height:70px;
+                  object-fit:contain;
+                  object-position: center top;
+                  display:block;
+                "
+              />
+            ` : ''}
 
-    try {
-      // Get GST invoice data from backend
-      const res = await api.get(
-        `/trips/gst-invoice-data?from_date=${fromDate}&to_date=${toDate}`
-      );
-
-      if (!res.data.success) {
-        throw new Error(res.data.error || 'Failed to generate GST invoice');
-      }
-
-      const invoiceData = res.data.data;
-      
-      // Import html2pdf dynamically
-      const html2pdf = (await import('html2pdf.js')).default;
-      
-      // Get company data
-      const companyData = invoiceData?.company || {};
-
-      // Prepare invoice content - EXACTLY as in your image
-      const invoiceContent = `
-        <div style="font-family: Arial, sans-serif; color: #000; width: 100%; box-sizing: border-box;">
-          <!-- Header Section -->
-           <div style="display:flex; align-items:center; gap:18px; margin-bottom:8px;">
-      ${companyData?.logo ? `
-        <img 
-          src="${companyData.logo}" 
-          alt="Company Logo"
-          crossorigin="anonymous"
-          style="
-            width:90px;
-            height:70px;
-            object-fit:contain;
-            object-position: center top;
-            display:block;
-          "
-        />
-      ` : ''}
-
-      <div style="line-height:1.25;">
-        <h1 style="margin:0; font-size:26px; font-weight:700;">
-          ${companyData.name}
-        </h1>
-        <p style="margin:6px 0 2px 0; font-size:14px; color:#333;">
-          ${companyData.address}
-        </p>
-        ${companyData.city || companyData.state || companyData.pincode ? `
-          <p style="margin:2px 0; font-size:14px; color:#333;">
-            ${companyData.city || ''}${companyData.state ? ', ' + companyData.state : ''}${companyData.pincode ? ' - ' + companyData.pincode : ''}
-          </p>
-        ` : ''}
-        <p style="margin:0 0 2px 0; font-size:14px; color:#333;">
-          CONTACT: ${companyData.phone} ${companyData.email ? '| EMAIL: ' + companyData.email : ''}
-        </p>
-        ${companyData.gst_number ? `
-          <p style="margin:4px 0 0 0; font-size:14px; color:#333; font-weight:700;">
-            GSTIN: ${companyData.gst_number}
-          </p>
-        ` : ''}
-      </div>
-    </div>
-  </div>
-            
-            <!-- Invoice Header - Right Aligned -->
-            <div style="text-align: right; margin-top: -100px;">
-              <h2 style="font-size: 28px; font-weight: bold; margin: 0; color: #333; text-transform: uppercase;">
-                GST INVOICE
-              </h2>
-              <p style="margin: 4px 0; font-size: 13px;">
+            <div style="line-height:1.25;">
+              <h1 style="margin:0; font-size:26px; font-weight:700;">
+                ${companyData.name}
+              </h1>
+              <p style="margin:6px 0 2px 0; font-size:14px; color:#333;">
+                ${companyData.address}
+              </p>
+              ${companyData.city || companyData.state || companyData.pincode ? `
+                <p style="margin:2px 0; font-size:14px; color:#333;">
+                  ${companyData.city || ''}${companyData.state ? ', ' + companyData.state : ''}${companyData.pincode ? ' - ' + companyData.pincode : ''}
+                </p>
+              ` : ''}
+              <p style="margin:0 0 2px 0; font-size:14px; color:#333;">
+                CONTACT: ${companyData.phone} ${companyData.email ? '| EMAIL: ' + companyData.email : ''}
+              </p>
+              ${companyData.gst_number ? `
+                <p style="margin:4px 0 0 0; font-size:14px; color:#333; font-weight:700;">
+                  GSTIN: ${companyData.gst_number}
+                </p>
+              ` : ''}
+            </div>
+          </div>
+          
+          <!-- GST Invoice Header - Right -->
+          <div style="text-align: right;">
+            <h2 style="font-size: 32px; font-weight: bold; margin: 0; color: #333; text-transform: uppercase;">
+              GST INVOICE
+            </h2>
+            <div style="margin-top: 10px; font-size: 13px;">
+              <p style="margin: 4px 0;">
                 <strong>Invoice Type:</strong> Tax Invoice (GTA)
               </p>
-              <p style="margin: 4px 0; font-size: 13px;">
+              <p style="margin: 4px 0;">
                 <strong>Place of Supply:</strong> Tamil Nadu
               </p>
-              <p style="margin: 4px 0; font-size: 13px;">
+              <p style="margin: 4px 0;">
                 <strong>Period:</strong> ${new Date(fromDate).toLocaleDateString('en-GB')} to ${new Date(toDate).toLocaleDateString('en-GB')}
               </p>
               ${invoiceData?.invoice_number ? `
-                <p style="margin: 4px 0; font-size: 13px;">
+                <p style="margin: 4px 0;">
                   <strong>Invoice No:</strong> ${invoiceData.invoice_number}
                 </p>
               ` : ''}
             </div>
-            
-            <!-- Horizontal Line -->
-            <div style="border-bottom: 2px solid #000; margin: 20px 0;"></div>
-          </div>
-
-          <!-- GST Rate Notice -->
-          <div style="margin-bottom: 15px; padding: 8px; background-color: #f0f8ff; border-left: 4px solid #007bff;">
-            <p style="margin: 0; font-size: 12px; font-weight: bold;">
-              GST @ 5% under GTA services (SAC 9965)
-            </p>
-          </div>
-
-          <!-- GST Table -->
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 10px;">
-            <thead>
-              <tr style="background-color: #f8f9fa;">
-                <th style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold;">S.No</th>
-                <th style="border: 1px solid #000; padding: 8px; font-weight: bold;">Customer Name</th>
-                <th style="border: 1px solid #000; padding: 8px; font-weight: bold;">Description</th>
-                <th style="border: 1px solid #000; padding: 8px; text-align: right; font-weight: bold;">Quantity (Trips)</th>
-                <th style="border: 1px solid #000; padding: 8px; text-align: right; font-weight: bold;">Taxable Value (₹)</th>
-                <th style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold;">GST Rate</th>
-                <th style="border: 1px solid #000; padding: 8px; text-align: right; font-weight: bold;">CGST @ 2.5% (₹)</th>
-                <th style="border: 1px solid #000; padding: 8px; text-align: right; font-weight: bold;">SGST @ 2.5% (₹)</th>
-                <th style="border: 1px solid #000; padding: 8px; text-align: right; font-weight: bold;">IGST (₹)</th>
-                <th style="border: 1px solid #000; padding: 8px; text-align: right; font-weight: bold;">Total (₹)</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${invoiceData.gst_table_rows && invoiceData.gst_table_rows.length > 0 
-                ? invoiceData.gst_table_rows.map((row, index) => `
-                  <tr>
-                    <td style="border: 1px solid #000; padding: 6px; text-align: center;">${index + 1}</td>
-                    <td style="border: 1px solid #000; padding: 6px; font-weight: bold;">${row.customer_name}</td>
-                    <td style="border: 1px solid #000; padding: 6px;">${row.description}</td>
-                    <td style="border: 1px solid #000; padding: 6px; text-align: right;">${row.quantity}</td>
-                    <td style="border: 1px solid #000; padding: 6px; text-align: right;">${formatCurrency(row.taxable_value)}</td>
-                    <td style="border: 1px solid #000; padding: 6px; text-align: center;">${row.gst_rate}</td>
-                    <td style="border: 1px solid #000; padding: 6px; text-align: right;">${formatCurrency(row.cgst_amount)}</td>
-                    <td style="border: 1px solid #000; padding: 6px; text-align: right;">${formatCurrency(row.sgst_amount)}</td>
-                    <td style="border: 1px solid #000; padding: 6px; text-align: right;">${formatCurrency(row.igst_amount)}</td>
-                    <td style="border: 1px solid #000; padding: 6px; text-align: right; font-weight: bold;">${formatCurrency(row.total_amount)}</td>
-                  </tr>
-                `).join('')
-                : `
-                  <tr>
-                    <td colspan="12" style="border: 1px solid #000; padding: 12px; text-align: center; font-style: italic;">
-                      No GST trips found in selected period
-                    </td>
-                  </tr>
-                `
-              }
-            </tbody>
-          </table>
-
-          <!-- Summary Section -->
-          <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #000; background-color: #f8f9fa;">
-            <h3 style="margin: 0 0 15px 0; font-size: 16px; font-weight: bold;">Invoice Summary</h3>
-            <table style="width: 100%; font-size: 13px;">
-              <tr>
-                <td style="padding: 5px 0;"><strong>Total Customers:</strong></td>
-                <td style="padding: 5px 0; text-align: right;">${invoiceData.summary?.total_customers || 0}</td>
-              </tr>
-              <tr>
-                <td style="padding: 5px 0;"><strong>Total Trips:</strong></td>
-                <td style="padding: 5px 0; text-align: right;">${invoiceData.summary?.total_trips || 0}</td>
-              </tr>
-              <tr>
-                <td style="padding: 5px 0;"><strong>Total Taxable Value:</strong></td>
-                <td style="padding: 5px 0; text-align: right;">₹${formatCurrency(invoiceData.summary?.total_taxable_value)}</td>
-              </tr>
-              <tr>
-                <td style="padding: 5px 0;"><strong>Total CGST @ 2.5%:</strong></td>
-                <td style="padding: 5px 0; text-align: right;">₹${formatCurrency(invoiceData.summary?.total_cgst)}</td>
-              </tr>
-              <tr>
-                <td style="padding: 5px 0;"><strong>Total SGST @ 2.5%:</strong></td>
-                <td style="padding: 5px 0; text-align: right;">₹${formatCurrency(invoiceData.summary?.total_sgst)}</td>
-              </tr>
-              <tr>
-                <td style="padding: 5px 0;"><strong>Total IGST:</strong></td>
-                <td style="padding: 5px 0; text-align: right;">₹${formatCurrency(invoiceData.summary?.total_igst)}</td>
-              </tr>
-              <tr>
-                <td style="padding: 5px 0;"><strong>Total GST:</strong></td>
-                <td style="padding: 5px 0; text-align: right;">₹${formatCurrency(invoiceData.summary?.total_gst)}</td>
-              </tr>
-              <tr style="border-top: 2px solid #000;">
-                <td style="padding: 8px 0;"><strong>Grand Total (Taxable + GST):</strong></td>
-                <td style="padding: 8px 0; text-align: right; font-weight: bold; font-size: 16px;">
-                  ₹${formatCurrency(invoiceData.summary?.grand_total)}
-                </td>
-              </tr>
-            </table>
-          </div>
-
-          <!-- Legal Footer -->
-          <div style="margin-top: 30px; padding: 15px; border-top: 2px solid #000; text-align: center; font-size: 11px; color: #333; background-color: #f9f9f9;">
-            <p style="margin: 5px 0; font-weight: bold;">
-              This is a computer generated GST Tax Invoice.
-            </p>
-            <p style="margin: 5px 0;">
-              GST charged as per applicable GTA services under SAC 9965.
-            </p>
-            <p style="margin: 5px 0;">
-              Generated on ${new Date().toLocaleDateString('en-GB')} | Consolidated GST Invoice for multiple customers
-            </p>
           </div>
         </div>
-      `;
 
-      // Create HTML element
-      const element = document.createElement('div');
-      element.innerHTML = invoiceContent;
+        <!-- GST Rate Notice with page break control -->
+        <div style="margin-bottom: 15px; padding: 8px; background-color: #f0f8ff; border-left: 4px solid #007bff; page-break-inside: avoid;">
+          <p style="margin: 0; font-size: 13px; font-weight: bold;">
+            GST @ 5% under GTA services (SAC 9965)
+          </p>
+        </div>
 
-      // PDF options
-      const opt = {
-        margin: [10, 10, 10, 10],
-        filename: `GST_Invoice_${fromDate}_to_${toDate}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          letterRendering: true,
-          width: 1120,
-        },
-        jsPDF: {
-          unit: 'mm',
-          format: 'a4',
-          orientation: 'landscape'
-        }
-      };
+        <!-- GST Table with improved styling and page break control -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; page-break-inside: avoid;">
+          <thead style="display: table-header-group;">
+            <tr style="background-color: #f8f9fa;">
+              <th style="border: 1px solid #000; padding: 10px 8px; text-align: center; font-weight: bold; font-size: 12px;">S.No</th>
+              <th style="border: 1px solid #000; padding: 10px 8px; text-align: left; font-weight: bold; font-size: 12px;">Customer Name</th>
+              <th style="border: 1px solid #000; padding: 10px 8px; text-align: left; font-weight: bold; font-size: 12px;">Description</th>
+              <th style="border: 1px solid #000; padding: 10px 8px; text-align: right; font-weight: bold; font-size: 12px;">Quantity (Trips)</th>
+              <th style="border: 1px solid #000; padding: 10px 8px; text-align: right; font-weight: bold; font-size: 12px;">Taxable Value (₹)</th>
+              <th style="border: 1px solid #000; padding: 10px 8px; text-align: center; font-weight: bold; font-size: 12px;">GST Rate</th>
+              <th style="border: 1px solid #000; padding: 10px 8px; text-align: right; font-weight: bold; font-size: 12px;">CGST @ 2.5% (₹)</th>
+              <th style="border: 1px solid #000; padding: 10px 8px; text-align: right; font-weight: bold; font-size: 12px;">SGST @ 2.5% (₹)</th>
+              <th style="border: 1px solid #000; padding: 10px 8px; text-align: right; font-weight: bold; font-size: 12px;">IGST (₹)</th>
+              <th style="border: 1px solid #000; padding: 10px 8px; text-align: right; font-weight: bold; font-size: 12px;">Total (₹)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${invoiceData.gst_table_rows && invoiceData.gst_table_rows.length > 0 
+              ? invoiceData.gst_table_rows.map((row, index) => `
+                <tr style="page-break-inside: avoid;">
+                  <td style="border: 1px solid #000; padding: 9px 8px; text-align: center; font-size: 12px;">${index + 1}</td>
+                  <td style="border: 1px solid #000; padding: 9px 8px; text-align: left; font-weight: bold; font-size: 12px;">${row.customer_name}</td>
+                  <td style="border: 1px solid #000; padding: 9px 8px; text-align: left; font-size: 12px;">${row.description}</td>
+                  <td style="border: 1px solid #000; padding: 9px 8px; text-align: right; font-size: 12px;">${row.quantity}</td>
+                  <td style="border: 1px solid #000; padding: 9px 8px; text-align: right; font-size: 12px;">${formatCurrency(row.taxable_value)}</td>
+                  <td style="border: 1px solid #000; padding: 9px 8px; text-align: center; font-size: 12px;">${row.gst_rate}</td>
+                  <td style="border: 1px solid #000; padding: 9px 8px; text-align: right; font-size: 12px;">${formatCurrency(row.cgst_amount)}</td>
+                  <td style="border: 1px solid #000; padding: 9px 8px; text-align: right; font-size: 12px;">${formatCurrency(row.sgst_amount)}</td>
+                  <td style="border: 1px solid #000; padding: 9px 8px; text-align: right; font-size: 12px;">${formatCurrency(row.igst_amount)}</td>
+                  <td style="border: 1px solid #000; padding: 9px 8px; text-align: right; font-weight: bold; font-size: 12px;">${formatCurrency(row.total_amount)}</td>
+                </tr>
+              `).join('')
+              : `
+                <tr style="page-break-inside: avoid;">
+                  <td colspan="10" style="border: 1px solid #000; padding: 12px; text-align: center; font-style: italic; font-size: 12px;">
+                    No GST trips found in selected period
+                  </td>
+                </tr>
+              `
+            }
+          </tbody>
+        </table>
 
-      // Generate and download PDF
-      await html2pdf().set(opt).from(element).save();
-      
-      toast.success('GST Invoice downloaded successfully!');
+        <!-- Summary Section with page break control -->
+        <div style="margin-bottom: 20px; padding: 15px; border: 1px solid #000; background-color: #f8f9fa; page-break-inside: avoid;">
+          <h3 style="margin: 0 0 15px 0; font-size: 16px; font-weight: bold;">Invoice Summary</h3>
+          <table style="width: 100%; font-size: 13px;">
+            <tr>
+              <td style="padding: 8px 0;"><strong>Total Customers:</strong></td>
+              <td style="padding: 8px 0; text-align: right;">${invoiceData.summary?.total_customers || 0}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Total Trips:</strong></td>
+              <td style="padding: 8px 0; text-align: right;">${invoiceData.summary?.total_trips || 0}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Total Taxable Value:</strong></td>
+              <td style="padding: 8px 0; text-align: right;">₹${formatCurrency(invoiceData.summary?.total_taxable_value)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Total CGST @ 2.5%:</strong></td>
+              <td style="padding: 8px 0; text-align: right;">₹${formatCurrency(invoiceData.summary?.total_cgst)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Total SGST @ 2.5%:</strong></td>
+              <td style="padding: 8px 0; text-align: right;">₹${formatCurrency(invoiceData.summary?.total_sgst)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Total IGST:</strong></td>
+              <td style="padding: 8px 0; text-align: right;">₹${formatCurrency(invoiceData.summary?.total_igst)}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;"><strong>Total GST:</strong></td>
+              <td style="padding: 8px 0; text-align: right;">₹${formatCurrency(invoiceData.summary?.total_gst)}</td>
+            </tr>
+            <tr style="border-top: 2px solid #000;">
+              <td style="padding: 12px 0;"><strong>Grand Total (Taxable + GST):</strong></td>
+              <td style="padding: 12px 0; text-align: right; font-weight: bold; font-size: 16px;">
+                ₹${formatCurrency(invoiceData.summary?.grand_total)}
+              </td>
+            </tr>
+          </table>
+        </div>
 
-    } catch (error) {
-      console.error('Error generating GST invoice:', error);
-      toast.error(error.response?.data?.error || 'Failed to generate GST invoice');
-    } finally {
-      setLoading(false);
-    }
-  };
+        <!-- Legal Footer with page break control -->
+        <div style="margin-top: 30px; padding: 15px; border-top: 2px solid #000; text-align: center; font-size: 11px; color: #333; background-color: #f9f9f9; page-break-inside: avoid;">
+          <p style="margin: 5px 0; font-weight: bold;">
+            This is a computer generated GST Tax Invoice.
+          </p>
+          <p style="margin: 5px 0;">
+            GST charged as per applicable GTA services under SAC 9965.
+          </p>
+          <p style="margin: 5px 0;">
+            Generated on ${new Date().toLocaleDateString('en-GB')} | Consolidated GST Invoice for multiple customers
+          </p>
+        </div>
+      </div>
+    `;
+
+    // Create HTML element
+    const element = document.createElement('div');
+    element.innerHTML = invoiceContent;
+
+    // PDF options with page break handling
+    const opt = {
+      margin: [10, 10, 10, 10],
+      filename: `GST_Invoice_${fromDate}_to_${toDate}.pdf`,
+      image: { 
+        type: 'jpeg', 
+        quality: 0.98 
+      },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        letterRendering: true
+      },
+      jsPDF: {
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'landscape'
+      },
+      pagebreak: {
+        mode: ['css', 'legacy'],
+        avoid: 'tr'
+      }
+    };
+
+    // Generate and download PDF
+    await html2pdf().set(opt).from(element).save();
+    
+    toast.success('GST Invoice downloaded successfully!');
+
+  } catch (error) {
+    console.error('Error generating GST invoice:', error);
+    toast.error(error.response?.data?.error || 'Failed to generate GST invoice');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="max-w-6xl mx-auto p-6">
