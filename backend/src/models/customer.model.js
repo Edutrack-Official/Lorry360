@@ -18,7 +18,11 @@ const customerSchema = new mongoose.Schema({
     required: [true, 'Phone number is required'],
     match: [/^\+91-?\d{10}$/, 'Phone must be in format +91-xxxxxxxxxx']
   },
-  
+    gst_number: {
+    type: String,
+    default: null,
+    trim: true,
+  },
   address: {
     type: String,
     required: [true, 'Address is required'],

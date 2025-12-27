@@ -29,6 +29,7 @@ interface Customer {
   phone: string;
   address: string;
   site_addresses: string[];
+  gst_number?: string | null;
   isActive: boolean;
   owner_id: {
     _id: string;
@@ -425,90 +426,101 @@ const Customers = () => {
       </div>
 
       {/* Customer Details Modal */}
-      <AnimatePresence>
-        {selectedCustomer && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-            onClick={() => setSelectedCustomer(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-             <div className="p-4 sm:p-6">
-  <div className="flex items-start justify-between mb-4 sm:mb-6">
-    <div className="flex items-start gap-2 sm:gap-3 flex-1">
-      <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg flex-shrink-0">
-        <User className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-base sm:text-lg font-bold text-gray-900 break-words">
-            {selectedCustomer.name}
-          </h3>
-          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusConfig(selectedCustomer.isActive).color}`}>
-            {getStatusConfig(selectedCustomer.isActive).label}
-          </span>
-        </div>
-      </div>
-    </div>
-    <button
+ <AnimatePresence>
+  {selectedCustomer && (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
       onClick={() => setSelectedCustomer(null)}
-      className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0 ml-2"
     >
-      ✕
-    </button>
-  </div>
-
-  <div className="space-y-4">
-    {/* Contact Information */}
-    <div className="space-y-2.5">
-      <h4 className="text-xs sm:text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
-        Contact Information
-      </h4>
-
-      <div className="flex items-center gap-2 text-sm text-gray-900">
-        <Phone className="h-4 w-4 text-gray-400 flex-shrink-0" />
-        <span className="break-all">{selectedCustomer.phone}</span>
-      </div>
-
-      <div className="flex items-start gap-2 text-sm text-gray-900">
-        <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
-        <span className="break-words">{selectedCustomer.address}</span>
-      </div>
-    </div>
-
-    {/* Site Addresses */}
-    {selectedCustomer.site_addresses.length > 0 && (
-      <div>
-        <h4 className="text-xs sm:text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2 mb-2.5">
-          Site Addresses ({selectedCustomer.site_addresses.length})
-        </h4>
-        <div className="space-y-2">
-          {selectedCustomer.site_addresses.map((site, index) => (
-            <div
-              key={index}
-              className="flex items-start gap-2 p-2.5 bg-gray-50 rounded-lg border border-gray-200"
-            >
-              <MapPin className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
-              <span className="text-xs sm:text-sm text-gray-700 break-words">{site}</span>
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-4 sm:p-6">
+          <div className="flex items-start justify-between mb-4 sm:mb-6">
+            <div className="flex items-start gap-2 sm:gap-3 flex-1">
+              <div className="p-1.5 sm:p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                <User className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 break-words">
+                    {selectedCustomer.name}
+                  </h3>
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusConfig(selectedCustomer.isActive).color}`}>
+                    {getStatusConfig(selectedCustomer.isActive).label}
+                  </span>
+                </div>
+              </div>
             </div>
-          ))}
+            <button
+              onClick={() => setSelectedCustomer(null)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0 ml-2"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {/* Contact Information */}
+            <div className="space-y-2.5">
+              <h4 className="text-xs sm:text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2">
+                Contact Information
+              </h4>
+
+              <div className="flex items-center gap-2 text-sm text-gray-900">
+                <Phone className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                <span className="break-all">{selectedCustomer.phone}</span>
+              </div>
+
+              <div className="flex items-start gap-2 text-sm text-gray-900">
+                <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                <span className="break-words">{selectedCustomer.address}</span>
+              </div>
+
+              {/* GST Number - SIMPLE ADDITION */}
+              {selectedCustomer.gst_number && (
+                <div className="flex items-center gap-2 text-sm text-gray-900">
+                  <svg className="h-4 w-4 text-green-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span className="font-medium">GSTIN:</span>
+                  <span className="text-green-700 font-mono">{selectedCustomer.gst_number}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Site Addresses */}
+            {selectedCustomer.site_addresses.length > 0 && (
+              <div>
+                <h4 className="text-xs sm:text-sm font-semibold text-gray-900 border-b border-gray-200 pb-2 mb-2.5">
+                  Site Addresses ({selectedCustomer.site_addresses.length})
+                </h4>
+                <div className="space-y-2">
+                  {selectedCustomer.site_addresses.map((site, index) => (
+                    <div
+                      key={index}
+                      className="flex items-start gap-2 p-2.5 bg-gray-50 rounded-lg border border-gray-200"
+                    >
+                      <MapPin className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-xs sm:text-sm text-gray-700 break-words">{site}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    )}
-  </div>
-</div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
 
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal

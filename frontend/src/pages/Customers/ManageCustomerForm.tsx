@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 import FloatingInput from "../../components/FloatingInput";
-import { User, MapPin, Plus, X } from "lucide-react";
+import { User, MapPin, Plus, X, Hash } from "lucide-react";
 import api from "../../api/client";
 import BackButton from "../../components/BackButton";
 
@@ -10,6 +10,7 @@ interface FormData {
   name: string;
   phone: string;
   address: string;
+  gst_number: string;
   site_addresses: string[];
 }
 
@@ -17,12 +18,14 @@ interface FormErrors {
   name?: string;
   phone?: string;
   address?: string;
+  gst_number?: string;
 }
 
 const initialFormData: FormData = {
   name: "",
   phone: "+91-",
   address: "",
+  gst_number: "",
   site_addresses: [],
 };
 
@@ -48,6 +51,7 @@ const ManageCustomerForm: React.FC = () => {
             name: customerData.name || "",
             phone: customerData.phone || "+91-",
             address: customerData.address || "",
+            gst_number: customerData.gst_number || "",
             site_addresses: customerData.site_addresses || [],
           });
         })
@@ -79,6 +83,16 @@ const ManageCustomerForm: React.FC = () => {
       newErrors.address = "Address must be at least 5 characters";
     }
 
+    // Validate GST number if provided
+    if (formData.gst_number.trim()) {
+      const cleanedGst = formData.gst_number.trim().toUpperCase().replace(/\s/g, '');
+      const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[Z]{1}[0-9A-Z]{1}$/;
+      
+      if (!gstRegex.test(cleanedGst)) {
+        newErrors.gst_number = "Invalid GSTIN format. Example: 33AAAAA0000A1Z5";
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -101,6 +115,13 @@ const ManageCustomerForm: React.FC = () => {
       const digits = formattedValue.slice(4).replace(/\D/g, "").slice(0, 10);
       formattedValue = "+91-" + digits;
 
+      setFormData((prev) => ({
+        ...prev,
+        [name]: formattedValue,
+      }));
+    } else if (name === "gst_number") {
+      // Auto-uppercase GST number and remove spaces
+      const formattedValue = value.toUpperCase().replace(/\s/g, '');
       setFormData((prev) => ({
         ...prev,
         [name]: formattedValue,
@@ -211,6 +232,23 @@ const ManageCustomerForm: React.FC = () => {
               )}
               <p className="mt-1 text-xs text-gray-500">
                 Format: +91 followed by 10-digit phone number
+              </p>
+            </div>
+
+            {/* GST Number */}
+            <div className="md:col-span-2">
+              <FloatingInput
+                type="text"
+                name="gst_number"
+                value={formData.gst_number}
+                onChange={handleChange}
+                label="GST Number (Optional)"
+              />
+              {errors.gst_number && (
+                <p className="mt-1 text-sm text-red-600">{errors.gst_number}</p>
+              )}
+              <p className="mt-1 text-xs text-gray-500">
+                Enter 15-digit GSTIN. Example: 33AAAAA0000A1Z5
               </p>
             </div>
 

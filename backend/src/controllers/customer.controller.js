@@ -7,7 +7,8 @@ const createCustomer = async (customerData) => {
     name,
     phone,
     address,
-    site_addresses
+    site_addresses,
+    gst_number
   } = customerData;
 
   if (!owner_id || !name || !phone || !address) {
@@ -16,11 +17,27 @@ const createCustomer = async (customerData) => {
     throw err;
   }
 
+  // Validate GST number if provided
+  if (gst_number) {
+    // Remove spaces and convert to uppercase
+    const cleanedGst = gst_number.trim().toUpperCase().replace(/\s/g, '');
+    
+    // Basic GSTIN format validation
+    const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[Z]{1}[0-9A-Z]{1}$/;
+    
+    if (!gstRegex.test(cleanedGst)) {
+      const err = new Error('Invalid GSTIN format. Example: 33AAAAA0000A1Z5');
+      err.status = 400;
+      throw err;
+    }
+  }
+
   const newCustomer = new Customer({
     owner_id,
     name,
     phone,
     address,
+    gst_number: gst_number ? gst_number.trim().toUpperCase() : null,
     site_addresses: site_addresses || []
   });
 
@@ -28,11 +45,51 @@ const createCustomer = async (customerData) => {
   return newCustomer;
 };
 
-const getAllCustomers = async (owner_id) => {
-  const customers = await Customer.find({ owner_id }).sort({ createdAt: -1 });
+const getAllCustomers = async (owner_id, options = {}) => {
+  const { 
+    search = '', 
+    page = 1, 
+    limit = 20,
+    gst_filter = 'all' // 'all', 'with_gst', 'without_gst'
+  } = options;
+
+  const query = { owner_id };
+
+  // Search functionality
+  if (search) {
+    query.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { phone: { $regex: search, $options: 'i' } },
+      { address: { $regex: search, $options: 'i' } }
+    ];
+  }
+
+  // GST filter
+  if (gst_filter === 'with_gst') {
+    query.gst_number = { $ne: null, $ne: '' };
+  } else if (gst_filter === 'without_gst') {
+    query.$or = [
+      { gst_number: null },
+      { gst_number: '' }
+    ];
+  }
+
+  const skip = (page - 1) * limit;
+
+  const [customers, total] = await Promise.all([
+    Customer.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .select('name phone address gst_number site_addresses isActive createdAt'),
+    Customer.countDocuments(query)
+  ]);
 
   return {
     count: customers.length,
+    total,
+    page: parseInt(page),
+    totalPages: Math.ceil(total / limit),
     customers
   };
 };
@@ -49,6 +106,25 @@ const getCustomerById = async (id, owner_id) => {
 };
 
 const updateCustomer = async (id, owner_id, updateData) => {
+  // Validate GST number if being updated
+  if (updateData.gst_number !== undefined) {
+    if (updateData.gst_number) {
+      const cleanedGst = updateData.gst_number.trim().toUpperCase().replace(/\s/g, '');
+      
+      const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[Z]{1}[0-9A-Z]{1}$/;
+      
+      if (!gstRegex.test(cleanedGst)) {
+        const err = new Error('Invalid GSTIN format. Example: 33AAAAA0000A1Z5');
+        err.status = 400;
+        throw err;
+      }
+      
+      updateData.gst_number = cleanedGst;
+    } else {
+      updateData.gst_number = null;
+    }
+  }
+
   const updatedCustomer = await Customer.findOneAndUpdate(
     { _id: id, owner_id },
     updateData,
@@ -119,6 +195,8 @@ const removeSiteAddress = async (id, owner_id, siteAddress) => {
 
   return customer;
 };
+
+
 
 module.exports = {  
   createCustomer,

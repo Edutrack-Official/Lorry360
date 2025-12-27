@@ -2746,201 +2746,443 @@ const getCrusherInvoiceData = async (owner_id, crusher_id, from_date, to_date, i
   }
 };
 
+// const getGSTInvoiceData = async (owner_id, from_date, to_date, customer_id = null) => {
+//   try {
+//     // 1. Get owner details
+//     const owner = await User.findById(owner_id).select('name company_name address city state pincode phone gst_number');
+
+//     if (!owner) {
+//       throw new Error('Owner not found');
+//     }
+
+//     // 2. Build query for GST trips
+//     const tripsQuery = {
+//       owner_id,
+//       include_gst: true, // ONLY GST trips
+//       isActive: true,
+//       trip_date: {
+//         $gte: new Date(from_date),
+//         $lte: new Date(to_date)
+//       },
+//       status: { $in: ['delivered', 'completed'] }
+//     };
+
+//     // 3. If specific customer is provided, filter by that customer
+//     if (customer_id) {
+//       tripsQuery.customer_id = customer_id;
+//     }
+
+//     // 4. Get all GST trips in date range
+//     const trips = await Trip.find(tripsQuery)
+//       .populate('customer_id', 'name gst_number state address phone')
+//       .populate('collab_owner_id', 'name gst_number state address phone')
+//       .sort({ trip_date: 1 });
+
+//     if (trips.length === 0) {
+//       throw new Error('No GST trips found in the specified date range');
+//     }
+
+//     // 5. GROUP TRIPS BY CUSTOMER
+//     const customersMap = {};
+
+//     trips.forEach(trip => {
+//       // Determine who is the customer
+//       let customer;
+//       let customerType;
+
+//       if (trip.customer_id) {
+//         customer = trip.customer_id;
+//         customerType = 'customer';
+//       } else if (trip.collab_owner_id) {
+//         customer = trip.collab_owner_id;
+//         customerType = 'collaborator';
+//       } else {
+//         return; // Skip if no customer
+//       }
+
+//       const customerId = customer._id.toString();
+
+//       // Create customer entry if doesn't exist
+//       if (!customersMap[customerId]) {
+//         customersMap[customerId] = {
+//           customer_id: customerId,
+//           customer_name: customer.name,
+//           customer_type: customerType,
+//           gst_number: customer.gst_number || 'Not Provided',
+//           state: customer.state,
+//           address: customer.address,
+//           phone: customer.phone,
+//           total_trips: 0,
+//           taxable_value: 0,
+//           total_cgst: 0,
+//           total_sgst: 0,
+//           total_igst: 0,
+//           total_gst: 0,
+//           total_amount: 0,
+//           trips_by_material: {},
+//           trips: []
+//         };
+//       }
+
+//       // Get GST values from trip
+//       const sgstPercentage = parseFloat(trip.gst_values?.SGST?.replace('%', '') || '0');
+//       const cgstPercentage = parseFloat(trip.gst_values?.CGST?.replace('%', '') || '0');
+//       const igstPercentage = parseFloat(trip.gst_values?.IGST?.replace('%', '') || '0');
+//       const gstRate = sgstPercentage + cgstPercentage + igstPercentage;
+
+//       // IMPORTANT: trip.customer_amount is WITH GST (total amount)
+//       const totalAmount = trip.customer_amount; // This is 6600 (with GST)
+      
+//       // Calculate taxable amount by removing GST
+//       // Formula: Taxable Amount = Total Amount / (1 + GST Rate/100)
+//       const taxableAmount = totalAmount / (1 + (gstRate / 100));
+      
+//       // Calculate GST amount
+//       const gstAmount = totalAmount - taxableAmount;
+
+//       // Calculate individual GST amounts proportionally
+//       const sgstAmount = (gstAmount * sgstPercentage) / gstRate;
+//       const cgstAmount = (gstAmount * cgstPercentage) / gstRate;
+//       const igstAmount = (gstAmount * igstPercentage) / gstRate;
+
+//       // Update customer totals
+//       customersMap[customerId].total_trips += 1;
+//       customersMap[customerId].taxable_value += taxableAmount;
+//       customersMap[customerId].total_cgst += cgstAmount;
+//       customersMap[customerId].total_sgst += sgstAmount;
+//       customersMap[customerId].total_igst += igstAmount;
+//       customersMap[customerId].total_gst += gstAmount;
+//       customersMap[customerId].total_amount += totalAmount;
+
+//       // Group by material within customer
+//       const materialKey = trip.material_name;
+//       if (!customersMap[customerId].trips_by_material[materialKey]) {
+//         customersMap[customerId].trips_by_material[materialKey] = {
+//           material_name: trip.material_name,
+//           total_quantity: 0,
+//           total_amount: 0,
+//           trips: []
+//         };
+//       }
+
+//       customersMap[customerId].trips_by_material[materialKey].total_quantity += trip.no_of_unit_customer;
+//       customersMap[customerId].trips_by_material[materialKey].total_amount += totalAmount;
+
+//       // Add individual GST amounts to each trip
+//       customersMap[customerId].trips_by_material[materialKey].trips.push({
+//         trip_id: trip._id,
+//         trip_number: trip.trip_number,
+//         date: trip.trip_date,
+//         quantity: trip.no_of_unit_customer,
+//         taxable_amount: taxableAmount,
+//         cgst_amount: cgstAmount,
+//         sgst_amount: sgstAmount,
+//         igst_amount: igstAmount,
+//         gst_amount: gstAmount,
+//         total_amount: totalAmount,
+//         gst_rate: `${gstRate}%`,
+//         cgst_rate: `${cgstPercentage}%`,
+//         sgst_rate: `${sgstPercentage}%`,
+//         igst_rate: `${igstPercentage}%`
+//       });
+
+//       // Also keep all trips with individual GST breakdown
+//       customersMap[customerId].trips.push({
+//         trip_id: trip._id,
+//         trip_number: trip.trip_number,
+//         date: trip.trip_date,
+//         material: trip.material_name,
+//         quantity: trip.no_of_unit_customer,
+//         taxable_amount: taxableAmount,
+//         cgst_amount: cgstAmount,
+//         sgst_amount: sgstAmount,
+//         igst_amount: igstAmount,
+//         gst_amount: gstAmount,
+//         total_amount: totalAmount,
+//         gst_rate: `${gstRate}%`,
+//         cgst_rate: `${cgstPercentage}%`,
+//         sgst_rate: `${sgstPercentage}%`,
+//         igst_rate: `${igstPercentage}%`
+//       });
+//     });
+
+//     // Convert to array
+//     const customers = Object.values(customersMap);
+
+//     // 6. Calculate overall totals
+//     let overallTotals = {
+//       total_customers: customers.length,
+//       total_trips: trips.length,
+//       total_taxable_value: 0,
+//       total_cgst: 0,
+//       total_sgst: 0,
+//       total_igst: 0,
+//       total_gst_amount: 0,
+//       total_invoice_amount: 0
+//     };
+
+//     customers.forEach(cust => {
+//       overallTotals.total_taxable_value += cust.taxable_value;
+//       overallTotals.total_cgst += cust.total_cgst;
+//       overallTotals.total_sgst += cust.total_sgst;
+//       overallTotals.total_igst += cust.total_igst;
+//       overallTotals.total_gst_amount += cust.total_gst;
+//       overallTotals.total_invoice_amount += cust.total_amount;
+//     });
+
+//     // 7. Prepare the response
+//     const gstInvoiceData = {
+//       invoice_type: 'GST_SUMMARY_INVOICE',
+//       invoice_number: `GST-SUMMARY-${Date.now().toString().slice(-6)}`,
+//       invoice_date: new Date().toISOString().split('T')[0],
+//       from_date: from_date,
+//       to_date: to_date,
+//       period: `${new Date(from_date).toLocaleDateString('en-IN')} to ${new Date(to_date).toLocaleDateString('en-IN')}`,
+
+//       // Your company details
+//       company: {
+//         name: owner.company_name || owner.name,
+//         address: owner.address,
+//         city: owner.city,
+//         state: owner.state,
+//         pincode: owner.pincode,
+//         phone: owner.phone,
+//         gst_number: owner.gst_number || 'Not Provided'
+//       },
+
+//       // Customers grouped data with GST breakdown
+//       customers: customers.map(cust => ({
+//         customer_id: cust.customer_id,
+//         customer_name: cust.customer_name,
+//         customer_type: cust.customer_type,
+//         gst_number: cust.gst_number,
+//         state: cust.state,
+//         address: cust.address,
+//         phone: cust.phone,
+//         summary: {
+//           total_trips: cust.total_trips,
+//           taxable_value: cust.taxable_value.toFixed(2),
+//           cgst_amount: cust.total_cgst.toFixed(2),
+//           sgst_amount: cust.total_sgst.toFixed(2),
+//           igst_amount: cust.total_igst.toFixed(2),
+//           gst_amount: cust.total_gst.toFixed(2),
+//           total_amount: cust.total_amount.toFixed(2)
+//         },
+//         materials: Object.values(cust.trips_by_material).map(mat => ({
+//           material_name: mat.material_name,
+//           total_quantity: mat.total_quantity.toFixed(2),
+//           total_amount: mat.total_amount.toFixed(2),
+//           trip_count: mat.trips.length
+//         })),
+//         // For detailed view with GST breakdown
+//         trips: cust.trips.slice(0, 10)
+//       })),
+
+//       // Overall summary with GST breakdown
+//       summary: {
+//         total_customers: overallTotals.total_customers,
+//         total_trips: overallTotals.total_trips,
+//         total_taxable_value: overallTotals.total_taxable_value.toFixed(2),
+//         total_cgst: overallTotals.total_cgst.toFixed(2),
+//         total_sgst: overallTotals.total_sgst.toFixed(2),
+//         total_igst: overallTotals.total_igst.toFixed(2),
+//         total_gst_amount: overallTotals.total_gst_amount.toFixed(2),
+//         total_invoice_amount: overallTotals.total_invoice_amount.toFixed(2)
+//       }
+//     };
+
+//     return gstInvoiceData;
+
+//   } catch (error) {
+//     console.error('Error generating GST invoice:', error);
+//     throw error;
+//   }
+// };
+
 const getGSTInvoiceData = async (owner_id, from_date, to_date, customer_id = null) => {
   try {
     // 1. Get owner details
-    const owner = await User.findById(owner_id).select('name company_name address city state pincode phone gst_number');
+    const owner = await User.findById(owner_id).select('name company_name address city state pincode phone gst_number logo');
 
     if (!owner) {
       throw new Error('Owner not found');
     }
 
-    // 2. Build query for GST trips
-    const tripsQuery = {
+    // 2. Get GST trips
+    const trips = await Trip.find({
       owner_id,
-      include_gst: true, // ONLY GST trips
+      include_gst: true,
       isActive: true,
-      trip_date: {
-        $gte: new Date(from_date),
-        $lte: new Date(to_date)
-      },
-      status: { $in: ['delivered', 'completed'] }
-    };
-
-    // 3. If specific customer is provided, filter by that customer
-    if (customer_id) {
-      tripsQuery.customer_id = customer_id;
-    }
-
-    // 4. Get all GST trips in date range
-    const trips = await Trip.find(tripsQuery)
-      .populate('customer_id', 'name gst_number state address phone')
-      .populate('collab_owner_id', 'name gst_number state address phone')
+      trip_date: { $gte: new Date(from_date), $lte: new Date(to_date) },
+      status: { $in: ['delivered', 'completed'] },
+      ...(customer_id && { customer_id })
+    })
+      .populate('customer_id', 'name gst_number')  // Make sure gst_number is included
+      .populate('collab_owner_id', 'name gst_number')
       .sort({ trip_date: 1 });
 
     if (trips.length === 0) {
-      throw new Error('No GST trips found in the specified date range');
+      throw new Error('No GST trips found');
     }
 
-    // 5. GROUP TRIPS BY CUSTOMER
-    const customersMap = {};
+    // Helper function to normalize material name for comparison
+    const normalizeMaterial = (material) => {
+      if (!material || typeof material !== 'string') return '';
+      return material
+        .toUpperCase()
+        .trim()
+        .replace(/\s+/g, ' ')      // Multiple spaces → single space
+        .replace(/[^\w\s]/g, '')   // Remove special characters
+        .trim();
+    };
+
+    // 3. GROUP BY CUSTOMER ONLY (not by material)
+    const customerMap = {};
+    let rowIndex = 1;
 
     trips.forEach(trip => {
-      // Determine who is the customer
-      let customer;
-      let customerType;
-
-      if (trip.customer_id) {
-        customer = trip.customer_id;
-        customerType = 'customer';
-      } else if (trip.collab_owner_id) {
-        customer = trip.collab_owner_id;
-        customerType = 'collaborator';
-      } else {
-        return; // Skip if no customer
-      }
+      // Get customer
+      const customer = trip.customer_id || trip.collab_owner_id;
+      if (!customer) return;
 
       const customerId = customer._id.toString();
-
-      // Create customer entry if doesn't exist
-      if (!customersMap[customerId]) {
-        customersMap[customerId] = {
-          customer_id: customerId,
-          customer_name: customer.name,
-          customer_type: customerType,
-          gst_number: customer.gst_number || 'Not Provided',
-          state: customer.state,
-          address: customer.address,
-          phone: customer.phone,
-          total_trips: 0,
-          taxable_value: 0,
-          total_cgst: 0,
-          total_sgst: 0,
-          total_igst: 0,
-          total_gst: 0,
-          total_amount: 0,
-          trips_by_material: {},
-          trips: []
-        };
-      }
-
-      // Get GST values from trip
-      const sgstPercentage = parseFloat(trip.gst_values?.SGST?.replace('%', '') || '0');
-      const cgstPercentage = parseFloat(trip.gst_values?.CGST?.replace('%', '') || '0');
-      const igstPercentage = parseFloat(trip.gst_values?.IGST?.replace('%', '') || '0');
-      const gstRate = sgstPercentage + cgstPercentage + igstPercentage;
-
-      // IMPORTANT: trip.customer_amount is WITH GST (total amount)
-      const totalAmount = trip.customer_amount; // This is 6600 (with GST)
+      const currentMaterial = trip.material_name || 'Material';
+      const normalizedCurrentMaterial = normalizeMaterial(currentMaterial);
       
-      // Calculate taxable amount by removing GST
-      // Formula: Taxable Amount = Total Amount / (1 + GST Rate/100)
+      // GST calculations
+      const sgstPercent = parseFloat(trip.gst_values?.SGST?.replace('%', '') || '0');
+      const cgstPercent = parseFloat(trip.gst_values?.CGST?.replace('%', '') || '0');
+      const igstPercent = parseFloat(trip.gst_values?.IGST?.replace('%', '') || '0');
+      const gstRate = sgstPercent + cgstPercent + igstPercent;
+
+      const totalAmount = trip.customer_amount; // With GST
       const taxableAmount = totalAmount / (1 + (gstRate / 100));
-      
-      // Calculate GST amount
       const gstAmount = totalAmount - taxableAmount;
 
-      // Calculate individual GST amounts proportionally
-      const sgstAmount = (gstAmount * sgstPercentage) / gstRate;
-      const cgstAmount = (gstAmount * cgstPercentage) / gstRate;
-      const igstAmount = (gstAmount * igstPercentage) / gstRate;
+      const cgstAmount = (gstAmount * cgstPercent) / gstRate || 0;
+      const sgstAmount = (gstAmount * sgstPercent) / gstRate || 0;
+      const igstAmount = (gstAmount * igstPercent) / gstRate || 0;
 
-      // Update customer totals
-      customersMap[customerId].total_trips += 1;
-      customersMap[customerId].taxable_value += taxableAmount;
-      customersMap[customerId].total_cgst += cgstAmount;
-      customersMap[customerId].total_sgst += sgstAmount;
-      customersMap[customerId].total_igst += igstAmount;
-      customersMap[customerId].total_gst += gstAmount;
-      customersMap[customerId].total_amount += totalAmount;
-
-      // Group by material within customer
-      const materialKey = trip.material_name;
-      if (!customersMap[customerId].trips_by_material[materialKey]) {
-        customersMap[customerId].trips_by_material[materialKey] = {
-          material_name: trip.material_name,
-          total_quantity: 0,
-          total_amount: 0,
-          trips: []
+      // Create or update customer entry
+      if (!customerMap[customerId]) {
+        customerMap[customerId] = {
+          s_no: rowIndex++,
+          customer_name: customer.name,
+          customer_gstin: customer.gst_number || '',  // Store customer GSTIN
+          materials: new Set(), // Store normalized material names
+          original_materials: new Set(), // Store original material names for display
+          quantity: 0, // Total trips for this customer
+          taxable_value: 0,
+          gst_rate: `${gstRate}%`,
+          cgst_amount: 0,
+          sgst_amount: 0,
+          igst_amount: 0,
+          total_amount: 0
         };
       }
 
-      customersMap[customerId].trips_by_material[materialKey].total_quantity += trip.no_of_unit_customer;
-      customersMap[customerId].trips_by_material[materialKey].total_amount += totalAmount;
+      // Check if this material already exists (case-insensitive)
+      let materialExists = false;
+      const existingNormalizedMaterials = Array.from(customerMap[customerId].materials);
+      
+      for (const existingMaterial of existingNormalizedMaterials) {
+        if (existingMaterial === normalizedCurrentMaterial) {
+          materialExists = true;
+          break;
+        }
+        
+        // Also check without spaces for things like "MSAND" vs "M SAND"
+        const noSpaceExisting = existingMaterial.replace(/\s/g, '');
+        const noSpaceCurrent = normalizedCurrentMaterial.replace(/\s/g, '');
+        
+        if (noSpaceExisting === noSpaceCurrent) {
+          materialExists = true;
+          break;
+        }
+      }
 
-      // Add individual GST amounts to each trip
-      customersMap[customerId].trips_by_material[materialKey].trips.push({
-        trip_id: trip._id,
-        trip_number: trip.trip_number,
-        date: trip.trip_date,
-        quantity: trip.no_of_unit_customer,
-        taxable_amount: taxableAmount,
-        cgst_amount: cgstAmount,
-        sgst_amount: sgstAmount,
-        igst_amount: igstAmount,
-        gst_amount: gstAmount,
-        total_amount: totalAmount,
-        gst_rate: `${gstRate}%`,
-        cgst_rate: `${cgstPercentage}%`,
-        sgst_rate: `${sgstPercentage}%`,
-        igst_rate: `${igstPercentage}%`
-      });
-
-      // Also keep all trips with individual GST breakdown
-      customersMap[customerId].trips.push({
-        trip_id: trip._id,
-        trip_number: trip.trip_number,
-        date: trip.trip_date,
-        material: trip.material_name,
-        quantity: trip.no_of_unit_customer,
-        taxable_amount: taxableAmount,
-        cgst_amount: cgstAmount,
-        sgst_amount: sgstAmount,
-        igst_amount: igstAmount,
-        gst_amount: gstAmount,
-        total_amount: totalAmount,
-        gst_rate: `${gstRate}%`,
-        cgst_rate: `${cgstPercentage}%`,
-        sgst_rate: `${sgstPercentage}%`,
-        igst_rate: `${igstPercentage}%`
-      });
+      // If material doesn't exist, add it
+      if (!materialExists) {
+        customerMap[customerId].materials.add(normalizedCurrentMaterial);
+        customerMap[customerId].original_materials.add(currentMaterial);
+      }
+      
+      // Add to customer totals
+      customerMap[customerId].quantity += 1;
+      customerMap[customerId].taxable_value += taxableAmount;
+      customerMap[customerId].cgst_amount += cgstAmount;
+      customerMap[customerId].sgst_amount += sgstAmount;
+      customerMap[customerId].igst_amount += igstAmount;
+      customerMap[customerId].total_amount += totalAmount;
     });
 
-    // Convert to array
-    const customers = Object.values(customersMap);
+    // 4. Convert to array and format description
+    const gstRows = Object.values(customerMap).map(customer => {
+      // Get original material names for display
+      const originalMaterials = Array.from(customer.original_materials);
+      
+      // Build description with original material names
+      let description = 'Goods Transport Service';
+      if (originalMaterials.length > 0) {
+        if (originalMaterials.length === 1) {
+          description += ` - ${originalMaterials[0].toUpperCase()}`;
+        } else {
+          description += ` - ${originalMaterials.map(m => m.toUpperCase()).join(' + ')}`;
+        }
+      }
+      
+      // Format customer name with GSTIN
+      let formattedCustomerName = customer.customer_name;
+      if (customer.customer_gstin && customer.customer_gstin.trim() !== '') {
+        // Format: Customer Name (GSTIN: XXXXXXXXXXXXXXX)
+        formattedCustomerName = `${customer.customer_name} (GSTIN: ${customer.customer_gstin})`;
+      }
+      
+      return {
+        s_no: customer.s_no,
+        customer_name: customer.customer_name, // Original name
+        formatted_customer_name: formattedCustomerName, // Name with GSTIN
+        customer_gstin: customer.customer_gstin || '', // GSTIN separately
+        description: description,
+        sac_code: "9965",
+        quantity: customer.quantity, // Total trips for this customer
+        taxable_value: customer.taxable_value,
+        gst_rate: customer.gst_rate,
+        cgst_amount: customer.cgst_amount,
+        sgst_amount: customer.sgst_amount,
+        igst_amount: customer.igst_amount,
+        total_amount: customer.total_amount
+      };
+    });
 
-    // 6. Calculate overall totals
-    let overallTotals = {
-      total_customers: customers.length,
-      total_trips: trips.length,
+    // 5. Calculate TOTALS
+    const totals = gstRows.reduce((acc, row) => {
+      return {
+        total_taxable_value: acc.total_taxable_value + row.taxable_value,
+        total_cgst: acc.total_cgst + row.cgst_amount,
+        total_sgst: acc.total_sgst + row.sgst_amount,
+        total_igst: acc.total_igst + row.igst_amount,
+        total_gst: acc.total_gst + row.cgst_amount + row.sgst_amount + row.igst_amount,
+        grand_total: acc.grand_total + row.total_amount
+      };
+    }, {
       total_taxable_value: 0,
       total_cgst: 0,
       total_sgst: 0,
       total_igst: 0,
-      total_gst_amount: 0,
-      total_invoice_amount: 0
-    };
-
-    customers.forEach(cust => {
-      overallTotals.total_taxable_value += cust.taxable_value;
-      overallTotals.total_cgst += cust.total_cgst;
-      overallTotals.total_sgst += cust.total_sgst;
-      overallTotals.total_igst += cust.total_igst;
-      overallTotals.total_gst_amount += cust.total_gst;
-      overallTotals.total_invoice_amount += cust.total_amount;
+      total_gst: 0,
+      grand_total: 0
     });
 
-    // 7. Prepare the response
-    const gstInvoiceData = {
-      invoice_type: 'GST_SUMMARY_INVOICE',
-      invoice_number: `GST-SUMMARY-${Date.now().toString().slice(-6)}`,
-      invoice_date: new Date().toISOString().split('T')[0],
+    // 6. Return ONLY what's needed
+    return {
+      invoice_type: 'GST_INVOICE',
+      invoice_number: `GST-${Date.now().toString().slice(-6)}`,
       from_date: from_date,
       to_date: to_date,
-      period: `${new Date(from_date).toLocaleDateString('en-IN')} to ${new Date(to_date).toLocaleDateString('en-IN')}`,
-
-      // Your company details
+      
       company: {
+        logo: owner.logo || null,
         name: owner.company_name || owner.name,
         address: owner.address,
         city: owner.city,
@@ -2950,48 +3192,34 @@ const getGSTInvoiceData = async (owner_id, from_date, to_date, customer_id = nul
         gst_number: owner.gst_number || 'Not Provided'
       },
 
-      // Customers grouped data with GST breakdown
-      customers: customers.map(cust => ({
-        customer_id: cust.customer_id,
-        customer_name: cust.customer_name,
-        customer_type: cust.customer_type,
-        gst_number: cust.gst_number,
-        state: cust.state,
-        address: cust.address,
-        phone: cust.phone,
-        summary: {
-          total_trips: cust.total_trips,
-          taxable_value: cust.taxable_value.toFixed(2),
-          cgst_amount: cust.total_cgst.toFixed(2),
-          sgst_amount: cust.total_sgst.toFixed(2),
-          igst_amount: cust.total_igst.toFixed(2),
-          gst_amount: cust.total_gst.toFixed(2),
-          total_amount: cust.total_amount.toFixed(2)
-        },
-        materials: Object.values(cust.trips_by_material).map(mat => ({
-          material_name: mat.material_name,
-          total_quantity: mat.total_quantity.toFixed(2),
-          total_amount: mat.total_amount.toFixed(2),
-          trip_count: mat.trips.length
-        })),
-        // For detailed view with GST breakdown
-        trips: cust.trips.slice(0, 10)
+      // TABLE DATA - READY TO USE
+      gst_table_rows: gstRows.map(row => ({
+        s_no: row.s_no,
+        customer_name: row.formatted_customer_name, // Use formatted name with GSTIN
+        original_customer_name: row.customer_name, // Keep original for reference
+        customer_gstin: row.customer_gstin, // GSTIN separately
+        description: row.description,
+        quantity: row.quantity,
+        taxable_value: row.taxable_value.toFixed(2),
+        gst_rate: row.gst_rate,
+        cgst_amount: row.cgst_amount.toFixed(2),
+        sgst_amount: row.sgst_amount.toFixed(2),
+        igst_amount: row.igst_amount.toFixed(2),
+        total_amount: row.total_amount.toFixed(2)
       })),
 
-      // Overall summary with GST breakdown
+      // TOTALS - READY TO USE
       summary: {
-        total_customers: overallTotals.total_customers,
-        total_trips: overallTotals.total_trips,
-        total_taxable_value: overallTotals.total_taxable_value.toFixed(2),
-        total_cgst: overallTotals.total_cgst.toFixed(2),
-        total_sgst: overallTotals.total_sgst.toFixed(2),
-        total_igst: overallTotals.total_igst.toFixed(2),
-        total_gst_amount: overallTotals.total_gst_amount.toFixed(2),
-        total_invoice_amount: overallTotals.total_invoice_amount.toFixed(2)
+        total_customers: new Set(gstRows.map(row => row.customer_name)).size,
+        total_trips: trips.length,
+        total_taxable_value: totals.total_taxable_value.toFixed(2),
+        total_cgst: totals.total_cgst.toFixed(2),
+        total_sgst: totals.total_sgst.toFixed(2),
+        total_igst: totals.total_igst.toFixed(2),
+        total_gst: totals.total_gst.toFixed(2),
+        grand_total: totals.grand_total.toFixed(2)
       }
     };
-
-    return gstInvoiceData;
 
   } catch (error) {
     console.error('Error generating GST invoice:', error);
